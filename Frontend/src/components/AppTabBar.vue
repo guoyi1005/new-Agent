@@ -75,9 +75,9 @@ const shortcutItems = [
         <RouterLink to="/activities">校园活动</RouterLink>
         <RouterLink to="/ai-tools">AI 工具</RouterLink>
         <RouterLink
-          to="/career/nebula"
-          :class="{ 'app-site-header__nav-link--active': inSection('/career/nebula') }"
-        >星图探索</RouterLink>
+          to="/jobs/explore"
+          :class="{ 'app-site-header__nav-link--active': inSection('/jobs/explore') || inSection('/career/nebula') }"
+        >岗位探索</RouterLink>
         <RouterLink to="/interview">AI 面试</RouterLink>
       </nav>
 
@@ -119,14 +119,16 @@ const shortcutItems = [
 </template>
 
 <style scoped>
+/* 顶部导航：浅色底 + 深色选中态 的混合式现代导航，全站共用同一套功能 */
 .app-site-header {
   position: fixed;
   inset: 0 0 auto;
   z-index: 1000;
   height: 60px;
-  border-bottom: 1px solid rgba(251, 248, 242, 0.12);
-  background: #14171d;
-  color: #f5f0e7;
+  border-bottom: 1px solid #ede7de;
+  background: #ffffff;
+  color: #23262b;
+  box-shadow: 0 1px 2px rgba(35, 38, 43, 0.03);
 }
 
 .app-site-header--embedded {
@@ -139,21 +141,21 @@ const shortcutItems = [
   width: min(1440px, calc(100% - 48px));
   height: 100%;
   margin: 0 auto;
-  gap: 22px;
+  gap: 24px;
 }
 
 .app-site-header__brand {
   flex: 0 0 auto;
-  color: #f5f0e7;
+  color: #23262b;
   font-size: 17px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .app-site-header__brand span {
-  color: #ead574;
+  color: #5c8cb4;
 }
 
 .app-site-header__nav {
@@ -178,7 +180,7 @@ const shortcutItems = [
   min-height: 34px;
   padding: 0 14px;
   border-radius: 999px;
-  color: rgba(245, 240, 231, 0.72);
+  color: #5a6069;
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -188,14 +190,15 @@ const shortcutItems = [
 }
 
 .app-site-header__nav a:hover {
-  color: #f5f0e7;
-  background: rgba(245, 240, 231, 0.08);
+  background: #f4f1ec;
+  color: #23262b;
 }
 
+/* 选中态用深色胶囊，形成浅色/深色的对比 */
 .app-site-header__nav a.router-link-active,
 .app-site-header__nav a.app-site-header__nav-link--active {
-  color: #14171d;
-  background: #ead574;
+  background: #23262b;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -203,54 +206,86 @@ const shortcutItems = [
   width: 36px;
   height: 36px;
   min-height: 36px;
-  border: 1px solid rgba(245, 240, 231, 0.32);
-  background: #f5f0e7;
-  color: #14171d;
+  border: 1px solid #e4ded4;
+  border-radius: 50%;
+  background: #f7f5f1;
+  color: #23262b;
   font-size: 14px;
   font-weight: 700;
 }
 
 .app-tab-nav__panel {
-  border: 1px solid #222222;
+  border: 1px solid #eae4da;
   border-radius: 18px;
-  background: #fbf8f2;
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(35, 38, 43, 0.04), 0 20px 44px rgba(35, 38, 43, 0.1);
+}
+
+/* AI 面试与岗位星图沿用同一套导航，底色压深以适应深色页面 */
+.app-site-header--product {
+  border-bottom-color: #14171b;
+  background: #1b1e24;
   box-shadow: none;
 }
 
-/* AI 面试与星图探索共同使用的同一套产品导航。 */
-.app-site-header--product {
-  border-bottom-color: #0d0d0c;
-  background: #171715;
-  box-shadow: none;
+.app-site-header--product .app-site-header__brand {
+  color: #f4f1ec;
 }
 
 .app-site-header--product .app-site-header__brand span {
-  color: #d6c28a;
+  color: #9dc0dd;
+}
+
+.app-site-header--product .app-site-header__nav a {
+  color: rgba(244, 241, 236, 0.72);
+}
+
+.app-site-header--product .app-site-header__nav a:hover {
+  background: rgba(244, 241, 236, 0.1);
+  color: #f4f1ec;
 }
 
 .app-site-header--product .app-site-header__nav a.router-link-active,
 .app-site-header--product .app-site-header__nav a.app-site-header__nav-link--active {
-  color: #1d1c19;
-  background: #f2e8d7;
-  box-shadow: none;
+  background: #f2f4f7;
+  color: #1b1e24;
+}
+
+.app-site-header--product .app-tab-nav__avatar {
+  border-color: rgba(244, 241, 236, 0.28);
+  background: #f4f1ec;
+  color: #1b1e24;
 }
 
 @media (max-width: 680px) {
   .app-site-header__inner {
     width: min(100%, calc(100% - 24px));
-    gap: 10px;
+    gap: 12px;
   }
 
   .app-site-header__brand {
     font-size: 16px;
   }
-
 }
 
 @media (max-width: 760px) {
-  .app-site-header--product .app-site-header__inner { width: calc(100% - 16px); gap: 8px; }
-  .app-site-header--product .app-site-header__brand { display: none; }
-  .app-site-header--product .app-site-header__nav { justify-content: flex-start; }
-  .app-site-header--product .app-site-header__nav a { min-height: 34px; padding: 0 10px; font-size: 12px; }
+  .app-site-header--product .app-site-header__inner {
+    width: calc(100% - 16px);
+    gap: 8px;
+  }
+
+  .app-site-header--product .app-site-header__brand {
+    display: none;
+  }
+
+  .app-site-header--product .app-site-header__nav {
+    justify-content: flex-start;
+  }
+
+  .app-site-header--product .app-site-header__nav a {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
 }
 </style>

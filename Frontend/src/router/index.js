@@ -63,6 +63,7 @@ import DocumentConvertView from '../views/DocumentConvertView.vue'
 import CareerNebulaView from '../views/CareerNebulaView.vue'
 import CareerPlanetView from '../views/CareerPlanetView.vue'
 import HotJobsView from '../views/HotJobsView.vue'
+import JobExplorationView from '../views/JobExplorationView.vue'
 import InterviewShell from '../views/interview/InterviewShell.vue'
 import InterviewIndex from '../views/interview/pages/Index.vue'
 import InterviewAiMockInterview from '../views/interview/pages/AiMockInterview.vue'
@@ -93,6 +94,7 @@ const routes = [
   { path: '/ai-tools/resume/wizard', name: 'ai-tools-resume-wizard', component: ResumeWizard },
   { path: '/ai-tools/resume/wizard/edit', name: 'ai-tools-resume-edit', component: ResumeWizard },
   { path: '/jobs/hot', name: 'hot-jobs', component: HotJobsView },
+  { path: '/jobs/explore', name: 'job-exploration', component: JobExplorationView },
   { path: '/ai-original', name: 'ai-original', component: AiOriginalView },
   { path: '/ai-original/add', name: 'ai-original-add', component: WatermarkAddView },
   { path: '/ai-original/batch', name: 'ai-original-batch', component: WatermarkBatchView },
