@@ -146,7 +146,7 @@ onMounted(async () => {
   <div class="hotjobs-shell">
     <AppTabBar />
     <header class="hotjobs-header">
-      <button type="button" aria-label="返回 AI 工具" @click="router.push('/ai-tools')">‹</button>
+      <button type="button" aria-label="返回首页" @click="router.push('/home')">‹</button>
       <div>
         <span class="hotjobs-kicker">CAREER SIGNAL</span>
         <h1>岗位雷达</h1>

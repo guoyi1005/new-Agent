@@ -39,9 +39,9 @@ onMounted(loadProblems)
     <main class="py-bank-shell">
       <header class="py-bank-header">
         <div class="py-bank-header__intro">
-          <RouterLink class="py-bank-back" to="/career/nebula">
+          <RouterLink class="py-bank-back" to="/learning">
             <span class="py-bank-back__arrow" aria-hidden="true">←</span>
-            <span>返回星途探索</span>
+            <span>返回学习实践</span>
           </RouterLink>
           <h1>Python 题库</h1>
           <p>在线刷题与编程练习，支持运行、提交与 AI 辅助</p>

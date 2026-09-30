@@ -45,7 +45,7 @@ onMounted(load)
     <main class="graph-page">
       <header class="graph-header">
         <div>
-          <RouterLink class="py-back" to="/career/nebula">星图探索</RouterLink>
+          <RouterLink class="py-back" to="/learning">学习实践</RouterLink>
           <h1>Python 知识图谱</h1><p>基于真实答题与学习路径动态更新</p>
         </div>
         <input v-model="keyword" class="feature-input" placeholder="搜索知识点" />

@@ -5,36 +5,40 @@ import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
 import './index.css'
 import './styles/admin-soft-brutalism.css'
+import './styles/home-theme.css'
 import App from './App.jsx'
 import AppErrorBoundary from './components/AppErrorBoundary/AppErrorBoundary.jsx'
 
 // 确保 window.dayjs 存在，Ant Design 内部可能依赖它
 window.dayjs = dayjs
 
-// Soft Brutalism 主题：奶油底 + 深色描边 + 大圆角，与前台用户端视觉保持一致
+// 与学生端首页共享同一套暖灰背景、低饱和辅助色与轻量卡片规格。
 const appTheme = {
   token: {
-    colorPrimary: '#171717',
-    colorInfo: '#171717',
-    colorLink: '#171717',
-    colorLinkHover: '#4a453c',
-    colorBgLayout: '#F5F0E7',
-    colorBgContainer: '#FBF8F2',
-    colorBgElevated: '#FBF8F2',
-    colorText: '#171717',
-    colorTextSecondary: '#6F6A60',
-    colorTextTertiary: '#9A9384',
-    colorBorder: '#222222',
-    colorBorderSecondary: '#E6E0D3',
-    colorSplit: '#E6E0D3',
-    borderRadius: 14,
-    borderRadiusLG: 18,
+    colorPrimary: '#23262B',
+    colorInfo: '#5C8CB4',
+    colorSuccess: '#6F9463',
+    colorWarning: '#A8822B',
+    colorError: '#B4707F',
+    colorLink: '#5C8CB4',
+    colorLinkHover: '#23262B',
+    colorBgLayout: '#F7F5F1',
+    colorBgContainer: '#FFFFFF',
+    colorBgElevated: '#FFFFFF',
+    colorText: '#23262B',
+    colorTextSecondary: '#5A6069',
+    colorTextTertiary: '#8A9099',
+    colorBorder: '#DED7CB',
+    colorBorderSecondary: '#EAE4DA',
+    colorSplit: '#EAE4DA',
+    borderRadius: 12,
+    borderRadiusLG: 20,
     borderRadiusSM: 10,
-    boxShadow: 'none',
-    boxShadowSecondary: 'none',
-    boxShadowTertiary: 'none',
-    fontFamily: "'Plus Jakarta Sans', 'Avenir Next', 'PingFang SC', 'Microsoft YaHei', sans-serif",
-    controlHeight: 40,
+    boxShadow: '0 1px 2px rgba(35,38,43,.04), 0 4px 12px rgba(35,38,43,.04)',
+    boxShadowSecondary: '0 2px 4px rgba(35,38,43,.04), 0 12px 28px rgba(35,38,43,.06)',
+    boxShadowTertiary: '0 1px 2px rgba(35,38,43,.04)',
+    fontFamily: "Inter, 'Segoe UI', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif",
+    controlHeight: 42,
   },
   components: {
     Button: {
@@ -42,34 +46,34 @@ const appTheme = {
       primaryShadow: 'none',
       defaultShadow: 'none',
       dangerShadow: 'none',
-      defaultBg: '#FBF8F2',
-      defaultBorderColor: '#222222',
+      defaultBg: '#FFFFFF',
+      defaultBorderColor: '#DED7CB',
     },
     Card: {
       headerBg: 'transparent',
-      colorBorderSecondary: '#222222',
+      colorBorderSecondary: '#EAE4DA',
     },
     Table: {
-      headerBg: '#F1EBDF',
-      headerColor: '#4A453C',
-      headerSplitColor: '#E6E0D3',
-      rowHoverBg: '#F7F2E8',
-      borderColor: '#E6E0D3',
+      headerBg: '#FBF9F5',
+      headerColor: '#5A6069',
+      headerSplitColor: '#EAE4DA',
+      rowHoverBg: '#EFF4F9',
+      borderColor: '#EAE4DA',
     },
     Modal: {
-      contentBg: '#FBF8F2',
-      headerBg: '#FBF8F2',
+      contentBg: '#FFFFFF',
+      headerBg: '#FFFFFF',
     },
     Tag: {
-      defaultBg: '#FBF8F2',
-      defaultColor: '#171717',
+      defaultBg: '#FBF9F5',
+      defaultColor: '#5A6069',
     },
     Tabs: {
-      itemSelectedColor: '#171717',
-      inkBarColor: '#171717',
+      itemSelectedColor: '#23262B',
+      inkBarColor: '#5C8CB4',
     },
     Pagination: {
-      itemActiveBg: '#171717',
+      itemActiveBg: '#DCE8F3',
     },
   },
 }

@@ -33,7 +33,7 @@ onMounted(() => {
 
 <template>
   <div class="interview-shell">
-    <AppTabBar variant="product" />
+    <AppTabBar />
     <div class="interview-shell__content">
       <RouterView />
     </div>

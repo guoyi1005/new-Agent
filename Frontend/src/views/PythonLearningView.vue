@@ -52,9 +52,9 @@ onMounted(load)
     <main class="feature-container">
       <header class="feature-heading">
         <div>
-          <RouterLink class="py-back py-back--nebula" to="/career/nebula">
+          <RouterLink class="py-back py-back--nebula" to="/learning">
             <span class="py-back__arrow" aria-hidden="true">←</span>
-            <span>返回星途探索</span>
+            <span>返回学习实践</span>
           </RouterLink>
           <h1>Python 个性化学习</h1><p>根据真实答题和学习记录规划下一步</p>
         </div>

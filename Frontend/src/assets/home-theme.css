@@ -1,0 +1,554 @@
+/*
+ * 首页视觉在其它学生端页面的共享适配层。
+ * 首页使用 scoped 样式，本文件只处理旧功能页，不改动首页结构或样式。
+ */
+
+html {
+  color-scheme: light;
+  background: var(--hp-bg);
+}
+
+body {
+  color: var(--hp-ink);
+  background: var(--hp-bg);
+  font-family: Inter, 'Segoe UI', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+::selection {
+  color: var(--hp-ink);
+  background: var(--hp-blue);
+}
+
+:focus-visible {
+  outline: 2px solid var(--hp-blue-ink);
+  outline-offset: 2px;
+}
+
+/* ---------- 通用内容页 ---------- */
+
+.feature-page,
+.reference-theme,
+.paper-shell,
+.phone-shell,
+.blank-page,
+.watermark-page,
+.discount-page,
+.campus-activities-view,
+.my-activities-view,
+.map-page {
+  color: var(--hp-ink) !important;
+  background: var(--hp-bg) !important;
+  font-family: inherit !important;
+}
+
+.feature-container,
+.settings-page,
+.publish-page,
+.signin-page,
+.course-reader,
+.message-page,
+.mine-page {
+  width: min(1440px, calc(100% - 48px));
+}
+
+.feature-heading h1,
+.feature-section__head h2,
+.paper-header__title h1,
+.reference-theme h1,
+.reference-theme h2,
+.reference-theme h3 {
+  color: var(--hp-ink) !important;
+  letter-spacing: -0.02em;
+}
+
+.feature-heading p,
+.feature-row__copy span,
+.paper-header__title p,
+.reference-theme p,
+.reference-theme small {
+  color: var(--hp-muted);
+}
+
+.feature-card,
+.card,
+.paper-card,
+.paper-steps,
+.paper-field,
+.message-layout,
+.signin-card {
+  border: 1px solid var(--hp-line) !important;
+  border-radius: var(--hp-r-md) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+}
+
+.feature-row,
+.overview__row,
+.message-row,
+.chapter,
+.exam-card {
+  border-color: var(--hp-line) !important;
+  border-radius: var(--hp-r-sm) !important;
+  background: var(--hp-surface-2) !important;
+}
+
+.feature-row:hover,
+.message-row:hover,
+.chapter:hover,
+.exam-card:hover {
+  border-color: var(--hp-line-strong) !important;
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.feature-button,
+.paper-btn,
+.reference-theme button,
+.feature-chip {
+  border-color: var(--hp-line-strong) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.feature-button--primary,
+.paper-btn--primary,
+.submit-btn,
+.login-btn {
+  border-color: var(--hp-ink) !important;
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+}
+
+.feature-button--primary:hover,
+.paper-btn--primary:hover,
+.submit-btn:hover:not(:disabled),
+.login-btn:hover:not(:disabled) {
+  background: #34383e !important;
+  transform: translateY(-1px);
+}
+
+.feature-input,
+.feature-select,
+.feature-textarea,
+.paper-field input,
+.paper-field textarea,
+.paper-field select,
+.paper-picker {
+  border: 1px solid var(--hp-line-strong) !important;
+  border-radius: var(--hp-r-sm) !important;
+  color: var(--hp-ink) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: none !important;
+}
+
+.feature-input:focus,
+.feature-select:focus,
+.feature-textarea:focus,
+.paper-field input:focus,
+.paper-field textarea:focus,
+.paper-field select:focus {
+  border-color: var(--hp-blue-ink) !important;
+  box-shadow: 0 0 0 3px rgba(92, 140, 180, 0.12) !important;
+  outline: none;
+}
+
+.feature-chip--active,
+.paper-step--active .paper-step__no {
+  border-color: transparent !important;
+  color: var(--hp-blue-ink) !important;
+  background: var(--hp-blue) !important;
+}
+
+.feature-status--mastered,
+.feature-status--completed {
+  color: var(--hp-green-ink) !important;
+  background: var(--hp-green) !important;
+}
+
+.feature-status--learning,
+.feature-status--running,
+.feature-status--in_progress {
+  color: var(--hp-blue-ink) !important;
+  background: var(--hp-blue) !important;
+}
+
+.feature-status--weak,
+.feature-status--failed {
+  color: var(--hp-pink-ink) !important;
+  background: var(--hp-pink) !important;
+}
+
+.feature-empty,
+.feature-error {
+  border-color: var(--hp-line-strong) !important;
+  border-radius: var(--hp-r-md) !important;
+  background: var(--hp-surface) !important;
+}
+
+/* ---------- 登录与账户 ---------- */
+
+.login-page {
+  background: var(--hp-bg) !important;
+}
+
+.login-card {
+  border-color: var(--hp-line) !important;
+  border-radius: var(--hp-r-lg) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-md) !important;
+}
+
+.brand-logo {
+  border-color: transparent !important;
+  background: var(--hp-blue) !important;
+  color: var(--hp-blue-ink) !important;
+}
+
+.input-wrapper {
+  border-color: var(--hp-line-strong) !important;
+  background: var(--hp-surface) !important;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--hp-blue-ink) !important;
+  box-shadow: 0 0 0 3px rgba(92, 140, 180, 0.12);
+}
+
+.avatar-preview {
+  color: var(--hp-blue-ink) !important;
+  background: var(--hp-blue) !important;
+}
+
+/* ---------- 活动、优惠与个人中心 ---------- */
+
+body .campus-activities-view,
+body .my-activities-view,
+body .activity-detail-view,
+body .signup-page,
+body .discount-page {
+  background: var(--hp-bg) !important;
+}
+
+/* 地图与活动旧版 referenceDashboard 会把导航改成深色悬浮胶囊；
+   这里恢复为首页同款白色固定顶栏。 */
+#app .reference-theme {
+  --ref-bg: var(--hp-bg);
+  --ref-surface: var(--hp-surface);
+  --ref-ink: var(--hp-ink);
+  --ref-text: var(--hp-ink-2);
+  --ref-muted: var(--hp-muted);
+  --ref-line: var(--hp-line);
+  --ref-pink: var(--hp-pink);
+  --ref-sage: var(--hp-green);
+  --ref-blue: var(--hp-blue);
+  --ref-sand: var(--hp-yellow);
+}
+
+#app .reference-theme .app-site-header {
+  inset: 0 0 auto !important;
+  height: 60px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #ede7de !important;
+  background: var(--hp-surface) !important;
+  box-shadow: 0 1px 2px rgba(35, 38, 43, 0.03) !important;
+}
+
+#app .reference-theme .app-site-header__inner {
+  width: min(1440px, calc(100% - 48px)) !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#app .reference-theme .app-site-header__brand {
+  color: var(--hp-ink) !important;
+}
+
+#app .reference-theme .app-site-header__brand span {
+  color: var(--hp-blue-ink) !important;
+}
+
+#app .reference-theme .app-site-header__nav a {
+  color: var(--hp-ink-2) !important;
+  background: transparent !important;
+}
+
+#app .reference-theme .app-site-header__nav a:hover {
+  color: var(--hp-ink) !important;
+  background: #f4f1ec !important;
+}
+
+#app .reference-theme .app-site-header__nav a.router-link-active,
+#app .reference-theme .app-site-header__nav a.app-site-header__nav-link--active {
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+}
+
+#app .reference-theme .app-tab-nav__avatar {
+  border: 1px solid var(--hp-line-strong) !important;
+  color: var(--hp-ink) !important;
+  background: var(--hp-bg) !important;
+}
+
+#app .activities-reference .ca-page {
+  padding-top: 60px !important;
+}
+
+#app .activities-reference :is(.ca-search, .ca-toolbar, .ca-state, .ca-calendar__panel, .ca-calendar__side, .ca-card) {
+  border-color: var(--hp-line) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+}
+
+#app .activities-reference .ca-card:hover {
+  border-color: var(--hp-line-strong) !important;
+  box-shadow: var(--hp-shadow-md) !important;
+  transform: translateY(-3px) !important;
+}
+
+:is(.campus-activities-view, .my-activities-view, .activity-detail-view, .signup-page, .discount-page)
+  :is(.ca-header, .ca-toolbar, .ca-card, .activity-card, .info-card, .intro-section, .signup-card, .modal-card, .success-dialog, .filter-card, .merchant-card, .discount-card, [class*='panel']) {
+  border-color: var(--hp-line) !important;
+  border-radius: var(--hp-r-md) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+  backdrop-filter: none !important;
+}
+
+:is(.campus-activities-view, .my-activities-view, .activity-detail-view, .signup-page, .discount-page)
+  :is(.primary-btn, .publish-btn, .signup-btn, .submit-btn, .confirm-btn, .search-btn) {
+  border-color: var(--hp-ink) !important;
+  border-radius: 999px !important;
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+  box-shadow: none !important;
+}
+
+:is(.campus-activities-view, .my-activities-view, .activity-detail-view, .signup-page, .discount-page)
+  :is(.active, .selected, .ca-seg__item--active) {
+  border-color: var(--hp-line-strong) !important;
+}
+
+.message-layout > aside {
+  border-color: var(--hp-line) !important;
+  background: var(--hp-surface-2) !important;
+}
+
+.message-layout > aside button.active,
+.message-row.unread {
+  color: var(--hp-blue-ink) !important;
+  background: var(--hp-tint) !important;
+}
+
+/* ---------- 校园地图 ---------- */
+
+body .map-page {
+  background: var(--hp-bg) !important;
+}
+
+.map-page :is(.map-panel, .map-sidebar, .map-toolbar, .search-panel, .category-panel, .detail-panel, .indoor-panel, .intro-preview-popover, .indoor-content-view, .indoor-stall-card, .indoor-menu-card) {
+  border-color: var(--hp-line) !important;
+  border-radius: var(--hp-r-md) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+}
+
+.map-page :is(.category-all, .category-item.active, .indoor-categories button.active, .stall-card-actions button:last-child) {
+  border-color: var(--hp-ink) !important;
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+}
+
+.map-page :is(.category-item, .indoor-view-tabs, .indoor-categories, .indoor-stall-grid, .indoor-menu-grid) {
+  border-color: var(--hp-line) !important;
+  background: var(--hp-surface-2) !important;
+}
+
+/* ---------- AI 工具、写作与会话 ---------- */
+
+.ai-tools-page,
+.ai-studio-page,
+.campus-ai {
+  color: var(--hp-ink) !important;
+  background: var(--hp-bg) !important;
+}
+
+.campus-ai {
+  --bg: var(--hp-bg) !important;
+  --surface: var(--hp-surface) !important;
+  --surface-soft: var(--hp-surface-2) !important;
+  --text: var(--hp-ink) !important;
+  --muted: var(--hp-muted) !important;
+  --line: var(--hp-line) !important;
+  --primary: var(--hp-blue-ink) !important;
+}
+
+.campus-ai :is(.sidebar, .app-header, .surface, .composer, .message-bubble, .popover, .meeting-card, .meeting-detail, .result-panel),
+.ai-tools-page :is(.tool-card, .category-card, .hero-card),
+.ai-studio-page :is(.tool-panel, .preview-panel, .editor-panel) {
+  border-color: var(--hp-line) !important;
+  border-radius: var(--hp-r-md) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+  backdrop-filter: none !important;
+}
+
+.campus-ai .message-row.user .message-bubble,
+.campus-ai .history-list button.active,
+.campus-ai .type-tabs button.active {
+  color: var(--hp-ink) !important;
+  background: var(--hp-blue) !important;
+}
+
+.campus-ai :is(.send-button, .primary-action),
+.ai-tools-page :is(.primary-button, .tool-action) {
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- 试卷 ---------- */
+
+.paper-shell {
+  color: var(--hp-ink) !important;
+}
+
+.paper-header,
+.paper-bottom,
+.paper-modal {
+  border-color: var(--hp-line) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+}
+
+.paper-card,
+.paper-steps,
+.paper-field {
+  border-radius: var(--hp-r-md) !important;
+}
+
+.paper-header__back,
+.paper-btn--secondary,
+.paper-btn--ghost,
+.paper-modal__close {
+  color: var(--hp-ink-2) !important;
+  background: var(--hp-surface-2) !important;
+}
+
+/* ---------- Python 学习：取消旧深色主题，沿用首页浅色体系 ---------- */
+
+body .py-dark {
+  --py-ink: var(--hp-ink) !important;
+  --py-muted: var(--hp-muted) !important;
+  --py-line: var(--hp-line) !important;
+  --py-line-soft: var(--hp-line) !important;
+  --py-surface: var(--hp-surface) !important;
+  --py-surface-strong: var(--hp-surface-2) !important;
+  --py-violet: var(--hp-blue-ink) !important;
+  --py-sky: var(--hp-blue-ink) !important;
+  --py-mint: var(--hp-green-ink) !important;
+  --py-pink: var(--hp-pink-ink) !important;
+  --py-sand: var(--hp-yellow-ink) !important;
+  color: var(--hp-ink) !important;
+  background: var(--hp-bg) !important;
+}
+
+.py-dark :is(.feature-card, .feature-section, .problem-card, .graph-panel, .resource-card, .practice-panel) {
+  border: 1px solid var(--hp-line) !important;
+  border-radius: var(--hp-r-lg) !important;
+  color: var(--hp-ink) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+  backdrop-filter: none !important;
+}
+
+.py-dark :is(h1, h2, h3, h4, strong) {
+  color: var(--hp-ink) !important;
+}
+
+.py-dark :is(p, span, small) {
+  color: var(--hp-muted);
+}
+
+.py-dark :is(.feature-button--primary, .active, .primary-action) {
+  border-color: var(--hp-ink) !important;
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- 岗位星图与 AI 面试 ---------- */
+
+body .nebula-page,
+body .career-planet-page,
+body .interview-shell,
+.interview-shell .page-layout {
+  color: var(--hp-ink) !important;
+  background: var(--hp-bg) !important;
+}
+
+:is(.nebula-page, .career-planet-page, .interview-shell)
+  :is(.panel, .card, .content-card, .ability-card, .question-card, .report-card, .plan-card, .profile-card, .stat-card, .config-card, .dialog-content) {
+  border: 1px solid var(--hp-line) !important;
+  border-radius: var(--hp-r-md) !important;
+  color: var(--hp-ink) !important;
+  background: var(--hp-surface) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+}
+
+.interview-shell :is(input, textarea, select) {
+  border-color: var(--hp-line-strong) !important;
+  color: var(--hp-ink) !important;
+  background: var(--hp-surface) !important;
+}
+
+.interview-shell :is(.primary-btn, .start-btn, .submit-btn, .confirm-btn),
+:is(.nebula-page, .career-planet-page) :is(.primary-btn, .action-btn) {
+  border-color: var(--hp-ink) !important;
+  color: #fff !important;
+  background: var(--hp-ink) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- 响应式 ---------- */
+
+@media (max-width: 960px) {
+  .feature-container,
+  .settings-page,
+  .publish-page,
+  .signin-page,
+  .course-reader,
+  .message-page,
+  .mine-page {
+    width: min(100%, calc(100% - 32px));
+  }
+}
+
+@media (max-width: 680px) {
+  .feature-container,
+  .settings-page,
+  .publish-page,
+  .signin-page,
+  .course-reader,
+  .message-page,
+  .mine-page {
+    width: min(100%, calc(100% - 24px));
+  }
+
+  .feature-card,
+  .paper-card,
+  .paper-field {
+    border-radius: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

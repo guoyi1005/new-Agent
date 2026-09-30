@@ -54,6 +54,28 @@ const shortcutItems = [
   { label: '我的试卷', to: '/mine/papers' },
   { label: '账户设置', to: '/mine/account-settings' },
 ]
+
+const isLearningRoute = computed(() => (
+  inSection('/learning') ||
+  inSection('/career/nebula/python') ||
+  inSection('/paper') ||
+  (inSection('/ai-tools') && !inSection('/ai-tools/resume')) ||
+  inSection('/ai-studio') ||
+  inSection('/convert') ||
+  inSection('/courses')
+))
+
+const isCareerRoute = computed(() => (
+  inSection('/career') ||
+  inSection('/jobs/explore') ||
+  (inSection('/career/nebula') && !inSection('/career/nebula/python'))
+))
+
+const isEmploymentRoute = computed(() => inSection('/employment') || inSection('/jobs/hot'))
+const isCommunityRoute = computed(() => inSection('/community'))
+const isAiCareerRoute = computed(() => (
+  inSection('/ai-career') || inSection('/interview') || inSection('/ai-tools/resume') || inSection('/mine/ai-history')
+))
 </script>
 
 <template>
@@ -71,14 +93,12 @@ const shortcutItems = [
 
       <nav class="app-site-header__nav" aria-label="主导航">
         <RouterLink to="/home">首页</RouterLink>
-        <RouterLink to="/map">校园地图</RouterLink>
-        <RouterLink to="/activities">校园活动</RouterLink>
-        <RouterLink to="/ai-tools">AI 工具</RouterLink>
-        <RouterLink
-          to="/jobs/explore"
-          :class="{ 'app-site-header__nav-link--active': inSection('/jobs/explore') || inSection('/career/nebula') }"
-        >岗位探索</RouterLink>
-        <RouterLink to="/interview">AI 面试</RouterLink>
+        <RouterLink to="/growth" :class="{ 'app-site-header__nav-link--active': inSection('/growth') || inSection('/profile-radar') || inSection('/activities') || inSection('/map') || inSection('/mine/activities') }">成长中心</RouterLink>
+        <RouterLink to="/career" :class="{ 'app-site-header__nav-link--active': isCareerRoute }">岗位探索</RouterLink>
+        <RouterLink to="/learning" :class="{ 'app-site-header__nav-link--active': isLearningRoute }">学习实践</RouterLink>
+        <RouterLink to="/employment" :class="{ 'app-site-header__nav-link--active': isEmploymentRoute }">实习就业</RouterLink>
+        <RouterLink to="/community" :class="{ 'app-site-header__nav-link--active': isCommunityRoute }">校友社区</RouterLink>
+        <RouterLink to="/ai-career" :class="{ 'app-site-header__nav-link--active': isAiCareerRoute }">AI 求职</RouterLink>
       </nav>
 
       <div class="app-tab-nav__profile">

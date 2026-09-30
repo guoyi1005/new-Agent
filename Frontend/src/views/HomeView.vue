@@ -575,7 +575,7 @@ const abilityGrowth = [
 
 /* 目标岗位详情入口：复用已有的岗位探索页 */
 function openTargetJobDetail() {
-  router.push('/jobs/explore')
+  router.push('/career/gap')
 }
 
 function openJobPicker() {
@@ -714,10 +714,10 @@ const recommendJobs = computed(() => {
           </p>
 
           <div class="hp-hero__actions">
-            <button class="hp-btn hp-btn--solid" type="button" @click="router.push('/interview/resume')">
+            <button class="hp-btn hp-btn--solid" type="button" @click="router.push('/ai-career/resume')">
               开始岗位体检
             </button>
-            <button class="hp-link" type="button" @click="router.push('/career/nebula')">
+            <button class="hp-link" type="button" @click="router.push('/career/star-map')">
               查看岗位星图 →
             </button>
           </div>
@@ -756,55 +756,18 @@ const recommendJobs = computed(() => {
         </div>
 
         <div class="hp-stage__body">
-          <HomeSection size="sm" title="岗位探索" hint="按行业查看岗位方向">
-            <template #aside>
-              <div class="hp-pager">
-                <button type="button" :disabled="currentPage === 0" @click="changePage(-1)">上一组</button>
-                <span class="hp-pager__num">{{ currentPage + 1 }} / {{ pageCount }}</span>
-                <button type="button" :disabled="currentPage === pageCount - 1" @click="changePage(1)">下一组</button>
+          <HomeSection size="sm" title="岗位探索" hint="了解方向后再确定目标">
+            <article class="hp-card hp-starmap">
+              <p class="hp-starmap__desc">从行业、岗位方向与技能要求出发，找到适合自己的职业方向。</p>
+              <div class="hp-tags">
+                <span class="hp-tag">行业探索</span>
+                <span class="hp-tag">岗位方向</span>
+                <span class="hp-tag">岗位搜索</span>
               </div>
-            </template>
-
-            <ul class="hp-cats" @mouseleave="resetPreview">
-              <li v-for="(item, index) in currentCategories" :key="item.id">
-                <button
-                  class="hp-cat"
-                  :class="{ 'is-active': featuredCategoryId === item.id }"
-                  type="button"
-                  @mouseenter="showCategory(item.id)"
-                  @focus="showCategory(item.id)"
-                >
-                  <span class="hp-cat__head">
-                    <span class="hp-cat__num">{{ categoryIndex(index) }}</span>
-                    <svg
-                      class="hp-cat__icon"
-                      viewBox="0 0 32 32"
-                      aria-hidden="true"
-                      v-html="CATEGORY_ICONS[item.id] || CATEGORY_ICONS.it_ai"
-                    ></svg>
-                  </span>
-                  <span class="hp-cat__main">{{ item.main }}</span>
-                  <span class="hp-cat__sub">{{ formatCategorySub(item.sub) }}</span>
-                </button>
-              </li>
-            </ul>
-
-            <div
-              v-if="featuredCategory"
-              class="hp-cat-detail"
-              @mouseenter="keepPreview"
-              @mouseleave="releasePreview"
-            >
-              <p class="hp-cat-detail__title">
-                <span class="hp-cat-detail__label">岗位方向</span>{{ featuredCategory.title }}
-              </p>
-              <div v-for="group in featuredCategory.groups" :key="group.name" class="hp-cat-detail__group">
-                <p class="hp-cat-detail__group-name">{{ group.name }}</p>
-                <div class="hp-tags">
-                  <span v-for="tag in group.tags" :key="tag" class="hp-tag">{{ tag }}</span>
-                </div>
-              </div>
-            </div>
+              <button class="hp-btn hp-btn--solid" type="button" @click="router.push('/career')">
+                进入岗位探索
+              </button>
+            </article>
           </HomeSection>
         </div>
       </section>
@@ -818,7 +781,7 @@ const recommendJobs = computed(() => {
         </div>
 
         <div class="hp-stage__body hp-stage__body--target">
-          <HomeSection class="hp-tile" size="sm" title="我的目标岗位">
+          <HomeSection class="hp-tile" size="sm" title="目标岗位">
             <article class="hp-card hp-target">
               <div class="hp-target__top">
                 <div class="hp-target__info">
@@ -870,7 +833,7 @@ const recommendJobs = computed(() => {
                 <li>岗位节点可点击查看</li>
                 <li>配套课程与技能一起展开</li>
               </ul>
-              <button class="hp-btn hp-btn--ghost" type="button" @click="router.push('/career/nebula')">
+              <button class="hp-btn hp-btn--ghost" type="button" @click="router.push('/career/star-map')">
                 打开岗位星图
               </button>
             </article>
@@ -887,7 +850,7 @@ const recommendJobs = computed(() => {
         </div>
 
         <div class="hp-stage__body hp-stage__body--grow">
-          <HomeSection class="hp-tile hp-tile--plan" size="sm" title="今日计划">
+          <HomeSection class="hp-tile hp-tile--plan" size="sm" title="今日任务">
             <template #aside>
               <span class="hp-plan__count">{{ todayPlanDone }} / {{ todayPlan.length }}</span>
               <button
@@ -931,7 +894,7 @@ const recommendJobs = computed(() => {
             </article>
           </HomeSection>
 
-          <HomeSection class="hp-tile hp-tile--ability" size="sm" title="当前能力成长">
+          <HomeSection class="hp-tile hp-tile--ability" size="sm" title="成长动态">
             <article class="hp-card hp-ability">
               <SkillProgress
                 v-for="item in abilityGrowth"
@@ -945,7 +908,7 @@ const recommendJobs = computed(() => {
 
           <HomeSection class="hp-tile hp-tile--courses" size="sm" title="继续学习">
             <template #aside>
-              <button class="hp-link" type="button" @click="router.push('/career/nebula/python')">
+              <button class="hp-link" type="button" @click="router.push('/learning/python')">
                 全部课程 →
               </button>
             </template>
@@ -956,7 +919,7 @@ const recommendJobs = computed(() => {
                   <button
                     class="hp-course hp-course--row"
                     type="button"
-                    @click="router.push('/career/nebula/python')"
+                    @click="router.push('/learning/python')"
                   >
                     <span class="hp-course__cover" :class="`is-${course.tone}`">
                   <svg v-if="course.cover === 'api'" viewBox="0 0 320 200" aria-hidden="true">
@@ -1020,10 +983,10 @@ const recommendJobs = computed(() => {
         </div>
 
         <div class="hp-stage__body">
-          <HomeSection size="sm" title="推荐岗位">
+          <HomeSection size="sm" title="实习推荐">
             <template #aside>
               <span v-if="hotJobsWeekLabel" class="hp-section__meta">{{ hotJobsWeekLabel }}</span>
-              <button class="hp-link" type="button" @click="router.push('/jobs/hot')">查看全部 →</button>
+              <button class="hp-link" type="button" @click="router.push('/employment')">查看全部 →</button>
             </template>
 
             <p v-if="hotJobsLoading" class="hp-jobs__state">正在整理本周岗位…</p>
@@ -1053,7 +1016,7 @@ const recommendJobs = computed(() => {
               <p class="hp-closing__title">想知道自己和目标岗位还差多少？</p>
               <p class="hp-closing__desc">上传简历，AI 会给出匹配度、能力差距和提升建议。</p>
             </div>
-            <button class="hp-btn hp-btn--solid" type="button" @click="router.push('/interview/resume')">
+            <button class="hp-btn hp-btn--solid" type="button" @click="router.push('/ai-career/resume')">
               开始岗位体检
             </button>
           </div>

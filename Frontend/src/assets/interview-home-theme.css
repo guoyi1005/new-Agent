@@ -1,0 +1,332 @@
+/*
+ * AI interview visual bridge
+ *
+ * The interview module predates the light student portal and owns a large set
+ * of scoped dark styles. These overrides deliberately stay inside
+ * .interview-shell so the module can share the homepage visual language without
+ * changing any interview behaviour or the homepage itself.
+ */
+
+#app .interview-shell {
+  --iv-bg: #f7f5f1;
+  --iv-surface: #ffffff;
+  --iv-surface-soft: #f3f0eb;
+  --iv-ink: #23262b;
+  --iv-muted: #69717b;
+  --iv-line: #e3ded6;
+  --iv-blue: #dceaf5;
+  --iv-blue-strong: #5c8cb4;
+  --iv-green: #dfeadb;
+  --iv-yellow: #f3e4a8;
+  --iv-pink: #eededc;
+  --iv-danger: #b96060;
+  color: var(--iv-ink);
+  color-scheme: light;
+  background: var(--iv-bg);
+}
+
+#app .interview-shell,
+#app .interview-shell .interview-shell__content,
+#app .interview-shell .page-layout,
+#app .interview-shell .page-wrapper,
+#app .interview-shell .main-content,
+#app .interview-shell .content-area,
+#app .interview-shell .content-container,
+#app .interview-shell .page-container,
+#app .interview-shell .page-content-body,
+#app .interview-shell .main-body,
+#app .interview-shell .cockpit,
+#app .interview-shell .config-shell,
+#app .interview-shell .report-shell {
+  color: var(--iv-ink) !important;
+  background-color: var(--iv-bg) !important;
+  background-image: none !important;
+}
+
+/* Interview sidebar: retain the compact module navigation, but use the same
+   white surfaces, dark type and powder-blue accent as the student homepage. */
+#app .interview-shell .sidebar-wrapper {
+  --sidebar-bg: #ffffff !important;
+  --sidebar-bg-secondary: #f5f2ed !important;
+  --sidebar-bg-hover: #f0ece6 !important;
+  --sidebar-bg-active: #23262b !important;
+  --sidebar-border: #e3ded6 !important;
+  --sidebar-text: #69717b !important;
+  --sidebar-text-hover: #23262b !important;
+  --sidebar-text-active: #ffffff !important;
+  --sidebar-primary: #5c8cb4 !important;
+  --sidebar-card-bg: #eef4f8 !important;
+}
+
+#app .interview-shell .sidebar {
+  border-color: var(--iv-line) !important;
+  background: var(--iv-surface) !important;
+  box-shadow: 0 14px 34px rgba(35, 38, 43, 0.07) !important;
+}
+
+#app .interview-shell .sidebar :is(.logo, .user-name, .mentor-title) {
+  color: var(--iv-ink) !important;
+}
+
+#app .interview-shell .sidebar :is(.logo-sub, .user-status, .mentor-desc) {
+  color: var(--iv-muted) !important;
+}
+
+#app .interview-shell .sidebar .user-card,
+#app .interview-shell .sidebar .mentor-card {
+  border-color: var(--iv-line) !important;
+  background: var(--iv-surface-soft) !important;
+  box-shadow: none !important;
+}
+
+#app .interview-shell .sidebar .user-card:hover,
+#app .interview-shell .sidebar .mentor-card:hover {
+  border-color: #c8d8e5 !important;
+  background: #eef4f8 !important;
+}
+
+#app .interview-shell .sidebar .nav-item {
+  color: var(--iv-muted) !important;
+}
+
+#app .interview-shell .sidebar .nav-item:hover {
+  color: var(--iv-ink) !important;
+  background: var(--iv-surface-soft) !important;
+}
+
+#app .interview-shell .sidebar .nav-item.active,
+#app .interview-shell .sidebar .nav-item.active .nav-icon {
+  color: #ffffff !important;
+  background: var(--iv-ink) !important;
+}
+
+#app .interview-shell .sidebar .mentor-btn {
+  border-color: var(--iv-ink) !important;
+  color: #ffffff !important;
+  background: var(--iv-ink) !important;
+}
+
+#app .interview-shell .sidebar .mentor-btn:hover {
+  background: #3b4048 !important;
+}
+
+/* Typography */
+#app .interview-shell :is(
+  h1, h2, h3, h4,
+  .page-title, .hero-title, .section-title, .card-title, .config-title,
+  .picker-title, .top-title, .chat-title, .brand-title, .report-title-wrap,
+  .course-title, .featured-title, .doc-title, .mini-title, .practice-name,
+  .question-title, .title-wrap, .resume-name, .resume-title
+) {
+  color: var(--iv-ink) !important;
+  text-shadow: none !important;
+}
+
+#app .interview-shell :is(
+  p, .hero-desc, .header-sub, .section-subtitle, .featured-desc, .course-level,
+  .doc-meta, .hint-text, .text-muted, .empty-text, .state-hint, .status-label,
+  .metric-label, .stat-label, .card-label, .brand-sub, .left-sub
+) {
+  color: var(--iv-muted) !important;
+}
+
+/* Convert the legacy dark cards and panels into homepage-style surfaces. */
+#app .interview-shell :is(
+  .status-card, .resume-preview-card, .chat-section, .chat-header, .chat-input-area,
+  .featured-card, .course-card, .doc-card, .mini-card, .modal-content,
+  .center-main-card, .left-card, .ability-card, .actions-card, .env-card,
+  .face-card, .focus-card, .overview-card, .transcript-card, .tip-card,
+  .topbar, .left-panel, .hero-panel, .config-card, .analysis-card, .history-card,
+  .report-card, .dimension-card, .qa-card, .filter-card, .form-card, .list-card,
+  .filter-panel, .result-panel, .result-item, .state-box, .hero-card, .card,
+  .metric-card, .work-experience-card, .toolbar-card, .note-row, .metric-box,
+  .top-sticky-block, .top-sticky-inner, .section-card, .stat-card, .practice-card,
+  .question-list-card, .mock-exam-card, .batch-config, .batch-preview,
+  .filter-chip, .ebbinghaus-card, .knowledge-card, .monthly-report, .report-card,
+  .ai-plan-content, .review-core-blocks, .modal-content, .modal-box, .ai-modal-box,
+  .detail-modal, .edit-modal, .password-modal, .auth-modal, .drawer-content
+) {
+  border-color: var(--iv-line) !important;
+  color: var(--iv-ink) !important;
+  background-color: var(--iv-surface) !important;
+  background-image: none !important;
+  box-shadow: 0 10px 26px rgba(35, 38, 43, 0.06) !important;
+}
+
+#app .interview-shell :is(
+  .page-header, .section-header, .panel-header, .config-header, .modal-header,
+  .drawer-header, .report-header, .list-head, .result-head, .q-thead,
+  .q-table-head, .tab-nav, .category-tabs, .filter-tabs, .batch-actions
+) {
+  border-color: var(--iv-line) !important;
+  color: var(--iv-ink) !important;
+  background: transparent !important;
+}
+
+/* Soft category accents keep the homepage's restrained pastel rhythm. */
+#app .interview-shell :is(.status-card, .metric-card, .stat-card, .overview-card):nth-child(4n + 1) {
+  background: var(--iv-blue) !important;
+}
+
+#app .interview-shell :is(.status-card, .metric-card, .stat-card, .overview-card):nth-child(4n + 2) {
+  background: var(--iv-green) !important;
+}
+
+#app .interview-shell :is(.status-card, .metric-card, .stat-card, .overview-card):nth-child(4n + 3) {
+  background: var(--iv-pink) !important;
+}
+
+#app .interview-shell :is(.status-card, .metric-card, .stat-card, .overview-card):nth-child(4n) {
+  background: var(--iv-yellow) !important;
+}
+
+/* Form controls and editable areas */
+#app .interview-shell :is(
+  input, textarea, select, .form-input, .form-textarea, .inline-input,
+  .search-input, .answer-input, .answer-textarea, .note-input-area,
+  .select-trigger, .multi-select, .ai-input, .center-chat-input
+) {
+  border-color: #d9d4cc !important;
+  color: var(--iv-ink) !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+#app .interview-shell :is(input, textarea, select)::placeholder {
+  color: #979da5 !important;
+}
+
+#app .interview-shell :is(input, textarea, select):focus {
+  border-color: var(--iv-blue-strong) !important;
+  box-shadow: 0 0 0 3px rgba(92, 140, 180, 0.14) !important;
+  outline: none !important;
+}
+
+/* Primary actions use the same dark capsule language as the homepage nav. */
+#app .interview-shell :is(
+  .btn-primary, .start-btn, .send-btn, .mock-start-btn, .btn-start,
+  .search-btn, .primary, .action-btn:not(.action-btn-outline),
+  .edit-resume-btn, .export-pdf-btn, .retry-button, .auth-submit-btn,
+  .chroma-done-btn
+) {
+  border-color: var(--iv-ink) !important;
+  color: #ffffff !important;
+  background: var(--iv-ink) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+#app .interview-shell :is(
+  .btn-primary, .start-btn, .send-btn, .mock-start-btn, .btn-start,
+  .search-btn, .primary, .action-btn:not(.action-btn-outline),
+  .edit-resume-btn, .export-pdf-btn, .retry-button, .auth-submit-btn
+):hover {
+  background: #3b4048 !important;
+  transform: translateY(-2px);
+}
+
+#app .interview-shell :is(
+  .btn-secondary, .btn-outline, .ghost-btn, .action-btn-outline, .quick-btn,
+  .tab-btn, .filter-chip, .analysis-tab, .category-tabs .tab-item,
+  .filter-tabs .tab-item, .mode-btn, .thumb-btn, .page-btn, .row-btn,
+  .btn-detail, .btn-back, .btn-config, .btn-view-all
+) {
+  border-color: var(--iv-line) !important;
+  color: var(--iv-ink) !important;
+  background: var(--iv-surface) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+#app .interview-shell :is(
+  .tab-btn.active, .filter-chip.active, .analysis-tab.active, .tab-item.active,
+  .mode-btn.active, .thumb-btn.active, .sel-tag, .tag-on
+) {
+  border-color: #b8cfdf !important;
+  color: #355e7e !important;
+  background: var(--iv-blue) !important;
+}
+
+/* Tags, badges and progress indicators */
+#app .interview-shell :is(
+  .tag, .chip, .skill-tag, .skill-tag-compact, .msg-tag, .mini-badge,
+  .featured-badge, .detail-tag, .favorite-tag, .diff-pill, .due-tag,
+  .count-pill, .status-badge, .sync-badge, .badge-warning, .nav-badge
+) {
+  border-color: #cfdae2 !important;
+  color: #426b89 !important;
+  background: #edf5fa !important;
+  background-image: none !important;
+}
+
+#app .interview-shell :is(
+  .progress-bar, .progress-text, .skill-progress, .skill-progress-compact,
+  .ability-bar-track, .overview-progress-bar, .env-progress-bar,
+  .mic-level-track, .bar-track, .bar-bg, .meter
+) {
+  background: #e7e4df !important;
+}
+
+#app .interview-shell :is(
+  .progress-fill, .skill-bar, .skill-bar-compact, .ability-bar-fill,
+  .overview-progress-fill, .env-progress-fill, .mic-level-fill,
+  .bar-fill, .kp-fill
+) {
+  background: var(--iv-blue-strong) !important;
+  background-image: none !important;
+}
+
+/* Tables and list rows */
+#app .interview-shell :is(
+  .q-tr, .q-row, .history-table tr, .education-item, .work-item,
+  .batch-question-item, .favorite-item, .analysis-item, .plan-item,
+  .review-question-header, .detail-field, .doc-block
+) {
+  border-color: var(--iv-line) !important;
+  color: var(--iv-ink) !important;
+  background: transparent !important;
+}
+
+#app .interview-shell :is(.q-th, .q-td, th, td, .detail-label, .form-label, .label) {
+  border-color: var(--iv-line) !important;
+  color: inherit !important;
+}
+
+/* AI conversation bubbles: preserve speaker distinction without neon styling. */
+#app .interview-shell :is(.message-bubble, .thinking-bubble, .msg-bubble, .bubble) {
+  border: 1px solid var(--iv-line) !important;
+  color: var(--iv-ink) !important;
+  background: #f3f0eb !important;
+  background-image: none !important;
+}
+
+#app .interview-shell .message.user .message-bubble,
+#app .interview-shell .chat-item.user .bubble {
+  border-color: #c8dbe9 !important;
+  background: var(--iv-blue) !important;
+}
+
+/* Keep camera/video preview areas dark so media remains legible. */
+#app .interview-shell :is(
+  .camera-body, .camera-placeholder, .camera-video, .avatar-video,
+  .interviewer-direct-video, .center-camera-preview, .face-preview,
+  .media-preview, video
+) {
+  color: #f4f6f8 !important;
+  background-color: #20252b !important;
+  background-image: none !important;
+}
+
+#app .interview-shell .modal-overlay,
+#app .interview-shell .overlay,
+#app .interview-shell .drawer-backdrop,
+#app .interview-shell .auth-modal-overlay {
+  background: rgba(35, 38, 43, 0.42) !important;
+  backdrop-filter: blur(3px);
+}
+
+@media (max-width: 900px) {
+  #app .interview-shell .sidebar {
+    border-radius: 20px !important;
+  }
+}

@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
 
     <header class="py-workspace-toolbar">
       <div class="py-workspace-toolbar__left">
-        <button class="py-toolbar-btn py-toolbar-btn--ghost" type="button" @click="router.push('/career/nebula')">← 星图探索</button>
+        <button class="py-toolbar-btn py-toolbar-btn--ghost" type="button" @click="router.push('/learning')">← 学习实践</button>
         <button class="py-toolbar-btn py-toolbar-btn--ghost" type="button" @click="goToBank">← 题库</button>
         <button
           class="py-toolbar-btn py-toolbar-btn--ghost"

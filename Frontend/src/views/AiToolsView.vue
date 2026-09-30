@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { getCampusCourses } from '../api/campusCourse'
 import AppTabBar from '../components/AppTabBar.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const heroIndex = ref(0)
 const activeCategory = ref('hot')
@@ -106,9 +107,9 @@ const baseTools = [
   { name: '流程图', desc: '生成清晰的业务与逻辑流程', category: ['diagram'], artSet: 'core', art: 6, route: '/ai-studio/flowchart', accent: '#ee5eaa' },
   { name: 'Python 在线编程', desc: '在线刷题编程练习', category: ['hot', 'learning'], artSet: 'core', art: 7, route: '/career/nebula/python', accent: '#10B981' },
   { name: '知识图谱', desc: '查看课程知识关系与学习路径', category: ['diagram', 'learning'], artSet: 'core', art: 4, route: '/career/nebula/python/knowledge-graph', accent: '#18a37d' },
-  { name: '校园地图', desc: '查询校园地点、设施和导航', category: ['campus'], artSet: 'service', art: 1, route: '/map', accent: '#56aa1b' },
-  { name: '我的简历', desc: '简历查看、编辑、上传与 AI 优化', category: ['hot', 'campus'], artSet: 'service', art: 2, route: '/ai-tools/resume', accent: '#1768e6' },
-  { name: '岗位雷达', desc: 'AI 整理近一周软件工程热门岗位', category: ['hot', 'campus'], artSet: 'service', art: 3, route: '/jobs/hot', accent: '#527797' },
+  { name: '校园地图', desc: '查询校园地点、设施和导航', category: ['campus'], artSet: 'service', art: 1, route: '/growth/campus-map', accent: '#56aa1b' },
+  { name: '我的简历', desc: '简历查看、编辑、上传与 AI 优化', category: ['hot', 'campus'], artSet: 'service', art: 2, route: '/ai-career/resume', accent: '#1768e6' },
+  { name: '岗位雷达', desc: 'AI 整理近一周软件工程热门岗位', category: ['hot', 'campus'], artSet: 'service', art: 3, route: '/employment', accent: '#527797' },
   { name: 'PDF → Word', desc: 'PDF 转 Word 文档', category: ['convert'], artSet: 'core', art: 0, route: '/convert?type=pdf_to_docx', accent: '#5C7A99' },
   { name: 'PPT → Word', desc: 'PPT 转 Word 文档', category: ['convert'], artSet: 'core', art: 1, route: '/convert?type=ppt_to_docx', accent: '#6B9B7A' },
   { name: 'Word → PDF', desc: 'Word 转 PDF 文档', category: ['convert'], artSet: 'core', art: 2, route: '/convert?type=docx_to_pdf', accent: '#B89B7A' },
@@ -400,6 +401,10 @@ watch(displayedTools, (tools) => {
 }, { immediate: true })
 
 onMounted(() => {
+  const requestedCategory = String(route.query.category || '')
+  if (categories.some((item) => item.key === requestedCategory)) {
+    activeCategory.value = requestedCategory
+  }
   restartAutoplay()
   revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {

@@ -74,7 +74,7 @@ const payloadText = computed(() => {
   <div class="feature-page py-dark">
     <AppTabBar />
     <main class="resource-page">
-      <header class="resource-heading"><div><RouterLink class="py-back" to="/career/nebula">星图探索</RouterLink><span>Python 学习 / 专项资源</span><h1>生成专项学习资源</h1></div><div class="progress"><label><span>生成进度</span><strong>{{ state.progress }}%</strong></label><div><i :style="{width:`${state.progress}%`}"></i></div></div></header>
+      <header class="resource-heading"><div><RouterLink class="py-back" to="/learning">学习实践</RouterLink><span>Python 学习 / 专项资源</span><h1>生成专项学习资源</h1></div><div class="progress"><label><span>生成进度</span><strong>{{ state.progress }}%</strong></label><div><i :style="{width:`${state.progress}%`}"></i></div></div></header>
       <div v-if="error" class="feature-error">{{ error }}</div>
       <div class="resource-grid">
         <aside class="feature-card config-panel">
