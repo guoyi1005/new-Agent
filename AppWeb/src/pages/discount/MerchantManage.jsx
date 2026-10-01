@@ -84,7 +84,7 @@ export default function MerchantManage() {
     } finally {
       setLoading(false)
     }
-  }, [pagination, keyword, categoryFilter])
+  }, [pagination.current, pagination.pageSize, keyword, categoryFilter])
 
   useEffect(() => { fetchCategories() }, [fetchCategories])
   useEffect(() => { fetchData() }, [fetchData])

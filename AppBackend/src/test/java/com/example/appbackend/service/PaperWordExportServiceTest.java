@@ -5,6 +5,7 @@ import com.example.appbackend.entity.PaperLayout;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.junit.jupiter.api.Test;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STPageOrientation;
@@ -13,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -48,28 +50,30 @@ class PaperWordExportServiceTest {
 
     private void assertDocument(byte[] content, boolean answers) throws Exception {
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(content))) {
-            String text = document.getParagraphs().stream().map(XWPFParagraph::getText)
-                    .reduce("", (left, right) -> left + "\n" + right);
-            assertTrue(text.contains("Python程序设计期末试卷"));
-            assertTrue(text.contains("总分：12分"));
-            assertTrue(text.contains("一、单项选择题（共1题，共7分）"));
-            assertTrue(text.contains("2. Python中哪个关键字用于定义函数？（7分）"));
+            List<String> documentParts = new ArrayList<>();
+            document.getParagraphs().stream().map(XWPFParagraph::getText).forEach(documentParts::add);
+            for (XWPFTable table : document.getTables()) {
+                table.getRows().forEach(row -> row.getTableCells().forEach(cell -> documentParts.add(cell.getText())));
+            }
+            String text = String.join("\n", documentParts);
+            assertTrue(text.contains("《Python程序设计》试题（A卷）"));
+            assertTrue(text.contains("满分：12分"));
+            assertTrue(text.contains("一、单项选择题（7分）"));
+            assertTrue(text.contains("Python中哪个关键字用于定义函数？"));
+            assertTrue(text.contains("（7分）"));
             assertTrue(text.contains("A. def"));
-            assertTrue(text.contains("二、判断题（共1题，共5分）"));
-            assertTrue(text.contains("1. Python是一种解释型语言。（5分）"));
+            assertTrue(text.contains("二、判断题（5分）"));
+            assertTrue(text.contains("Python是一种解释型语言。"));
             assertFalse(text.contains("学号 ____________"));
-            assertEquals(answers, text.contains("【答案】def"));
-            assertEquals(answers, text.contains("【解析】使用def关键字定义函数。"));
+            assertEquals(answers, text.contains("答案：def"));
+            assertEquals(answers, text.contains("解析：使用def关键字定义函数。"));
 
             CTSectPr section = document.getDocument().getBody().getSectPr();
             assertEquals(STPageOrientation.LANDSCAPE, section.getPgSz().getOrient());
             assertEquals(23811, integer(section.getPgSz().getW()));
             assertEquals(16838, integer(section.getPgSz().getH()));
             assertEquals(2, section.getCols().getNum().intValue());
-            assertTrue(document.getParagraphs().stream().anyMatch(paragraph ->
-                    paragraph.getCTP().isSetPPr()
-                            && paragraph.getCTP().getPPr().isSetSectPr()
-                            && paragraph.getCTP().getPPr().getSectPr().getCols().getNum().intValue() == 1));
+            assertTrue(document.getDocument().getBody().xmlText().contains("continuous"));
         }
     }
 

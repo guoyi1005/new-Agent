@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button, Progress, Space, Tag, Typography } from 'antd'
 import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
 import { getPptTask } from '../../api/ppt'
@@ -65,9 +65,7 @@ export default function PptTaskWorkspace({ seedTask }) {
     }
   }, [taskId, refreshTask])
 
-  const previews = useMemo(() => (
-    Array.isArray(task?.previews) ? task.previews.slice(0, 6) : []
-  ), [task?.previews])
+  const previews = Array.isArray(task?.previews) ? task.previews.slice(0, 6) : []
 
   const downloadPptx = useCallback(async () => {
     if (!taskId) return

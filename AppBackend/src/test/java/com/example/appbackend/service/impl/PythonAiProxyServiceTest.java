@@ -112,7 +112,7 @@ class PythonAiProxyServiceTest {
         Assertions.assertEquals("1001", userIdRef.get());
         Assertions.assertEquals("https://llm.test/v1", aiBaseUrlRef.get());
         Assertions.assertEquals("test-ai-key", aiApiKeyRef.get());
-        Assertions.assertEquals("qwen3.8-27b", aiModelRef.get());
+        Assertions.assertEquals(AiModelPolicy.defaultTextModel(), aiModelRef.get());
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode reqJson = mapper.readTree(requestBodyRef.get());
@@ -207,7 +207,7 @@ class PythonAiProxyServiceTest {
         Assertions.assertEquals("Bearer " + token, authRef.get());
         Assertions.assertEquals("1003", userIdRef.get());
         Assertions.assertEquals("test-internal-token", internalTokenRef.get());
-        Assertions.assertEquals("qwen3.8-27b", aiModelRef.get());
+        Assertions.assertEquals(AiModelPolicy.defaultTextModel(), aiModelRef.get());
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode reqJson = mapper.readTree(requestBodyRef.get());
@@ -551,7 +551,7 @@ class PythonAiProxyServiceTest {
             TimeUnit.MILLISECONDS.sleep(25);
         }
         Assertions.assertEquals("test-internal-token", internalToken.get());
-        Assertions.assertEquals("qwen3.8-27b", model.get());
+        Assertions.assertEquals(AiModelPolicy.defaultTextModel(), model.get());
         JsonNode body = new ObjectMapper().readTree(requestBody.get());
         Assertions.assertEquals("列表切片", body.path("input").asText());
         Assertions.assertTrue(body.path("llmModel").isMissingNode());
@@ -795,7 +795,7 @@ class PythonAiProxyServiceTest {
         Assertions.assertEquals("qwen", providerRef.get());
         Assertions.assertEquals("https://llm.test/v1", baseUrlRef.get());
         Assertions.assertEquals("test-ai-key", apiKeyRef.get());
-        Assertions.assertEquals("qwen3.8-27b", modelRef.get());
+        Assertions.assertEquals(AiModelPolicy.defaultTextModel(), modelRef.get());
 
         JsonNode request = new ObjectMapper().readTree(requestBodyRef.get());
         Assertions.assertEquals("material.txt", request.path("sourceName").asText());

@@ -41,5 +41,6 @@ public class MapPlaceResponse {
     private MapPlaceFence fence;
     private MapFloorPlan floorPlan;
     private MapPlaceIndoorPosition indoorPosition;
-    private List<MapPlaceResponse> children = new ArrayList<>();
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<MapPlaceResponse> children;
 }

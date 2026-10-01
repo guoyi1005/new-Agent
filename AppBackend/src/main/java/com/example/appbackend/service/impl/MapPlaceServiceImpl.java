@@ -137,6 +137,7 @@ public class MapPlaceServiceImpl implements MapPlaceService {
         Map<Long, MapPlaceResponse> responseById = places.stream()
                 .map(item -> toResponse(item, false))
                 .collect(Collectors.toMap(MapPlaceResponse::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        responseById.values().forEach(response -> response.setChildren(new ArrayList<>()));
         List<MapPlaceResponse> roots = new ArrayList<>();
         for (MapPlaceResponse response : responseById.values()) {
             if (response.getParentId() == null) {
@@ -463,7 +464,6 @@ public class MapPlaceServiceImpl implements MapPlaceService {
         response.setSceneType(place.getSceneType());
         response.setPlaceType(place.getPlaceType());
         response.setName(place.getName());
-        response.setDescription(place.getDescription());
         response.setUsagePurpose(place.getUsagePurpose());
         response.setUsageStatus(place.getUsageStatus());
         response.setStatus(place.getStatus());
@@ -483,6 +483,7 @@ public class MapPlaceServiceImpl implements MapPlaceService {
         response.setUpdatedAt(place.getUpdatedAt());
         response.setImages(imageRepository.findByPlaceIdOrderBySortOrderAscIdAsc(place.getId()));
         if (includeDetails) {
+            response.setDescription(place.getDescription());
             response.setFence(fenceRepository.findByPlaceId(place.getId()).orElse(null));
             if ("FLOOR".equals(place.getPlaceType())) {
                 response.setFloorPlan(floorPlanRepository.findByFloorPlaceId(place.getId()).orElse(null));
@@ -494,11 +495,9 @@ public class MapPlaceServiceImpl implements MapPlaceService {
             }
             if (includeChildren) {
                 List<MapPlace> children = placeRepository.findByParentIdOrderBySortOrderAscIdAsc(place.getId());
-                if (!children.isEmpty()) {
-                    response.setChildren(children.stream()
-                            .map(child -> toResponse(child, true, true))
-                            .toList());
-                }
+                response.setChildren(children.stream()
+                        .map(child -> toResponse(child, true, true))
+                        .toList());
             }
         }
         return response;

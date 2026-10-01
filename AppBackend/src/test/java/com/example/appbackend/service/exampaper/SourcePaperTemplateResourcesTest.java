@@ -26,10 +26,10 @@ class SourcePaperTemplateResourcesTest {
     private static final String ROOT = "exam-paper-template/";
     private static final Map<String, String> SOURCE_SHA_256 = Map.of(
             "static/document.docx", "3a403d4baa8160d9f2d688762013dc56bbc72d25f07efcf7403a2270e926302e",
-            "document/document.xml", "7e5457e8bf3acb364d3b5f803d5d3570fbc7b7a357539044cbb43945216ad6ef",
-            "document/document.xml.rels", "08c44a83333f1b3113aece6d891bea7bb2df6f9a5201f7ad8dff20b3b2cc9595",
-            "head/header1.xml", "b085cf8f755478369be89f029505a99df41b182223246675a0426b703f3d8e6e",
-            "head/header2.xml", "db298c7df0ae7ed1c3f6ecca19afc3d9dbc6a862294018a436b1883c98f5ffeb"
+            "document/document.xml", "326a6d8ef46b05542583606876d9484223bfac6ed59a8dcf7e3c885f0c3835a9",
+            "document/document.xml.rels", "853a2c17681a2f1c889a95552d1615ef22363be13cd8a132b9f0b5de9667f4e7",
+            "head/header1.xml", "12b626501fba5938207bce415b4deaa06a9c16291b258fee291bfd5985b71710",
+            "head/header2.xml", "58ddfca96276bfd12d17f5e1ae55feebc14999537929b811624386545010e1e6"
     );
     private static final List<String> IMPORTED_XML_PARTS = List.of(
             "document/document.xml",

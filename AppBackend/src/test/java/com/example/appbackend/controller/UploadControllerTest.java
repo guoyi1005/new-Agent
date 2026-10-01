@@ -4,7 +4,6 @@ import com.example.appbackend.entity.Result;
 import com.qcloud.cos.COSClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -34,8 +33,7 @@ class UploadControllerTest {
         MockMultipartFile image = new MockMultipartFile(
                 "file", "cover.png", "image/png", new byte[]{1, 2, 3});
 
-        Result<Map<String, String>> result = controller.uploadImage(
-                image, null, new MockHttpServletRequest());
+        Result<Map<String, String>> result = controller.uploadImage(image, null);
 
         assertEquals(200, result.getCode());
         String url = result.getData().get("url");

@@ -47,8 +47,13 @@ class MapPlaceServiceImplTest {
         positionRequest.setYRatio(new BigDecimal("40.0000"));
         MapPlaceIndoorPosition position = service.savePosition(classroom.getId(), positionRequest);
 
-        assertEquals(1, service.tree("TEACHING").size());
-        assertEquals("一层", service.tree("TEACHING").getFirst().getChildren().getFirst().getName());
+        List<MapPlaceResponse> teachingTree = service.tree("TEACHING");
+        assertEquals(1, teachingTree.size());
+        assertEquals("一层", teachingTree.getFirst().getChildren().getFirst().getName());
+        MapPlaceResponse classroomInTree = teachingTree.getFirst().getChildren().getFirst().getChildren().getFirst();
+        assertEquals("101教室", classroomInTree.getName());
+        assertNotNull(classroomInTree.getChildren());
+        assertTrue(classroomInTree.getChildren().isEmpty());
         assertEquals(new BigDecimal("25.5000"), position.getXRatio());
         assertEquals(plan.getId(), service.detail(classroom.getId()).getIndoorPosition().getFloorPlanId());
 

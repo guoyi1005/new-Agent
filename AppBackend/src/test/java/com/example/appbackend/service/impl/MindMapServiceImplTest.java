@@ -2,6 +2,7 @@ package com.example.appbackend.service.impl;
 
 import com.example.appbackend.dto.MindMapDTO;
 import com.example.appbackend.entity.MindMapRecord;
+import com.example.appbackend.exception.BusinessException;
 import com.example.appbackend.repository.MindMapRecordRepository;
 import com.example.appbackend.repository.SystemConfigRepository;
 import com.example.appbackend.service.FileParseService;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.when;
 class MindMapServiceImplTest {
 
     @Test
-    void generateFallsBackToLocalStructuredMindMapWhenAiConfigMissing() {
+    void generateRejectsMissingMindMapAgentModelBinding() {
         SystemConfigService systemConfigService = mock(SystemConfigService.class);
         SystemConfigRepository systemConfigRepository = mock(SystemConfigRepository.class);
         MindMapRecordRepository recordRepository = mock(MindMapRecordRepository.class);
@@ -53,16 +54,12 @@ class MindMapServiceImplTest {
         request.setStructure("知识梳理");
         request.setDetail("standard");
 
-        MindMapDTO.GenerateResponse response = service.generate(1L, request, null);
+        BusinessException error = Assertions.assertThrows(
+                BusinessException.class,
+                () -> service.generate(1L, request, null)
+        );
 
-        Assertions.assertNotNull(response.getId());
-        Assertions.assertEquals("Linux学习路线", response.getTitle());
-        Assertions.assertEquals("AUTO", response.getRequestedCenterTopicMode());
-        Assertions.assertEquals("KNOWLEDGE", response.getResolvedStructure());
-        Assertions.assertFalse(response.getNodes().isEmpty());
-        Assertions.assertEquals("Linux 基础", response.getNodes().get(0).getName());
-        Assertions.assertFalse(response.getNodes().get(0).getChildren().isEmpty());
-        verify(recordRepository).save(any(MindMapRecord.class));
+        Assertions.assertTrue(error.getMessage().contains("diagram_mind_map_agent.model"));
     }
 
     @Test

@@ -101,7 +101,7 @@ export default function ActivityManage() {
     } finally {
       setLoading(false)
     }
-  }, [pagination, keyword, statusFilter, filterMerchantId])
+  }, [pagination.current, pagination.pageSize, keyword, statusFilter, filterMerchantId])
 
   useEffect(() => { fetchMerchants() }, [fetchMerchants])
   useEffect(() => { fetchData() }, [fetchData])

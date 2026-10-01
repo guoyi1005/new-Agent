@@ -5,7 +5,6 @@ import com.example.appbackend.service.FileStorageService;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.model.ObjectMetadata;
 import com.qcloud.cos.model.PutObjectRequest;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
@@ -20,7 +19,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -81,8 +79,7 @@ public class UploadController {
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<Map<String, String>> uploadImage(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "folder", required = false) String folder,
-            HttpServletRequest request) throws IOException {
+            @RequestParam(value = "folder", required = false) String folder) throws IOException {
         if (file == null || file.isEmpty()) {
             return Result.badRequest("请选择图片文件");
         }
@@ -98,7 +95,7 @@ public class UploadController {
         }
         try {
             if (!StringUtils.hasText(bucket) || !StringUtils.hasText(domain)) {
-                return saveLocalImage(file, objectKey, request);
+                return Result.success(Map.of("url", saveLocally(file, objectKey)));
             }
             return Result.success(Map.of("url", storeToCos(file, objectKey)));
         } catch (Exception error) {
@@ -211,23 +208,6 @@ public class UploadController {
                 ? fileBaseUrl.trim().replaceAll("/+$", "")
                 : "";
         return normalizedBaseUrl + "/uploads/" + objectKey.replace('\\', '/');
-    }
-
-    private Result<Map<String, String>> saveLocalImage(MultipartFile file, String objectKey, HttpServletRequest request) throws IOException {
-        Path uploadRoot = Paths.get(System.getProperty("user.dir"), "uploads");
-        Path targetPath = uploadRoot.resolve(objectKey).normalize();
-        if (!targetPath.startsWith(uploadRoot)) {
-            return Result.badRequest("Invalid upload path");
-        }
-        Files.createDirectories(targetPath.getParent());
-        try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + contextPath;
-        String fileUrl = baseUrl + "/uploads/" + objectKey.replace("\\", "/");
-        return Result.success(Map.of("url", fileUrl));
     }
 
     private String buildObjectKey(String extension, String folder) {
