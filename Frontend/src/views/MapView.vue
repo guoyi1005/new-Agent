@@ -918,8 +918,6 @@ function stopMapDrag() {
 }
 
 onMounted(async () => {
-  document.documentElement.classList.remove('dark')
-  localStorage.removeItem('campus-dark')
   document.addEventListener('click', onDocClick)
   const mapContainer = document.getElementById('container')
   mapContainer?.addEventListener('click', onMapContainerClick)

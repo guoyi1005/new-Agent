@@ -222,7 +222,14 @@ const isAiCareerRoute = computed(() => (
   font-weight: 600;
 }
 
+.app-tab-nav__profile {
+  position: relative;
+  flex: 0 0 auto;
+}
+
 .app-tab-nav__avatar {
+  display: grid;
+  place-items: center;
   width: 36px;
   height: 36px;
   min-height: 36px;
@@ -232,13 +239,98 @@ const isAiCareerRoute = computed(() => (
   color: #23262b;
   font-size: 14px;
   font-weight: 700;
+  overflow: hidden;
+  padding: 0;
+}
+
+.app-tab-nav__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .app-tab-nav__panel {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 220px;
   border: 1px solid #eae4da;
   border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 4px 8px rgba(35, 38, 43, 0.04), 0 20px 44px rgba(35, 38, 43, 0.1);
+  overflow: hidden;
+}
+
+.app-tab-nav__panel-section {
+  padding: 14px 16px;
+}
+
+.app-tab-nav__panel-section + .app-tab-nav__panel-section {
+  border-top: 1px solid #eae4da;
+}
+
+.app-tab-nav__panel-section--list {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.app-tab-nav__name,
+.app-tab-nav__student {
+  margin: 0;
+}
+
+.app-tab-nav__name {
+  color: #23262b;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.app-tab-nav__student {
+  margin-top: 8px;
+  color: #8a9099;
+  font-size: 13px;
+}
+
+.app-tab-nav__panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  color: #5a6069;
+  background: transparent;
+  text-align: left;
+}
+
+.app-tab-nav__panel-row + .app-tab-nav__panel-row {
+  margin-top: 4px;
+}
+
+.app-tab-nav__panel-arrow {
+  color: #8a9099;
+  font-size: 20px;
+}
+
+.app-tab-nav__logout {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #efd6dc;
+  border-radius: 12px;
+  color: #b4707f;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+.profile-panel-enter-active,
+.profile-panel-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.profile-panel-enter-from,
+.profile-panel-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* AI 面试与岗位星图沿用同一套导航，底色压深以适应深色页面 */

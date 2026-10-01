@@ -1,5 +1,5 @@
+import './assets/theme-tokens.css'
 import './assets/main.css'
-import './assets/soft-brutalism.css'
 import './assets/home-theme.css'
 import './assets/interview-home-theme.css'
 import './utils/uniShim.js'

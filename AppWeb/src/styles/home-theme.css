@@ -1,29 +1,5 @@
 /* 管理端沿用学生端首页的现代校园视觉，不改变后台信息架构。 */
 
-:root {
-  --hp-bg: #f7f5f1;
-  --hp-cream: #ffffff;
-  --hp-surface: #ffffff;
-  --hp-surface-2: #fbf9f5;
-  --hp-ink: #23262b;
-  --hp-ink-2: #5a6069;
-  --hp-muted: #8a9099;
-  --hp-line: #eae4da;
-  --hp-line-soft: #eae4da;
-  --hp-line-strong: #ded7cb;
-  --hp-pink: #f2d9de;
-  --hp-yellow: #f7e9c6;
-  --hp-green: #dee9d8;
-  --hp-blue: #dce8f3;
-  --hp-blue-ink: #5c8cb4;
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
-  --shadow-sm: 0 1px 2px rgba(35, 38, 43, 0.04), 0 4px 12px rgba(35, 38, 43, 0.04);
-  --shadow-md: 0 2px 4px rgba(35, 38, 43, 0.04), 0 12px 28px rgba(35, 38, 43, 0.06);
-}
-
 html,
 body,
 #root {

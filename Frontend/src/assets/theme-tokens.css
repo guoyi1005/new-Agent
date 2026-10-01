@@ -1,8 +1,9 @@
 /**
- * 全站视觉变量。
- * 数值与当前首页保持一致，供首页以外的功能页面复用。
+ * 当前全站视觉变量。
+ * 数值与首页一致，所有非首页功能页面只从这里读取主题值。
  */
 :root {
+  color-scheme: light;
   --hp-bg: #f7f5f1;
   --hp-cream: #ffffff;
   --hp-surface: #ffffff;
