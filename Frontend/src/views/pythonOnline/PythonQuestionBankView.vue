@@ -141,6 +141,7 @@ onMounted(loadProblems)
               />
               <button v-if="searchKeyword" type="button" aria-label="清除搜索" @click="searchKeyword = ''">×</button>
             </label>
+            <button class="py-bank-ai" type="button" @click="router.push('/paper')">AI 出题</button>
             <span class="py-bank-count">共 {{ filteredQuestions.length }} 道</span>
           </div>
 
@@ -407,6 +408,18 @@ onMounted(loadProblems)
   background: #eef2f6;
   font-size: 16px;
   line-height: 1;
+}
+
+.py-bank-ai {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #b9c8d2;
+  border-radius: 999px;
+  color: #36566c;
+  background: #eef4f7;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .py-bank-count {
@@ -700,6 +713,18 @@ onMounted(loadProblems)
 .py-bank-search input::placeholder { color: #677188; }
 .py-bank-search img { filter: invert(.78) opacity(.55); }
 .py-bank-search button { color: #9aa4ba; background: rgba(148, 163, 184, .14); }
+.py-bank-ai {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #b9c8d2;
+  border-radius: 999px;
+  color: #36566c;
+  background: #eef4f7;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .py-bank-count { color: #7d879e; }
 
 .py-bank-table th {

@@ -13,6 +13,8 @@ import PythonQuestionBankView from '../views/pythonOnline/PythonQuestionBankView
 import PythonPracticeView from '../views/pythonOnline/PythonPracticeView.vue'
 import KnowledgeGraphView from '../views/KnowledgeGraphView.vue'
 import LearningResourceView from '../views/LearningResourceView.vue'
+import LearningPracticeView from '../views/LearningPracticeView.vue'
+import CommunityView from '../views/CommunityView.vue'
 import AiWritingView from '../views/aiStudio/AiWritingView.vue'
 import AiImageView from '../views/aiStudio/AiImageView.vue'
 import AiPresentationView from '../views/aiStudio/AiPresentationView.vue'
@@ -87,12 +89,17 @@ const routes = [
   { path: '/home', name: 'home', component: HomeView },
   { path: '/growth', name: 'growth-center', component: SectionHubView, meta: { section: 'growth' } },
   { path: '/career', name: 'career-exploration', component: SectionHubView, meta: { section: 'career' } },
-  { path: '/learning', name: 'learning-practice', component: SectionHubView, meta: { section: 'learning' } },
+  { path: '/learning', name: 'learning-practice', component: LearningPracticeView },
   { path: '/employment', name: 'employment', component: SectionHubView, meta: { section: 'employment' } },
-  { path: '/community', name: 'community', component: SectionHubView, meta: { section: 'community' } },
+  { path: '/community', name: 'community', component: CommunityView, meta: { public: true } },
   { path: '/ai-career', name: 'ai-career', component: SectionHubView, meta: { section: 'aiCareer' } },
   { path: '/growth/campus-map', redirect: '/map' },
   { path: '/growth/campus-activity', redirect: '/activities' },
+  { path: '/community/experience', redirect: { name: 'community', query: { category: 'experience' } } },
+  { path: '/community/cases', redirect: { name: 'community', query: { category: 'cases' } } },
+  { path: '/community/referrals', redirect: { name: 'community', query: { category: 'referrals' } } },
+  { path: '/community/qa', redirect: { name: 'community', query: { category: 'qa' } } },
+  { path: '/community/following', redirect: { name: 'community', query: { category: 'following' } } },
   { path: '/community/map', redirect: '/growth/campus-map' },
   { path: '/community/activities', redirect: '/growth/campus-activity' },
   { path: '/growth/star-map', redirect: '/career/nebula' },
@@ -110,6 +117,11 @@ const routes = [
   { path: '/learning/python/knowledge-graph', redirect: '/career/nebula/python/knowledge-graph' },
   { path: '/learning/question-bank', redirect: '/career/nebula/python' },
   { path: '/learning/special-training', redirect: '/career/nebula/python/resources' },
+  { path: '/learning/recommended', redirect: { name: 'learning-practice', query: { tab: 'recommended' } } },
+  { path: '/learning/python-and-algorithm', redirect: { name: 'learning-practice', query: { tab: 'python' } } },
+  { path: '/learning/courses-and-special', redirect: { name: 'learning-practice', query: { tab: 'courses' } } },
+  { path: '/learning/project-practice', redirect: { name: 'learning-practice', query: { tab: 'projects' } } },
+  { path: '/learning/my-practice', redirect: { name: 'learning-practice', query: { tab: 'practice' } } },
   { path: '/employment/radar', redirect: '/jobs/hot' },
   { path: '/employment/aggregate', redirect: '/jobs/hot' },
   { path: '/employment/campus-recruitment', redirect: '/jobs/hot' },
