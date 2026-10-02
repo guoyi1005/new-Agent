@@ -1,0 +1,3 @@
+package com.example.appbackend.repository;
+import com.example.appbackend.entity.LearningRecord; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface LearningRecordRepository extends JpaRepository<LearningRecord,Long>{ List<LearningRecord> findByUserIdOrderByOccurredAtDesc(Long userId); List<LearningRecord> findByUserIdAndSkillIdOrderByOccurredAtDesc(Long userId,Long skillId); Optional<LearningRecord> findByEventId(String eventId); boolean existsByEventId(String eventId); }

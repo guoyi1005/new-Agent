@@ -83,11 +83,15 @@ public final class CampusCourseDTO {
         private String bookTitle;
         private String teacherName;
         private String level;
+        /** 课程导学视频的 B 站 BV 号 */
+        private String videoBvid;
         private String coverUrl;
         private String displayImageUrl;
         private String description;
         private String semester;
         private Integer estimatedHours;
+        /** 当前登录学生是否已加入该课程；未登录时为 null */
+        private Boolean enrolled;
         private Long ownerId;
         private String ownerName;
         private String ownerType;
@@ -118,6 +122,8 @@ public final class CampusCourseDTO {
         private Integer estimatedMinutes;
         private Boolean required;
         private Integer sortOrder;
+        /** 该章节对应 B 站视频的分P序号 */
+        private Integer videoPage;
         private Boolean completed;
         private LocalDateTime completedTime;
     }

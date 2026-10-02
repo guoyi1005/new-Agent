@@ -3,6 +3,7 @@ package com.example.appbackend.controller;
 import com.example.appbackend.dto.LearningPathDTO;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.exception.BusinessException;
+import com.example.appbackend.service.LearningRecordService;
 import com.example.appbackend.service.LearningWorkflowService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -23,9 +24,12 @@ import java.util.List;
 public class AppLearningController {
 
     private final LearningWorkflowService learningWorkflowService;
+    private final LearningRecordService learningRecordService;
 
-    public AppLearningController(LearningWorkflowService learningWorkflowService) {
+    public AppLearningController(LearningWorkflowService learningWorkflowService,
+                                 LearningRecordService learningRecordService) {
         this.learningWorkflowService = learningWorkflowService;
+        this.learningRecordService = learningRecordService;
     }
 
     @PostMapping(value = "/resources/generate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -89,7 +93,12 @@ public class AppLearningController {
     public Result<LearningPathDTO.PathItemView> completePathItem(
             @PathVariable Long itemId,
             HttpServletRequest request) {
-        return Result.success(learningWorkflowService.completePathItem(requireUserId(request), itemId));
+        Long userId = requireUserId(request);
+        LearningPathDTO.PathItemView view = learningWorkflowService.completePathItem(userId, itemId);
+        String text = (view.getKnowledgePoint() == null ? "" : view.getKnowledgePoint())
+                + " " + (view.getObjective() == null ? "" : view.getObjective());
+        learningRecordService.recordPathItemCompleted(userId, itemId, text);
+        return Result.success(view);
     }
 
     @PostMapping("/courses/python/path/replan")

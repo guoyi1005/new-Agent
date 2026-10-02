@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { getContentTags } from '../api/learning'
 import { getPythonProblemList } from '../api/pythonProblem'
 import { DIFFICULTY_LABELS, PROGRESS_STORAGE_KEY } from '../utils/pythonOnlineIde'
 
@@ -102,13 +103,23 @@ export function usePythonProblemBank() {
     loadError.value = false
     if (questions.value.length === 0) loading.value = true
     try {
-      const res = await getPythonProblemList()
-      const list = (res && res.data) || []
+      const [res, tagRes] = await Promise.allSettled([
+        getPythonProblemList(),
+        getContentTags('PROBLEM'),
+      ])
+      const list = (res.status === 'fulfilled' && res.value && res.value.data) || []
+      const skillMap = {}
+      if (tagRes.status === 'fulfilled' && Array.isArray(tagRes.value)) {
+        tagRes.value.forEach((tag) => {
+          if (tag && tag.sourceId != null) skillMap[tag.sourceId] = tag.skills || []
+        })
+      }
       const solvedSet = Object.fromEntries(getSolvedIds().map((id) => [id, true]))
       questions.value = list.map((p) => ({
         ...p,
         done: !!solvedSet[p.id],
         judgeable: !!p.judgeable,
+        skills: skillMap[p.id] || [],
       }))
     } catch (e) {
       console.error('加载题库失败:', e)

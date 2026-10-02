@@ -60,6 +60,10 @@ public class CampusCourseChapter {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    /** 对应 B 站视频合集的分P序号（从 1 开始）；为空表示未做章节映射 */
+    @Column(name = "video_page")
+    private Integer videoPage;
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
 

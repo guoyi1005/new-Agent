@@ -26,6 +26,29 @@ export const getPythonKnowledgeGraph = () => unwrap(request({
   url: '/api/app/learning/courses/python/knowledge-graph',
 }))
 
+export const getLearningRecommendations = (jobName, limit) => unwrap(request({
+  url: '/api/app/learning/recommendations',
+  params: { jobName, limit },
+}))
+
+export const getExternalCourses = () => unwrap(request({
+  url: '/api/app/learning/external-courses',
+}))
+
+export const getPracticeSummary = () => unwrap(request({
+  url: '/api/app/learning/practice-summary',
+}))
+
+export const getContentTags = (sourceType, sourceId) => unwrap(request({
+  url: '/api/app/learning/content-tags',
+  params: { sourceType, sourceId },
+}))
+
+export const reportProblemSolved = (problemId) => unwrap(request({
+  url: `/api/app/learning/problems/${encode(problemId)}/solved`,
+  method: 'POST',
+}))
+
 export const getLearningWorkflow = (workflowId) => unwrap(request({
   url: `/api/app/learning/workflows/${encode(workflowId)}`,
 }))

@@ -48,15 +48,11 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="feature-page py-dark">
+  <div class="feature-page">
     <main class="feature-container">
       <header class="feature-heading">
         <div>
-          <RouterLink class="py-back py-back--nebula" to="/learning">
-            <span class="py-back__arrow" aria-hidden="true">←</span>
-            <span>返回学习实践</span>
-          </RouterLink>
-          <h1>Python 个性化学习</h1><p>根据真实答题和学习记录规划下一步</p>
+<h1>Python 个性化学习</h1><p>根据真实答题和学习记录规划下一步</p>
         </div>
         <div class="feature-actions">
           <button class="feature-button" :disabled="busy === 'replan'" @click="replan">重新规划路径</button>
@@ -111,81 +107,45 @@ onMounted(load)
 <style scoped>
 .learning-dashboard{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:20px}.graph-entry{display:flex;min-height:310px;padding:30px;cursor:pointer}.graph-entry__copy{position:relative;z-index:2;width:42%}.graph-entry__eyebrow{color:#6c8196;font-size:11px;font-weight:800;letter-spacing:1.4px}.graph-entry h2{margin:14px 0 8px;color:#20344b;font-size:25px}.graph-entry p{margin:0 0 28px;color:#718096}.graph-entry__preview{position:relative;flex:1;min-height:240px}.node{position:absolute;width:70px;height:32px;border:2px solid #6d8ca8;border-radius:17px;background:#f4f8fb}.node:after{content:'';position:absolute;inset:9px 27px;border-radius:50%;background:#527696}.n1{left:5%;top:45%}.n2{left:42%;top:14%;border-color:#5d9b7d}.n2:after{background:#4c9471}.n3{left:48%;top:67%;border-color:#5d9b7d}.n3:after{background:#4c9471}.weak{right:3%;top:42%;border-color:#bb6c65}.weak:after{background:#b85f57}.line{position:absolute;height:1px;background:#9eb0c1;transform-origin:left}.l1{left:22%;top:48%;width:115px;transform:rotate(-28deg)}.l2{left:22%;top:52%;width:126px;transform:rotate(23deg)}.l3{left:61%;top:34%;width:105px;transform:rotate(20deg)}.overview__row{display:flex;justify-content:space-between;padding:16px 0;border-top:1px solid #edf1f5}.overview__row span{color:#65758a}.overview__row strong{color:#26384d}.path-panel{grid-column:1}.recommendation-panel{grid-column:2}.path-sequence{display:grid;flex:0 0 30px;place-items:center;width:30px;height:30px;border-radius:50%;color:#315f8c;background:#eaf1f7;font-weight:800}.feature-row__copy{flex:1}.feature-section__head p{margin:5px 0 0;color:#718096;font-size:13px}.recommendation{display:block;width:100%;padding:14px;border:1px solid #e1e7ed;border-radius:8px;color:#26384d;background:#fff;text-align:left}.recommendation span,.recommendation small{display:block}.recommendation span{font-weight:750}.recommendation small{margin-top:7px;color:#718096;line-height:1.5}@media(max-width:900px){.learning-dashboard{grid-template-columns:1fr}.graph-entry,.overview,.path-panel,.recommendation-panel{grid-column:1}.graph-entry__copy{width:55%}}
 
-/* 深色未来感 Dashboard 主题补充 */
-.py-dark .graph-entry{background:linear-gradient(135deg,rgba(31,36,58,.9),rgba(20,24,38,.86))}
-.py-dark .graph-entry__eyebrow{color:#8d98ae}
-.py-dark .graph-entry h2{color:#f2f5ff}
-.py-dark .graph-entry p{color:#93a0b8}
-.py-dark .node{border-color:rgba(124,137,255,.5);background:rgba(23,28,43,.85)}
-.py-dark .node:after{background:#8f9bff}
-.py-dark .node.n2,.py-dark .node.n3{border-color:rgba(117,221,185,.55)}
-.py-dark .node.n2:after,.py-dark .node.n3:after{background:#75ddb9}
-.py-dark .node.weak{border-color:rgba(239,158,183,.6)}
-.py-dark .node.weak:after{background:#ef9eb7}
-.py-dark .line{background:rgba(124,137,255,.34)}
-.py-dark .overview__row span{color:#8893aa}
-.py-dark .overview__row strong{color:#e7ecf8}
-.py-dark .path-sequence{color:#c9d2ff;background:rgba(83,91,199,.24)}
-.py-dark .feature-section__head p{color:#8893aa}
-.py-dark .recommendation{border-color:rgba(148,163,184,.14);border-radius:16px;color:#e7ecf8;background:rgba(23,28,43,.72)}
-.py-dark .recommendation:hover{border-color:rgba(124,137,255,.45);background:rgba(52,59,94,.6)}
-.py-dark .recommendation small{color:#8893aa}
-
-.py-dark .py-back--nebula {
-  min-height: 34px;
+/* 返回学习实践：与站内其他页面的返回按钮保持一致的胶囊样式 */
+.py-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 14px;
-  padding: 7px 13px 7px 11px;
-  border: 1px solid rgba(80, 180, 255, 0.35);
-  border-radius: 10px;
-  color: #c8ddf2;
-  background: rgba(10, 20, 40, 0.75);
-  box-shadow: 0 5px 16px rgba(10, 28, 58, 0.24), 0 0 12px rgba(99, 102, 241, 0.06);
+  padding: 7px 14px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface);
   font-size: 13px;
-  line-height: 18px;
-  cursor: pointer;
-  transition: transform 0.18s ease, color 0.18s ease, border-color 0.18s ease,
-    background-color 0.18s ease, box-shadow 0.18s ease;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color .2s ease, color .2s ease, background .2s ease;
 }
 
-.py-dark .py-back--nebula::before {
-  content: none;
+.py-back:hover {
+  border-color: var(--hp-blue-ink);
+  color: var(--hp-blue-ink);
+  background: var(--hp-tint);
 }
 
 .py-back__arrow {
-  display: inline-block;
-  margin-right: 7px;
-  color: #83c7ff;
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1;
-  transition: transform 0.18s ease;
+  transition: transform .2s ease;
 }
 
-.py-dark .py-back--nebula:hover {
-  transform: translateY(-1px);
-  border-color: rgba(103, 196, 255, 0.62);
-  color: #dcecff;
-  background: rgba(20, 36, 65, 0.88);
-  box-shadow: 0 7px 18px rgba(10, 28, 58, 0.3), 0 0 15px rgba(88, 134, 255, 0.16);
-}
-
-.py-back--nebula:hover .py-back__arrow {
+.py-back:hover .py-back__arrow {
   transform: translateX(-2px);
 }
-
-.py-dark .py-back--nebula:active {
-  transform: translateY(0);
-  background: rgba(8, 17, 34, 0.88);
-  box-shadow: 0 2px 8px rgba(10, 28, 58, 0.2);
-}
-
-.py-dark .py-back--nebula:focus-visible {
-  outline: 2px solid rgba(105, 190, 255, 0.72);
-  outline-offset: 3px;
-  border-color: rgba(103, 196, 255, 0.58);
+/* 顶部留白收紧：外层已经有二级导航 */
+.feature-container {
+  padding-top: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .py-dark .py-back--nebula,
+  .py-back--nebula,
   .py-back__arrow {
     transition: none;
   }

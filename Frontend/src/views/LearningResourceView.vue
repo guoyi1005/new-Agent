@@ -71,7 +71,7 @@ const payloadText = computed(() => {
 </script>
 
 <template>
-  <div class="feature-page py-dark">
+  <div class="feature-page">
     <AppTabBar />
     <main class="resource-page">
       <header class="resource-heading"><div><RouterLink class="py-back" to="/learning">学习实践</RouterLink><span>Python 学习 / 专项资源</span><h1>生成专项学习资源</h1></div><div class="progress"><label><span>生成进度</span><strong>{{ state.progress }}%</strong></label><div><i :style="{width:`${state.progress}%`}"></i></div></div></header>
@@ -108,35 +108,19 @@ const payloadText = computed(() => {
 </template>
 
 <style scoped>
-.resource-page{width:min(1500px,calc(100% - 40px));margin:auto;padding:25px 0 42px}.resource-heading{display:flex;align-items:end;justify-content:space-between;gap:30px;margin-bottom:20px}.resource-heading>div>span{color:#718096;font-size:13px}.resource-heading h1{margin:8px 0 0;color:#17233a}.progress{width:min(680px,52%)}.progress label{display:flex;justify-content:space-between;color:#52667b;font-size:13px}.progress>div{height:9px;margin-top:8px;border-radius:999px;background:#e3e9ef;overflow:hidden}.progress i{display:block;height:100%;background:#527797;transition:width .2s}.resource-grid{display:grid;grid-template-columns:280px minmax(460px,1fr) 340px;gap:18px}.config-panel,.trace-panel{padding:22px}.config-panel label{display:grid;gap:8px;color:#43576c;font-size:13px;font-weight:750}.config-panel h3{margin:25px 0 12px}.type-option{display:flex;align-items:center;gap:12px;width:100%;height:49px;margin-bottom:9px;padding:0 13px;border:1px solid #dce3ea;border-radius:8px;color:#53687c;background:#fff;text-align:left}.type-option i{width:16px;height:16px;border:1px solid #9aabba;border-radius:4px}.type-option.active{border-color:#7898b5;color:#2d526f;background:#f0f6fa}.type-option.active i{border:4px solid #527797}.generate{width:100%;margin-top:18px}.result-panel{min-height:650px;overflow:hidden}.resource-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #dfe6ec}.resource-tabs button{position:relative;height:52px;color:#65758a;background:#fff;font-weight:700}.resource-tabs button.active{color:#315f8c;background:#f4f8fb}.resource-tabs button.active:after{content:'';position:absolute;inset:auto 0 0;height:2px;background:#527797}.resource-tabs i{display:inline-block;width:6px;height:6px;margin-left:5px;border-radius:50%;background:#4d9270}.resource-content{padding:28px}.resource-content h2{margin:14px 0 6px}.resource-content p{color:#718096}.resource-body{margin-top:24px;padding:22px;border:1px solid #e4eaf0;border-radius:8px;white-space:pre-wrap;line-height:1.8}.resource-empty{display:grid;place-items:center;padding-top:190px;color:#718096;text-align:center}.resource-empty h2{margin:16px 0 3px;color:#344a60}.empty-mark{width:52px;height:42px;border:2px solid #9caab8;border-radius:6px;box-shadow:inset 0 -8px #eef2f5}.trace-panel{height:fit-content}.feature-section__head>span{color:#718096;font-size:12px}.trace-item{display:grid;grid-template-columns:22px 1fr;gap:12px;min-height:90px}.trace-rail{position:relative}.trace-rail:after{content:'';position:absolute;left:7px;top:18px;bottom:-3px;width:1px;background:#d5dee7}.trace-item:last-child .trace-rail:after{display:none}.trace-rail i{position:relative;z-index:1;display:block;width:15px;height:15px;border:3px solid #fff;border-radius:50%;background:#527797;box-shadow:0 0 0 1px #527797}.trace-rail i.completed{background:#4d9270;box-shadow:0 0 0 1px #4d9270}.trace-rail i.failed{background:#b85e56;box-shadow:0 0 0 1px #b85e56}.trace-title{display:flex;align-items:center;justify-content:space-between;gap:8px}.trace-title strong{font-size:14px}.trace-item p{margin:6px 0;color:#718096;font-size:12px;line-height:1.5}.trace-item small{color:#527797}@media(max-width:1150px){.resource-grid{grid-template-columns:240px 1fr}.trace-panel{grid-column:1/-1}.resource-heading{align-items:start;flex-direction:column}.progress{width:100%}}@media(max-width:760px){.resource-grid{grid-template-columns:1fr}.trace-panel{grid-column:1}.resource-tabs{grid-template-columns:repeat(2,1fr)}}
-/* 深色未来感 Dashboard 主题补充 */
-.py-dark .resource-heading>div>span{color:#8893aa}
-.py-dark .resource-heading h1{color:#f5f7ff;letter-spacing:-.04em}
-.py-dark .progress label{color:#aab4c8}
-.py-dark .progress>div{background:rgba(141,153,186,.17)}
-.py-dark .progress i{background:linear-gradient(90deg,#6d77f4,#78c8f5);box-shadow:0 0 12px rgba(108,120,245,.42)}
-.py-dark .config-panel label{color:#aab4c8}
-.py-dark .type-option{border-color:rgba(148,163,184,.14);border-radius:14px;color:#aab4c8;background:rgba(23,28,43,.72)}
-.py-dark .type-option:hover{border-color:rgba(124,137,255,.4);color:#e7ecf8}
-.py-dark .type-option i{border-color:rgba(148,163,184,.4);border-radius:6px}
-.py-dark .type-option.active{border-color:transparent;color:#fff;background:linear-gradient(135deg,rgba(98,107,240,.5),rgba(129,119,237,.42));box-shadow:0 8px 22px rgba(25,26,63,.28)}
-.py-dark .type-option.active i{border:4px solid #8f9bff}
-.py-dark .resource-tabs{border-bottom-color:rgba(148,163,184,.12)}
-.py-dark .resource-tabs button{color:#8893aa;background:transparent}
-.py-dark .resource-tabs button.active{color:#fff;background:rgba(83,91,199,.18)}
-.py-dark .resource-tabs button.active:after{background:linear-gradient(90deg,#6d77f4,#78c8f5)}
-.py-dark .resource-tabs i{background:#75ddb9}
-.py-dark .resource-content h2{color:#f2f5ff}
-.py-dark .resource-content p{color:#93a0b8}
-.py-dark .resource-body{margin-top:24px;border-color:rgba(148,163,184,.16);border-radius:16px;color:#c2cbdd;background:rgba(9,12,20,.6)}
-.py-dark .resource-empty{color:#8893aa}
-.py-dark .resource-empty h2{color:#e7ecf8}
-.py-dark .empty-mark{border-color:rgba(148,163,184,.4);box-shadow:inset 0 -8px rgba(148,163,184,.12)}
-.py-dark .feature-section__head>span{color:#8893aa}
-.py-dark .trace-rail:after{background:rgba(148,163,184,.2)}
-.py-dark .trace-rail i{border-color:#0f1420;background:#6d77f4;box-shadow:0 0 0 1px #6d77f4}
-.py-dark .trace-rail i.completed{background:#75ddb9;box-shadow:0 0 0 1px #75ddb9}
-.py-dark .trace-rail i.failed{background:#ef9eb7;box-shadow:0 0 0 1px #ef9eb7}
-.py-dark .trace-item p{color:#8893aa}
-.py-dark .trace-item small{color:#72c7ff}
+.resource-page{width:min(1500px,calc(100% - 40px));margin:auto;padding:12px 0 42px}.resource-heading{display:flex;align-items:end;justify-content:space-between;gap:30px;margin-bottom:20px}.resource-heading>div>span{color:#718096;font-size:13px}.resource-heading h1{margin:8px 0 0;color:#17233a}.progress{width:min(680px,52%)}.progress label{display:flex;justify-content:space-between;color:#52667b;font-size:13px}.progress>div{height:9px;margin-top:8px;border-radius:999px;background:#e3e9ef;overflow:hidden}.progress i{display:block;height:100%;background:#527797;transition:width .2s}.resource-grid{display:grid;grid-template-columns:280px minmax(460px,1fr) 340px;gap:18px}.config-panel,.trace-panel{padding:22px}.config-panel label{display:grid;gap:8px;color:#43576c;font-size:13px;font-weight:750}.config-panel h3{margin:25px 0 12px}.type-option{display:flex;align-items:center;gap:12px;width:100%;height:49px;margin-bottom:9px;padding:0 13px;border:1px solid #dce3ea;border-radius:8px;color:#53687c;background:#fff;text-align:left}.type-option i{width:16px;height:16px;border:1px solid #9aabba;border-radius:4px}.type-option.active{border-color:#7898b5;color:#2d526f;background:#f0f6fa}.type-option.active i{border:4px solid #527797}.generate{width:100%;margin-top:18px}.result-panel{min-height:650px;overflow:hidden}.resource-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #dfe6ec}.resource-tabs button{position:relative;height:52px;color:#65758a;background:#fff;font-weight:700}.resource-tabs button.active{color:#315f8c;background:#f4f8fb}.resource-tabs button.active:after{content:'';position:absolute;inset:auto 0 0;height:2px;background:#527797}.resource-tabs i{display:inline-block;width:6px;height:6px;margin-left:5px;border-radius:50%;background:#4d9270}.resource-content{padding:28px}.resource-content h2{margin:14px 0 6px}.resource-content p{color:#718096}.resource-body{margin-top:24px;padding:22px;border:1px solid #e4eaf0;border-radius:8px;white-space:pre-wrap;line-height:1.8}.resource-empty{display:grid;place-items:center;padding-top:190px;color:#718096;text-align:center}.resource-empty h2{margin:16px 0 3px;color:#344a60}.empty-mark{width:52px;height:42px;border:2px solid #9caab8;border-radius:6px;box-shadow:inset 0 -8px #eef2f5}.trace-panel{height:fit-content}.feature-section__head>span{color:#718096;font-size:12px}.trace-item{display:grid;grid-template-columns:22px 1fr;gap:12px;min-height:90px}.trace-rail{position:relative}.trace-rail:after{content:'';position:absolute;left:7px;top:18px;bottom:-3px;width:1px;background:#d5dee7}.trace-item:last-child .trace-rail:after{display:none}.trace-rail i{position:relative;z-index:1;display:block;width:15px;height:15px;border:3px solid #fff;border-radius:50%;background:#527797;box-shadow:0 0 0 1px #527797}.trace-rail i.completed{background:#4d9270;box-shadow:0 0 0 1px #4d9270}.trace-rail i.failed{background:#b85e56;box-shadow:0 0 0 1px #b85e56}.trace-title{display:flex;align-items:center;justify-content:space-between;gap:8px}.trace-title strong{font-size:14px}.trace-item p{margin:6px 0;color:#718096;font-size:12px;line-height:1.5}.trace-item small{color:#527797}@media(max-width:1150px){.resource-grid{grid-template-columns:240px 1fr}.trace-panel{grid-column:1/-1}.resource-heading{align-items:start;flex-direction:column}.progress{width:100%}}@media(max-width:760px){.resource-grid{grid-template-columns:1fr}.trace-panel{grid-column:1}.resource-tabs{grid-template-columns:repeat(2,1fr)}}
+/* 面包屑返回链接：弱化处理，与站内次级文字一致 */
+.py-back {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  color: var(--hp-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color .2s ease;
+}
+
+.py-back:hover {
+  color: var(--hp-blue-ink);
+}
 </style>

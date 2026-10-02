@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getExamResult } from '../api/exam'
+import AppTabBar from '../components/AppTabBar.vue'
 import { getUserInfo } from '../utils/auth'
 
 const route = useRoute()
@@ -43,6 +44,7 @@ onMounted(async () => {
 
 <template>
   <div class="success-page">
+    <AppTabBar />
     <header class="page-bar">考试</header>
     <div class="page-decoration" aria-hidden="true">
       <span></span><span></span><span></span>
@@ -73,4 +75,81 @@ onMounted(async () => {
 <style scoped>
 .success-page{position:relative;display:grid;box-sizing:border-box;min-height:100vh;padding:94px 16px 44px;place-items:center;overflow:hidden;background:#f5f7fb}.page-bar{position:absolute;inset:0 0 auto;height:44px;color:#d8e0ec;background:#344b69;text-align:center;line-height:44px}.page-decoration{position:absolute;right:4%;bottom:4%;width:270px;height:220px;opacity:.45}.page-decoration span{position:absolute;display:block;border:18px solid #dbe8fb;border-radius:18px}.page-decoration span:nth-child(1){right:0;bottom:0;width:170px;height:145px}.page-decoration span:nth-child(2){right:105px;bottom:30px;width:100px;height:115px}.page-decoration span:nth-child(3){right:45px;bottom:115px;width:70px;height:70px}.success-card{position:relative;z-index:1;box-sizing:border-box;width:min(100%,520px);padding:42px 52px 36px;border:1px solid #edf0f5;border-radius:10px;background:#fff;box-shadow:0 12px 38px rgba(52,75,105,.08);text-align:center}.success-mark{display:grid;width:54px;height:54px;margin:0 auto 13px;place-items:center;border:5px solid #e7f0ff;border-radius:50%;background:#f3f7ff}.success-mark span{display:grid;width:34px;height:34px;place-items:center;border-radius:50%;color:#fff;background:#3485f5;font-size:21px;font-weight:800}.success-card h1{margin:0 0 25px;color:#3485f5;font-size:30px;line-height:1.2}.submitted-time{margin:0;color:#98a2b3;font-size:14px}.submitted-time b{color:#667085}.score-line{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:16px 0 10px;color:#7c8596}.score-line b{color:#737b8d;font-size:48px;line-height:1}.score-line em{font-size:15px;font-style:normal}.full-score{display:inline-block;padding:7px 15px;border:1px solid #ffd8d2;border-radius:18px;color:#f0644c;background:#fff2f0;font-size:13px}.exam-info{box-sizing:border-box;margin:24px 0 26px;padding:16px 22px;border-radius:5px;background:#f7f8fa;text-align:left}.exam-info div{display:grid;grid-template-columns:88px 1fr;padding:7px 0}.exam-info dt{color:#8f98aa}.exam-info dt::after{content:"："}.exam-info dd{margin:0;color:#667085}.detail-button,.back-button{box-sizing:border-box;width:100%;height:42px;border-radius:21px;font-size:14px;font-weight:700;cursor:pointer}.detail-button{color:#3485f5;border:1px solid #70a9ff;background:#fff}.detail-button:hover{background:#f1f6ff}.back-button{margin-top:10px;color:#7c8596;border:0;background:transparent}.back-button:hover{color:#3485f5}@media(max-width:680px){.success-page{padding-top:70px}.success-card{padding:32px 22px}.page-decoration{display:none}.exam-info div{grid-template-columns:80px 1fr}.score-line b{font-size:42px}}
 .career-return{margin-top:10px}
+</style>
+
+<style scoped>
+.success-page {
+  min-height: 100vh;
+  padding: 96px 20px 60px;
+  place-items: start center;
+  background: var(--hp-bg);
+}
+.page-bar,
+.page-decoration {
+  display: none;
+}
+.success-card {
+  width: min(100%, 680px);
+  padding: 36px 44px 32px;
+  border-color: var(--hp-line);
+  border-radius: var(--hp-r-lg);
+  background: var(--hp-surface);
+  box-shadow: var(--hp-shadow-sm);
+  color: var(--hp-ink);
+}
+.success-mark {
+  border-color: var(--hp-green);
+  background: #eef7f1;
+}
+.success-mark span {
+  background: var(--hp-green-ink);
+}
+.success-card h1 {
+  color: var(--hp-ink);
+}
+.submitted-time,
+.full-score {
+  color: var(--hp-ink-2);
+}
+.score-line {
+  color: var(--hp-muted);
+}
+.score-line b {
+  color: var(--hp-ink);
+}
+.full-score {
+  border-color: var(--hp-line);
+  background: var(--hp-surface-2);
+}
+.exam-info {
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-md);
+  background: var(--hp-surface-2);
+}
+.exam-info dt {
+  color: var(--hp-muted);
+}
+.exam-info dd {
+  color: var(--hp-ink);
+}
+.detail-button,
+.back-button {
+  min-height: 44px;
+  color: var(--hp-ink);
+  border-color: var(--hp-ink);
+  background: var(--hp-surface);
+}
+.detail-button:hover,
+.back-button:hover {
+  color: #fff;
+  background: var(--hp-ink);
+}
+@media (max-width: 680px) {
+  .success-page {
+    padding-top: 82px;
+  }
+  .success-card {
+    padding: 28px 20px;
+  }
+}
 </style>

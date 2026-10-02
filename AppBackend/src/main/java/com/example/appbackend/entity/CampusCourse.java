@@ -39,6 +39,10 @@ public class CampusCourse {
     @Column(length = 10)
     private String level;
 
+    /** 课程导学视频的 B 站 BV 号；为空表示该课程没有关联视频 */
+    @Column(name = "video_bvid", length = 30)
+    private String videoBvid;
+
     @Column(name = "cover_url", length = 500)
     private String coverUrl;
 

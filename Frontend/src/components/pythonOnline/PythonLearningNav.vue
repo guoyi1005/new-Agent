@@ -29,35 +29,35 @@ function isActive(link) {
 </template>
 
 <style scoped>
+/* 与站内其它二级导航保持一致：浅色胶囊 + 深色选中态 */
 .py-learning-nav {
-  display: flex;
-  gap: 6px;
+  display: inline-flex;
+  gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(148, 163, 184, .12);
+  border: 1px solid var(--hp-line);
   border-radius: 999px;
-  background: rgba(5, 8, 15, .66);
+  background: var(--hp-surface-2);
 }
 
 .py-learning-nav__link {
   padding: 8px 18px;
   border-radius: 999px;
-  color: #7e899f;
+  color: var(--hp-muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease;
 }
 
 .py-learning-nav__link:hover {
-  color: #cbd3e5;
-  background: rgba(255, 255, 255, 0.045);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
 }
 
 .py-learning-nav__link--active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #626bf0, #8177ed);
-  box-shadow: 0 7px 22px rgba(88, 93, 220, 0.3);
+  color: #fff;
+  background: var(--hp-ink);
 }
 
 .py-learning-nav__link:active {

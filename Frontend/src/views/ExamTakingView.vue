@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getExamAttempt, saveExamAnswer, submitExam } from '../api/exam'
+import AppTabBar from '../components/AppTabBar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,6 +154,7 @@ onBeforeUnmount(() => window.clearInterval(timer))
 
 <template>
   <div class="exam-shell">
+    <AppTabBar />
     <header class="exam-header">
       <button type="button" aria-label="返回试卷列表" @click="router.push('/mine/papers')">‹</button>
       <div><strong>Python基础能力随机考试</strong><small>第 {{ attempt?.attemptNo || '-' }} 次考试</small></div>
@@ -227,4 +229,130 @@ onBeforeUnmount(() => window.clearInterval(timer))
 
 <style scoped>
 .exam-shell{min-height:100vh;padding-bottom:70px;background:#f4f5f7}.exam-header{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:11px max(15px,calc((100% - 800px)/2));color:#fff;background:#2e73b6}.exam-header>button{color:#fff;background:transparent;font-size:30px}.exam-header>div{text-align:center}.exam-header strong,.exam-header small{display:block}.exam-header strong{font-size:17px}.exam-header small{margin-top:2px;font-size:11px;opacity:.8}.exam-header>p{margin:0;text-align:center}.exam-header>p b{display:block;font-size:17px}.exam-main{width:min(100%,800px);margin:auto;padding:18px}.progress-label{display:flex;justify-content:space-between;color:#667085;font-size:13px}.progress-label b{color:#2e73b6}.progress{height:5px;margin:9px 0 18px;border-radius:5px;background:#dfe4e9}.progress i{display:block;height:100%;border-radius:5px;background:#2e73b6}.question{padding:22px;border:1px solid #e0e4e9;border-radius:9px;background:#fff}.question__meta{display:flex;align-items:center;gap:9px}.question__meta span{display:grid;width:28px;height:28px;place-items:center;border-radius:4px;color:#fff;background:#2e73b6}.question__meta em{padding:4px 8px;border-radius:3px;color:#2e73b6;background:#eaf3fb;font-size:12px;font-style:normal}.question__meta b{margin-left:auto;color:#98a2b3;font-size:12px}.question h1{margin:22px 0;font-size:18px;line-height:1.7;font-weight:600}.options{display:grid;gap:12px}.options>button{display:flex;align-items:center;gap:12px;min-height:54px;padding:10px 14px;border:1px solid #d9dfe6;border-radius:7px;color:#344054;background:#fff;text-align:left}.options>button>span{display:grid;flex:0 0 29px;height:29px;place-items:center;border:1px solid #cbd3dc;border-radius:50%}.options button p{margin:0}.options>button.selected{color:#235f98;border-color:#2e73b6;background:#eef6fd}.options>button.selected>span{color:#fff;border-color:#2e73b6;background:#2e73b6}.hint{margin:0 0 2px;color:#98a2b3;font-size:12px}.blanks{display:grid;gap:14px}.blanks label{display:grid;gap:6px;color:#667085;font-size:13px}.blanks input{height:44px;padding:0 12px;border:1px solid #d9dfe6;border-radius:6px}.written>p{color:#667085;font-size:13px}.written textarea{width:100%;min-height:220px;padding:13px;border:1px solid #d9dfe6;border-radius:7px;line-height:1.7;resize:vertical}.blanks input:focus,.written textarea:focus{outline:2px solid #b9d9f4;border-color:#2e73b6}.save-state{margin:18px 0 0;color:#98a2b3;font-size:12px;text-align:right}.question-nav{display:flex;gap:12px;margin-top:18px}.question-nav button{flex:1;height:44px;border:1px solid #d5dae1;border-radius:6px;background:#fff}.question-nav button:disabled{color:#b5bbc3}.question-nav .primary,.question-nav .submit{color:#fff;border-color:#2e73b6;background:#2e73b6}.exam-footer{position:fixed;right:0;bottom:0;left:0;z-index:4;display:flex;align-items:center;justify-content:space-between;padding:12px max(18px,calc((100% - 800px)/2));border-top:1px solid #e1e4e8;background:#fff}.exam-footer button{padding:9px 18px;border-radius:5px;color:#245f97;background:#edf4fa}.exam-footer .submit{color:#fff;background:#2e73b6}.exam-footer span{color:#667085;font-size:13px}.mask{position:fixed;inset:0;z-index:10;background:rgba(16,24,40,.48)}.sheet{position:absolute;right:0;bottom:0;left:0;max-height:78vh;padding:22px max(18px,calc((100% - 800px)/2));border-radius:16px 16px 0 0;background:#fff;overflow:auto}.sheet header{display:flex;justify-content:space-between}.sheet h2{margin:0}.sheet header p{color:#667085;font-size:12px}.sheet header p i,.sheet header p span{display:inline-block;width:10px;height:10px;border-radius:2px;background:#5f9dd2}.sheet header p span{background:#e4e7ec}.sheet header>button{background:transparent;font-size:26px}.sheet h3{font-size:14px}.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:9px}.grid button{aspect-ratio:1;border-radius:5px;color:#667085;background:#f0f2f5}.grid button.done{color:#fff;background:#659dd0}.grid button.current{outline:2px solid #215e98}.error{margin-bottom:12px;padding:11px;border-radius:6px;color:#b42318;background:#fff0ee}.state{padding:80px 20px;text-align:center;color:#667085}@media(max-width:560px){.grid{grid-template-columns:repeat(7,1fr)}.question{padding:18px}.exam-header strong{font-size:14px}}
+</style>
+
+<style scoped>
+/* 与全站用户端视觉统一 */
+.exam-shell {
+  padding-top: 60px;
+  color: var(--hp-ink);
+  background: var(--hp-bg);
+}
+.exam-header {
+  top: 60px;
+  color: var(--hp-ink);
+  border-bottom: 1px solid var(--hp-line);
+  background: var(--hp-tint);
+}
+.exam-header > button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 50%;
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  font-size: 20px;
+}
+.exam-header strong {
+  color: var(--hp-ink);
+}
+.exam-header small {
+  color: var(--hp-muted);
+  opacity: 1;
+}
+.exam-header > p b {
+  color: var(--hp-blue-ink);
+}
+.exam-main {
+  width: min(100%, 980px);
+  padding: 24px 20px;
+}
+.progress-label b,
+.question__meta em {
+  color: var(--hp-blue-ink);
+}
+.progress {
+  background: var(--hp-track);
+}
+.progress i {
+  background: var(--hp-blue-ink);
+}
+.question,
+.question-nav button,
+.exam-footer,
+.sheet {
+  border-color: var(--hp-line);
+  background: var(--hp-surface);
+  box-shadow: var(--hp-shadow-sm);
+}
+.question {
+  border-radius: var(--hp-r-lg);
+}
+.question__meta span,
+.options > button.selected > span {
+  color: #fff;
+  border-color: var(--hp-ink);
+  background: var(--hp-ink);
+}
+.question__meta em {
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+}
+.options > button {
+  border-color: var(--hp-line-strong);
+  color: var(--hp-ink);
+  background: var(--hp-surface-2);
+}
+.options > button > span {
+  border-color: var(--hp-line-strong);
+}
+.options > button.selected {
+  color: var(--hp-ink);
+  border-color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+}
+.blanks input,
+.written textarea {
+  border-color: var(--hp-line-strong);
+  color: var(--hp-ink);
+  background: var(--hp-surface-2);
+}
+.blanks input:focus,
+.written textarea:focus {
+  outline-color: var(--hp-blue);
+  border-color: var(--hp-blue-ink);
+}
+.question-nav .primary,
+.question-nav .submit,
+.exam-footer .submit {
+  color: #fff;
+  border-color: var(--hp-ink);
+  background: var(--hp-ink);
+}
+.exam-footer {
+  padding-right: max(18px, calc((100% - 980px) / 2));
+  padding-left: max(18px, calc((100% - 980px) / 2));
+}
+.exam-footer button {
+  color: var(--hp-ink);
+  background: var(--hp-surface-2);
+}
+.exam-footer .submit {
+  color: #fff;
+  background: var(--hp-ink);
+}
+.sheet header > button {
+  color: var(--hp-ink);
+}
+.grid button.done {
+  background: var(--hp-blue-ink);
+}
+.grid button.current {
+  outline-color: var(--hp-ink);
+}
+.mask {
+  background: rgba(27, 35, 41, .42);
+}
 </style>

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../components/AppTabBar.vue'
 import { getCampusCourses } from '../api/campusCourse'
-import { completePathItem, getPythonHome, startPathItem } from '../api/learning'
+import { completePathItem, getContentTags, getExternalCourses, getLearningRecommendations, getPracticeSummary, getPythonHome, startPathItem } from '../api/learning'
 import { getPythonProblemList } from '../api/pythonProblem'
 import {
   decomposeStudyText,
@@ -30,6 +30,11 @@ const TARGET_JOB_STORAGE_KEY = 'home_target_job'
 
 const loading = ref(true)
 const pythonHome = ref({})
+const unifiedRecommendations = ref([])
+const courseTags = ref({})
+const projectTags = ref({})
+const practiceSummary = ref(null)
+const externalCourses = ref([])
 const problems = ref([])
 const courses = ref([])
 const studyGoals = ref([])
@@ -37,10 +42,12 @@ const selectedGoalId = ref(null)
 const selectedGoalDetail = ref(null)
 const busyAction = ref('')
 const pageMessage = ref('')
-const dataErrors = reactive({ python: '', problems: '', courses: '', goals: '' })
+const dataErrors = reactive({ python: '', problems: '', courses: '', goals: '', recommendations: '', summary: '', external: '' })
 const goalDialogOpen = ref(false)
 const goalSaving = ref(false)
 const goalError = ref('')
+// AI 拆解不可用时置为 true，弹窗里会出现「直接保存（不拆解）」降级按钮
+const goalAiUnavailable = ref(false)
 const goalForm = reactive({
   title: '',
   description: '',
@@ -60,7 +67,57 @@ const targetJobTitle = computed(() => {
 const mastery = computed(() => Array.isArray(pythonHome.value.mastery) ? pythonHome.value.mastery : [])
 const pathItems = computed(() => Array.isArray(pythonHome.value.activePath?.items) ? pythonHome.value.activePath.items : [])
 const recommendations = computed(() => Array.isArray(pythonHome.value.recommendations) ? pythonHome.value.recommendations : [])
+const displayedRecommendations = computed(() => {
+  if (unifiedRecommendations.value.length) {
+    return unifiedRecommendations.value.map((item) => ({
+      key: `${item.sourceType}-${item.sourceId}-${item.skillCode}`,
+      type: sourceTypeLabel(item.sourceType),
+      title: item.title,
+      reason: item.reason,
+      skill: item.skillName,
+      required: item.requiredLevel,
+      current: item.currentLevel,
+      raw: item,
+    }))
+  }
+  return recommendations.value.map((item) => ({
+    key: item.id || item.title || item.knowledgePoint,
+    type: item.type || item.resourceType || '学习建议',
+    title: item.title || item.knowledgePoint || item.name || '学习内容',
+    reason: item.reason || item.rationale || item.description || '基于当前学习记录推荐',
+    raw: item,
+  }))
+})
 const weakSkills = computed(() => mastery.value.filter((item) => item.status === 'weak'))
+// 目标岗位的技能差距：直接取统一推荐结果里的技能去重，代表"还差什么才能达到岗位要求"
+const targetSkillGaps = computed(() => {
+  const seen = new Map()
+  unifiedRecommendations.value.forEach((item) => {
+    if (!item?.skillCode || seen.has(item.skillCode)) return
+    seen.set(item.skillCode, {
+      code: item.skillCode,
+      name: item.skillName || item.skillCode,
+      current: item.currentLevel ?? 0,
+      required: item.requiredLevel ?? 0,
+    })
+  })
+  return [...seen.values()]
+})
+// 今日重点优先展示岗位技能差距；没有岗位数据时回退到 Python 掌握度的薄弱知识点
+const focusSkills = computed(() => {
+  if (targetSkillGaps.value.length) {
+    return targetSkillGaps.value.map((item) => ({
+      key: item.code,
+      label: `${item.name} ${item.current}/${item.required}`,
+      tone: 'gap',
+    }))
+  }
+  return weakSkills.value.map((item) => ({
+    key: item.knowledgePointKey || item.knowledgePointName,
+    label: `待复习 ${item.knowledgePointName || item.knowledgePointKey || '知识点'}`,
+    tone: 'review',
+  }))
+})
 const nextPathItem = computed(() => pathItems.value.find((item) => item.status === 'in_progress') || pathItems.value.find((item) => item.status !== 'completed') || null)
 const activeGoalSummary = computed(() => studyGoals.value.find((item) => item.id === selectedGoalId.value) || studyGoals.value.find((item) => item.status === 'in_progress') || studyGoals.value.find((item) => item.status === 'pending') || studyGoals.value[0] || null)
 const activeGoalTasks = computed(() => Array.isArray(selectedGoalDetail.value?.tasks) ? selectedGoalDetail.value.tasks : [])
@@ -84,6 +141,86 @@ const projectItems = computed(() => pathItems.value.filter((item) => {
 const activeProjectItems = computed(() => projectItems.value.filter((item) => item.status !== 'completed'))
 const doneProjectItems = computed(() => projectItems.value.filter((item) => item.status === 'completed'))
 
+const summarySkills = computed(() => Array.isArray(practiceSummary.value?.skills) ? practiceSummary.value.skills : [])
+const summaryCourses = computed(() => Array.isArray(practiceSummary.value?.courses) ? practiceSummary.value.courses : [])
+const summaryProblemStats = computed(() => practiceSummary.value?.problems || {})
+const summaryProjectStats = computed(() => practiceSummary.value?.projects || { total: 0, completed: 0, inProgress: 0, items: [] })
+
+/* ---------- 目标岗位相关性：课程与专项跟随用户选的目标岗位 ---------- */
+
+// 只在用户选了目标岗位时才启用岗位相关性排序与筛选
+const jobFilterOnly = ref(false)
+
+function jobNamesOf(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((item) => (typeof item === 'string' ? item : item?.name))
+    .filter(Boolean)
+}
+
+function matchesTargetJob(list) {
+  const target = targetJobTitle.value
+  if (!target) return false
+  return jobNamesOf(list).includes(target)
+}
+
+// 校内课程的岗位信息来自课程技能标签里的 jobs
+function matchesCourse(course) {
+  return matchesTargetJob(tagOf(course?.id)?.jobs)
+}
+
+function sortByJobMatch(list, matcher) {
+  if (!targetJobTitle.value) return [...list]
+  return [...list].sort((left, right) => Number(matcher(right)) - Number(matcher(left)))
+}
+
+const sortedCourses = computed(() => sortByJobMatch(courses.value, matchesCourse))
+const visibleCourses = computed(() => {
+  if (!jobFilterOnly.value || !targetJobTitle.value) return sortedCourses.value
+  return sortedCourses.value.filter(matchesCourse)
+})
+
+const sortedExternalCourses = computed(() =>
+  sortByJobMatch(externalCourses.value, (course) => matchesTargetJob(course?.jobs)))
+const visibleExternalCourses = computed(() => {
+  if (!jobFilterOnly.value || !targetJobTitle.value) return sortedExternalCourses.value
+  return sortedExternalCourses.value.filter((course) => matchesTargetJob(course?.jobs))
+})
+
+const matchedCourseCount = computed(() => courses.value.filter(matchesCourse).length)
+const matchedExternalCount = computed(() => externalCourses.value.filter((course) => matchesTargetJob(course?.jobs)).length)
+
+/* ---------- 默认只展示少量，其余点「展开」查看，避免页面过长 ---------- */
+
+const PREVIEW_COUNT = 6
+const courseExpanded = ref(false)
+const externalExpanded = ref(false)
+
+function setJobFilterOnly(value) {
+  jobFilterOnly.value = value
+  // 切换筛选后重新收起，避免出现"展开了但没内容"的困惑
+  courseExpanded.value = false
+  externalExpanded.value = false
+}
+
+const displayedCourses = computed(() =>
+  courseExpanded.value ? visibleCourses.value : visibleCourses.value.slice(0, PREVIEW_COUNT))
+const displayedExternalCourses = computed(() =>
+  externalExpanded.value ? visibleExternalCourses.value : visibleExternalCourses.value.slice(0, PREVIEW_COUNT))
+const summaryProjectItems = computed(() => Array.isArray(summaryProjectStats.value.items) ? summaryProjectStats.value.items : [])
+const trendPoints = computed(() => Array.isArray(practiceSummary.value?.trend) ? practiceSummary.value.trend : [])
+
+// 「考试与证书专项」只展示备考类目标（四六级 / 证书 / 考研等），技能类目标仍在「我的练习」里
+const EXAM_GOAL_KEYWORDS = ['四六级', '四级', '六级', '英语', '雅思', '托福', '证书', '考证', '考试', '软考', '计算机等级', '教师资格', '考研', '资格证']
+const examGoals = computed(() => studyGoals.value.filter((goal) => {
+  const text = `${goal?.title || ''} ${goal?.description || ''}`
+  return EXAM_GOAL_KEYWORDS.some((keyword) => text.includes(keyword))
+}))
+const trendPeak = computed(() => Math.max(1, ...trendPoints.value.map((point) => point.averageLevel || 0)))
+function trendHeight(point) {
+  return `${Math.max(6, Math.round(((point.averageLevel || 0) / trendPeak.value) * 100))}%`
+}
+
 function friendlyError(message) {
   const text = String(message || '')
   if (/failed to fetch|networkerror|load failed|connection/i.test(text)) return '网络连接失败，请确认服务已启动后重试'
@@ -93,11 +230,13 @@ function friendlyError(message) {
 async function loadLearningData() {
   loading.value = true
   pageMessage.value = ''
-  const [pythonResult, problemResult, courseResult, goalResult] = await Promise.allSettled([
+  const [pythonResult, problemResult, courseResult, goalResult, tagResult, projectTagResult] = await Promise.allSettled([
     getPythonHome(),
     getPythonProblemList(),
     getCampusCourses(),
     listMyStudyGoals(1, 20),
+    getContentTags('COURSE'),
+    getContentTags('PROJECT'),
   ])
   if (pythonResult.status === 'fulfilled') {
     pythonHome.value = pythonResult.value || {}
@@ -131,9 +270,71 @@ async function loadLearningData() {
     selectedGoalDetail.value = null
     dataErrors.goals = friendlyError(goalResult.reason?.message || '学习目标加载失败')
   }
+  if (tagResult.status === 'fulfilled') {
+    courseTags.value = indexTags(tagResult.value)
+  } else {
+    courseTags.value = {}
+  }
+  if (projectTagResult.status === 'fulfilled') {
+    projectTags.value = indexTags(projectTagResult.value)
+  } else {
+    projectTags.value = {}
+  }
+  try {
+    externalCourses.value = await getExternalCourses() || []
+    dataErrors.external = ''
+  } catch (error) {
+    externalCourses.value = []
+    dataErrors.external = friendlyError(error.message || '外部课程加载失败')
+  }
+  try {
+    practiceSummary.value = await getPracticeSummary()
+    dataErrors.summary = ''
+  } catch (error) {
+    practiceSummary.value = null
+    dataErrors.summary = friendlyError(error.message || '学习记录加载失败')
+  }
+  await loadUnifiedRecommendations()
   loading.value = false
 }
 
+async function loadUnifiedRecommendations() {
+  const jobName = targetJobTitle.value
+  unifiedRecommendations.value = []
+  if (!jobName) {
+    dataErrors.recommendations = ''
+    return
+  }
+  try {
+    const items = await getLearningRecommendations(jobName, 8)
+    unifiedRecommendations.value = Array.isArray(items) ? items : []
+    dataErrors.recommendations = ''
+  } catch (error) {
+    unifiedRecommendations.value = []
+    dataErrors.recommendations = friendlyError(error.message || '推荐学习加载失败')
+  }
+}
+function indexTags(list) {
+  const map = {}
+  if (Array.isArray(list)) {
+    list.forEach((item) => {
+      if (item && item.sourceId != null) map[item.sourceId] = item
+    })
+  }
+  return map
+}
+function tagOf(courseId) {
+  return courseTags.value[courseId] || null
+}
+function projectTagOf(itemId) {
+  return projectTags.value[itemId] || null
+}
+function difficultyLabel(value) {
+  return { BEGINNER: '入门', INTERMEDIATE: '进阶', ADVANCED: '挑战' }[value] || ''
+}
+function sourceTypeLabel(value) {
+  return { COURSE: '推荐课程', PROBLEM: '推荐算法题', PROJECT: '项目实训', SPECIAL_TRAINING: '专项资源', PYTHON: 'Python 学习', EXTERNAL_COURSE: '外部精选课程' }[value] || '推荐学习'
+}
 function selectTab(tabId) {
   router.replace({ path: '/learning', query: tabId === 'recommended' ? {} : { tab: tabId } })
 }
@@ -172,8 +373,14 @@ function resetGoalForm() {
   goalForm.dailyStudyMinutes = 60
   goalError.value = ''
 }
+function openGoalForCheckin(goalId) {
+  loadGoalDetail(goalId)
+  selectTab('practice')
+}
+
 function openGoalDialog() {
   resetGoalForm()
+  goalAiUnavailable.value = false
   goalDialogOpen.value = true
 }
 function closeGoalDialog() {
@@ -205,7 +412,7 @@ function normalizeTask(item, index) {
     subtasks: Array.isArray(item.subtasks) ? item.subtasks.map(normalizeSubtask) : [],
   }
 }
-async function saveGoal() {
+async function saveGoal(skipDecompose = false) {
   if (!goalForm.title.trim()) {
     goalError.value = '请先填写学习目标名称'
     return
@@ -214,8 +421,17 @@ async function saveGoal() {
   goalError.value = ''
   try {
     let payload
-    if (goalForm.planText.trim()) {
-      const preview = await decomposeStudyText(goalForm.planText.trim())
+    if (goalForm.planText.trim() && !skipDecompose) {
+      let preview
+      try {
+        preview = await decomposeStudyText(goalForm.planText.trim())
+      } catch {
+        // 不把底层的网络错误抛给用户，直接给出可执行的替代方案
+        goalAiUnavailable.value = true
+        goalError.value = 'AI 拆解服务暂时不可用，无法把学习计划自动拆成任务。你可以点下方「直接保存（不拆解）」先创建目标，稍后再到「我的练习」里补充任务。'
+        return
+      }
+      goalAiUnavailable.value = false
       payload = {
         goal: {
           ...(preview?.goal || {}),
@@ -228,6 +444,8 @@ async function saveGoal() {
         tasks: Array.isArray(preview?.tasks) ? preview.tasks.map(normalizeTask) : [],
       }
     } else {
+      // 未填计划文本，或 AI 拆解不可用时的降级保存：整段计划作为一条任务的说明
+      const taskDetail = goalForm.planText.trim() || goalForm.description.trim()
       payload = {
         goal: {
           title: goalForm.title.trim(),
@@ -237,19 +455,20 @@ async function saveGoal() {
           dailyStudyMinutes: Number(goalForm.dailyStudyMinutes) || 60,
         },
         tasks: [{
-          taskName: goalForm.description.trim().slice(0, 120) || (goalForm.title.trim() + '学习任务'),
+          taskName: (goalForm.description.trim() || (goalForm.title.trim() + '学习任务')).slice(0, 120),
           estimatedDays: 1,
           plannedStartDate: goalForm.startDate || null,
           priority: '中',
           orderNum: 1,
           isCompleted: false,
           progressPercent: 0,
-          description: goalForm.description.trim(),
+          description: taskDetail,
         }],
       }
     }
     const saved = await saveStudyGoal(payload)
     goalDialogOpen.value = false
+    goalAiUnavailable.value = false
     await reloadGoals(saved?.goal?.id)
     pageMessage.value = '学习目标已保存'
   } catch (error) {
@@ -332,6 +551,15 @@ function continueLearning() {
   }
 }
 function openRecommendation(item) {
+  const raw = item?.raw || item
+  if (raw?.sourceType) {
+    if (raw.sourceType === 'COURSE') { router.push(`/courses/${raw.sourceId}`); return }
+    if (raw.sourceType === 'EXTERNAL_COURSE') { if (raw.url) window.open(raw.url, '_blank', 'noopener'); return }
+    if (raw.sourceType === 'PROBLEM') { router.push(`/career/nebula/python/practice/${raw.sourceId}`); return }
+    if (raw.sourceType === 'PROJECT') { selectTab('projects'); return }
+    if (raw.sourceType === 'SPECIAL_TRAINING') { router.push('/career/nebula/python/resources'); return }
+    if (raw.sourceType === 'PYTHON') { router.push('/learning/python'); return }
+  }
   const topic = item?.title || item?.knowledgePoint || item?.name || ''
   if (item?.courseId) {
     router.push(`/courses/${item.courseId}`)
@@ -389,11 +617,11 @@ onMounted(loadLearningData)
         <template v-if="activeTab === 'recommended'">
           <section class="focus-grid">
             <article class="panel focus-panel">
-              <div class="head"><div><small>今日重点</small><h2>{{ targetJobTitle || '先选择目标岗位' }}</h2></div><span v-if="targetJobTitle" class="tag">目标岗位</span></div>
+              <div class="head"><div><small>{{ targetSkillGaps.length ? '目标岗位技能差距' : '今日重点' }}</small><h2>{{ targetJobTitle || '先选择目标岗位' }}</h2></div><span v-if="targetJobTitle" class="tag">目标岗位</span></div>
               <template v-if="targetJobTitle">
                 <p>根据成长中心与岗位探索中的能力差距，安排下一步学习内容。</p>
-                <div v-if="weakSkills.length" class="chips"><span v-for="item in weakSkills.slice(0, 5)" :key="item.knowledgePoint || item.name">待补 {{ item.knowledgePoint || item.name }}</span></div>
-                <p v-else class="note">暂无待补技能数据，完成一次学习画像后会显示在这里。</p>
+                <div v-if="focusSkills.length" class="chips"><span v-for="item in focusSkills.slice(0, 5)" :key="item.key">{{ item.label }}</span></div>
+                <p v-else class="note">暂无技能差距数据；确认目标岗位并提供学习记录后，这里会显示还差哪些技能。</p>
                 <button type="button" class="btn btn--primary" @click="selectTab('python')">开始推荐练习</button>
               </template>
               <template v-else>
@@ -435,11 +663,11 @@ onMounted(loadLearningData)
           </section>
 
           <section class="panel section">
-            <div class="head"><div><small>基于学习记录</small><h2>推荐内容</h2></div><button type="button" class="link" @click="router.push('/learning/resources')">更多专项资源</button></div>
-            <div v-if="recommendations.length" class="card-grid">
-              <button v-for="item in recommendations.slice(0, 6)" :key="item.id || item.title" type="button" class="content-card" @click="openRecommendation(item)"><small>{{ item.type || item.resourceType || '学习建议' }}</small><strong>{{ item.title || item.knowledgePoint || item.name || '学习内容' }}</strong><p>{{ item.reason || item.rationale || item.description || '基于当前学习记录推荐' }}</p><em>开始学习 →</em></button>
+            <div class="head"><div><small>{{ unifiedRecommendations.length ? '基于目标岗位技能差距' : '基于学习记录' }}</small><h2>推荐内容</h2></div><button type="button" class="link" @click="router.push('/career/nebula/python/resources')">AI 生成学习资源</button></div>
+            <div v-if="displayedRecommendations.length" class="card-grid">
+              <button v-for="item in displayedRecommendations.slice(0, 6)" :key="item.key" type="button" class="content-card" @click="openRecommendation(item)"><small>{{ item.type }}</small><strong>{{ item.title }}</strong><p>{{ item.reason }}</p><span v-if="item.skill" class="skill-line">{{ item.skill }} · 要求 {{ item.required }} / 当前 {{ item.current }}</span><em>开始学习 →</em></button>
             </div>
-            <div v-else class="empty"><strong>暂无推荐内容</strong><p>继续完成课程或练习后，系统会根据真实记录更新推荐。</p><button type="button" class="btn" @click="selectTab('python')">浏览 Python 与算法</button></div>
+            <div v-else class="empty"><strong>暂无推荐内容</strong><p>{{ dataErrors.recommendations || (targetJobTitle ? '目标岗位的学习内容准备中，完成课程或练习后会更新推荐。' : '选择目标岗位后，这里会根据技能差距推荐学习内容。') }}</p><button type="button" class="btn" @click="targetJobTitle ? selectTab('courses') : router.push('/jobs/explore')">{{ targetJobTitle ? '浏览课程与专项' : '选择目标岗位' }}</button></div>
           </section>
 
           <section class="recent panel">
@@ -452,16 +680,21 @@ onMounted(loadLearningData)
         <template v-else-if="activeTab === 'python'">
           <section class="panel toolbar"><div><h2>Python 与算法</h2><p>课程、知识图谱、在线题库和 AI 辅助练习统一从这里进入。</p></div><div class="hero-actions"><button type="button" class="btn" @click="router.push('/paper')">AI 出题</button><button type="button" class="btn btn--primary" @click="router.push('/learning/python')">进入题库</button></div></section>
           <section class="stats"><article><span>题库总量</span><strong>{{ problems.length }}</strong><small>道公开题目</small></article><article><span>已解决</span><strong>{{ solvedProblemCount }}</strong><small>{{ solveRate }}% 完成度</small></article><article><span>在线判题</span><strong>{{ judgeableProblems.length }}</strong><small>支持运行与提交</small></article><article><span>已掌握知识</span><strong>{{ mastery.filter((item) => item.status === 'mastered').length }}</strong><small>个知识点</small></article></section>
-          <section class="quick-grid"><button type="button" @click="router.push('/learning/python/plan')"><strong>个性化学习路径</strong><span>按知识点和掌握状态安排下一步</span><em>打开路径 →</em></button><button type="button" @click="router.push('/learning/python/knowledge-graph')"><strong>知识图谱</strong><span>查看知识点关系和薄弱环节</span><em>打开图谱 →</em></button><button type="button" @click="router.push('/learning/python')"><strong>在线题库</strong><span>按难度、知识点和完成状态筛选</span><em>开始刷题 →</em></button><button type="button" @click="router.push('/learning/resources')"><strong>专项资源</strong><span>根据薄弱知识点生成学习资源</span><em>生成资源 →</em></button></section>
+          <section class="quick-grid"><button type="button" @click="router.push('/learning/python/plan')"><strong>个性化学习路径</strong><span>按知识点和掌握状态安排下一步</span><em>打开路径 →</em></button><button type="button" @click="router.push('/learning/python/knowledge-graph')"><strong>知识图谱</strong><span>查看知识点关系和薄弱环节</span><em>打开图谱 →</em></button><button type="button" @click="router.push('/learning/python')"><strong>在线题库</strong><span>按难度、知识点和完成状态筛选</span><em>开始刷题 →</em></button><button type="button" @click="router.push('/career/nebula/python/resources')"><strong>AI 生成学习资源</strong><span>按知识点生成讲解、思维导图与练习</span><em>生成资源 →</em></button></section>
           <section class="panel section"><div class="head"><div><h2>建议练习</h2></div><span class="note">按难度从低到高排列</span></div><p v-if="dataErrors.problems" class="error"><span>{{ dataErrors.problems }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><div v-if="nextProblems.length" class="question-list"><button v-for="item in nextProblems" :key="item.id" type="button" @click="openProblem(item.id)"><span :class="`diff diff--${item.difficulty}`">{{ formatDifficulty(item.difficulty) }}</span><strong>{{ item.title }}</strong><span>{{ (item.tags || []).slice(0, 3).join(' · ') || '未标注知识点' }}</span><em>开始答题 →</em></button></div><div v-else class="empty"><strong>暂无可推荐题目</strong><p>题库为空或已完成当前可练习题目。</p><button type="button" class="btn" @click="router.push('/learning/python')">查看完整题库</button></div></section>
         </template>
 
         <template v-else-if="activeTab === 'courses'">
-          <section class="panel toolbar"><div><h2>课程与专项</h2><p>继续校内课程，并将四六级、证书和专项内容集中管理。</p></div><button type="button" class="btn" @click="router.push('/learning/resources')">进入专项资源</button></section>
+          <section class="panel toolbar"><div><h2>课程与专项</h2><p>校内课程、公开课与官方文档，以及四六级、证书等备考目标。</p></div><div v-if="targetJobTitle" class="job-filter"><span class="job-filter__label">目标岗位：<strong>{{ targetJobTitle }}</strong></span><div class="job-filter__buttons"><button type="button" :class="{ active: !jobFilterOnly }" @click="setJobFilterOnly(false)">全部课程</button><button type="button" :class="{ active: jobFilterOnly }" @click="setJobFilterOnly(true)">只看匹配岗位<span v-if="matchedCourseCount + matchedExternalCount">{{ matchedCourseCount + matchedExternalCount }}</span></button></div></div></section>
           <p v-if="dataErrors.courses" class="error"><span>{{ dataErrors.courses }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p>
-          <section v-if="courses.length" class="course-grid"><button v-for="course in courses.slice(0, 8)" :key="course.id" type="button" class="course-card" @click="router.push(`/courses/${course.id}`)"><span>{{ String(course.name || '课').slice(0, 1) }}</span><div><strong>{{ course.name }}</strong><p>{{ course.bookTitle || course.ownerName || '校内课程' }}</p><div class="progress"><i :style="{ width: `${course.progressPercent || 0}%` }" /></div><small>学习进度 {{ course.progressPercent || 0 }}%</small></div></button></section>
-          <div v-else class="empty"><strong>暂无可展示的校园课程</strong><p>管理员发布课程后，会在这里显示真实课程和章节进度。可以先进入专项资源继续学习。</p><button type="button" class="btn" @click="router.push('/learning/resources')">进入专项资源</button></div>
-          <section class="panel section"><div class="head"><div><small>规划中</small><h2>考试与证书专项</h2></div></div><div class="special-row"><span class="special-chip">四六级备考</span><span class="special-chip">证书考试</span><p class="note">对应专项内容接入后将在这里开放，可按目标日期生成学习计划。</p></div></section>
+          <section v-if="displayedCourses.length" class="course-grid"><button v-for="course in displayedCourses" :key="course.id" type="button" class="course-card" @click="router.push(`/courses/${course.id}`)"><span>{{ String(course.name || '课').slice(0, 1) }}</span><div><strong>{{ course.name }}</strong><span v-if="matchesCourse(course)" class="match-badge">匹配目标岗位</span><p>{{ course.bookTitle || course.ownerName || '校内课程' }}</p><div class="progress"><i :style="{ width: `${course.progressPercent || 0}%` }" /></div><small>学习进度 {{ course.progressPercent || 0 }}%</small><div v-if="tagOf(course.id)" class="course-tags"><span v-for="skill in tagOf(course.id).skills.slice(0, 3)" :key="skill.code" class="course-tag" :class="{ 'is-primary': skill.primary }">{{ skill.name }}</span><span v-if="difficultyLabel(tagOf(course.id).difficulty)" class="course-tag course-tag--level">{{ difficultyLabel(tagOf(course.id).difficulty) }}</span></div><p v-if="tagOf(course.id) && tagOf(course.id).jobs.length" class="course-jobs">适合岗位：{{ tagOf(course.id).jobs.map((job) => job.name).join('、') }}</p><p v-if="tagOf(course.id) && tagOf(course.id).prerequisites.length" class="course-jobs">先修：{{ tagOf(course.id).prerequisites.map((skill) => skill.name).join('、') }}</p></div></button></section>
+          <div v-if="visibleCourses.length > PREVIEW_COUNT" class="expand-row"><span class="note">共 {{ visibleCourses.length }} 门课程</span><button type="button" class="expand-toggle" @click="courseExpanded = !courseExpanded">{{ courseExpanded ? '收起' : '展开全部 ' + visibleCourses.length + ' 门' }}</button></div>
+          <div v-else-if="courses.length" class="empty empty--small"><strong>目标岗位暂无匹配的校内课程</strong><p>「{{ targetJobTitle }}」目前没有直接相关的课程，可以切回全部课程浏览完整目录。</p><button type="button" class="btn" @click="setJobFilterOnly(false)">查看全部课程</button></div>
+          <div v-else class="empty"><strong>暂无可展示的校园课程</strong><p>管理员发布课程后，会在这里显示真实课程和章节进度。可以先去刷题，或浏览下面的公开课程。</p><button type="button" class="btn" @click="selectTab('python')">去 Python 与算法</button></div>
+          <section class="panel section"><div class="head"><div><small>外部精选</small><h2>公开课程与官方文档</h2></div><span class="note">{{ targetJobTitle ? `匹配目标岗位 ${matchedExternalCount} 门 · 跳转原站学习` : '跳转原站学习' }}</span></div><p v-if="dataErrors.external" class="error"><span>{{ dataErrors.external }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><div v-if="displayedExternalCourses.length" class="external-grid"><a v-for="course in displayedExternalCourses" :key="course.id" class="external-card" :href="course.url" target="_blank" rel="noreferrer noopener"><div class="external-card__top"><small>{{ course.provider }}</small><span class="external-card__badges"><span v-if="matchesTargetJob(course.jobs)" class="match-badge">匹配目标岗位</span><span v-if="course.free" class="external-badge">免费</span></span></div><strong>{{ course.title }}</strong><p>{{ course.description || '前往原站查看课程详情。' }}</p><div v-if="course.skills && course.skills.length" class="course-tags"><span v-for="skill in course.skills.slice(0, 3)" :key="skill" class="course-tag">{{ skill }}</span></div><em>去原站学习 ↗</em></a></div><div v-if="visibleExternalCourses.length > PREVIEW_COUNT" class="expand-row"><span class="note">共 {{ visibleExternalCourses.length }} 门</span><button type="button" class="expand-toggle" @click="externalExpanded = !externalExpanded">{{ externalExpanded ? '收起' : '展开全部 ' + visibleExternalCourses.length + ' 门' }}</button></div>
+            <div v-else-if="externalCourses.length" class="empty empty--small"><strong>目标岗位暂无匹配的外部课程</strong><p>可以切回全部课程查看公开课程与官方文档。</p><button type="button" class="btn" @click="setJobFilterOnly(false)">查看全部课程</button></div>
+            <div v-else class="empty empty--small"><strong>暂无外部课程</strong><p>登记外部精选课程后会显示在这里。</p></div></section>
+          <section class="panel section"><div class="head"><div><small>备考与证书</small><h2>考试与证书专项</h2></div><button type="button" class="link" @click="openGoalDialog">新建备考目标</button></div><div v-if="examGoals.length" class="exam-goal-grid"><article v-for="goal in examGoals" :key="goal.id" class="exam-goal"><div class="exam-goal__head"><strong>{{ goal.title }}</strong><span class="tag">{{ goalStatusLabel(goal.status) }}</span></div><p>{{ goal.description || '按任务推进备考计划' }}</p><div class="progress"><i :style="{ width: `${goal.progress || 0}%` }" /></div><div class="exam-goal__foot"><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务 · {{ goal.progress || 0 }}%</small><button type="button" class="link" @click="openGoalForCheckin(goal.id)">去打卡</button></div></article></div><div v-else class="empty empty--small"><strong>还没有备考目标</strong><p>四六级、证书考试都可以建目标，系统会拆解成任务并记录打卡进度。</p><button type="button" class="btn" @click="openGoalDialog">新建备考目标</button></div></section>
         </template>
 
         <template v-else-if="activeTab === 'projects'">
@@ -469,11 +702,11 @@ onMounted(loadLearningData)
           <template v-if="projectItems.length">
             <section class="panel section">
               <div class="head"><div><small>当前项目</small><h2>进行中的实践任务</h2></div><button type="button" class="link" @click="router.push('/learning/python/plan')">打开完整路径</button></div>
-              <div class="project-list"><article v-for="item in activeProjectItems" :key="item.id"><div><span>{{ item.stage || '实践阶段' }}</span><h3>{{ item.knowledgePoint }}</h3><p>{{ item.objective }}</p></div><em>{{ statusLabel(item.status) }}</em><button type="button" class="btn" @click="router.push('/learning/python/plan')">查看任务</button></article></div>
+              <div class="project-list"><article v-for="item in activeProjectItems" :key="item.id"><div><span>{{ item.stage || '实践阶段' }}</span><h3>{{ item.knowledgePoint }}</h3><p>{{ item.objective }}</p><div v-if="projectTagOf(item.id)" class="course-tags"><span v-for="skill in projectTagOf(item.id).skills" :key="skill.code" class="course-tag" :class="{ 'is-primary': skill.primary }">{{ skill.name }}</span></div></div><em>{{ statusLabel(item.status) }}</em><button type="button" class="btn" @click="router.push('/learning/python/plan')">查看任务</button></article></div>
             </section>
             <section v-if="doneProjectItems.length" class="panel section">
               <div class="head"><div><small>已完成</small><h2>已完成的实践任务</h2></div></div>
-              <div class="project-list project-list--done"><article v-for="item in doneProjectItems" :key="item.id"><div><span>{{ item.stage || '实践阶段' }}</span><h3>{{ item.knowledgePoint }}</h3><p>{{ item.objective }}</p></div><em>{{ statusLabel(item.status) }}</em><button type="button" class="btn" @click="router.push('/learning/python/plan')">查看任务</button></article></div>
+              <div class="project-list project-list--done"><article v-for="item in doneProjectItems" :key="item.id"><div><span>{{ item.stage || '实践阶段' }}</span><h3>{{ item.knowledgePoint }}</h3><p>{{ item.objective }}</p><div v-if="projectTagOf(item.id)" class="course-tags"><span v-for="skill in projectTagOf(item.id).skills" :key="skill.code" class="course-tag" :class="{ 'is-primary': skill.primary }">{{ skill.name }}</span></div></div><em>{{ statusLabel(item.status) }}</em><button type="button" class="btn" @click="router.push('/learning/python/plan')">查看任务</button></article></div>
             </section>
           </template>
           <div v-else class="empty"><strong>当前学习路径中暂无项目节点</strong><p>先完成基础学习路径，项目实践任务会出现在这里。</p><button type="button" class="btn" @click="router.push('/learning/python/plan')">进入个性化学习路径</button></div>
@@ -493,26 +726,80 @@ onMounted(loadLearningData)
         </template>
 
         <template v-else>
-          <section class="panel toolbar"><div><h2>我的练习</h2><p>查看学习目标、任务进度、未完成题目和已完成内容。</p></div><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></section>
+          <section class="panel toolbar"><div><h2>我的练习</h2><p>课程、刷题、项目和技能进度汇总在同一个视图里。</p></div><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></section>
           <section class="practice-layout panel">
             <aside class="goal-list"><div class="head"><h2>学习目标</h2><span>{{ studyGoals.length }} 个</span></div><p v-if="dataErrors.goals" class="error"><span>{{ dataErrors.goals }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><button v-for="goal in studyGoals" :key="goal.id" type="button" :class="{ active: selectedGoalId === goal.id }" @click="loadGoalDetail(goal.id)"><span><strong>{{ goal.title }}</strong><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务</small></span><em>{{ goal.progress || 0 }}%</em></button><div v-if="!studyGoals.length" class="empty empty--small"><strong>还没有学习目标</strong><p>创建四六级、证书或技能目标后，任务会显示在这里。</p></div></aside>
             <section class="goal-detail"><template v-if="selectedGoalDetail?.goal"><div class="head"><div><h2>{{ selectedGoalDetail.goal.title }}</h2></div><span class="tag">{{ goalStatusLabel(selectedGoalDetail.goal.status) }}</span></div><p>{{ selectedGoalDetail.goal.description || '暂无目标说明' }}</p><div class="meta"><span>开始 {{ formatDate(selectedGoalDetail.goal.startDate) }}</span><span>目标 {{ formatDate(selectedGoalDetail.goal.targetDate) }}</span><span>每日 {{ selectedGoalDetail.goal.dailyStudyMinutes || 60 }} 分钟</span></div><div class="progress"><i :style="{ width: `${selectedGoalDetail.goal.progress || 0}%` }" /></div><div v-if="nextGoalTask" class="next-task"><div><small>下一步</small><strong>{{ nextGoalTask.taskName }}</strong><p>{{ nextGoalTask.description || nextGoalTask.stage || '完成这项任务，推进当前学习目标' }}</p></div><button type="button" class="btn" :disabled="busyAction === `task-${nextGoalTask.id}`" @click="toggleTask(nextGoalTask)">标记完成</button></div><div v-if="activeGoalTasks.length" class="task-list"><article v-for="task in activeGoalTasks" :key="task.id"><button type="button" class="check" :class="{ done: task.isCompleted }" :disabled="busyAction === `task-${task.id}`" @click="toggleTask(task)">{{ task.isCompleted ? '✓' : '' }}</button><div><strong :class="{ done: task.isCompleted }">{{ task.taskName }}</strong><p>{{ task.description || task.stage || '暂无任务说明' }}</p><small>{{ task.progressPercent || 0 }}% · 预计 {{ task.estimatedDays || 1 }} 天</small><div v-if="task.subtasks?.length" class="subtasks"><button v-for="subtask in task.subtasks" :key="subtask.id" type="button" :class="{ done: subtask.isCompleted }" @click="toggleSubtask(subtask)">{{ subtask.isCompleted ? '✓' : '·' }} {{ subtask.taskName }}</button></div></div></article></div><div v-else class="empty empty--small"><strong>这个目标还没有任务</strong><p>新建目标时填写学习计划文本，可以让 AI 拆解为可勾选任务。</p></div></template><div v-else class="empty"><strong>请选择一个学习目标</strong><p>目标详情和可勾选任务会显示在这里。</p></div></section>
           </section>
-          <section class="panel section"><div class="head"><div><h2>练习记录</h2></div><button type="button" class="link" @click="router.push('/learning/python')">进入题库</button></div><div class="stats"><article><span>已完成题目</span><strong>{{ solvedProblemCount }}</strong></article><article><span>待完成题目</span><strong>{{ Math.max(0, judgeableProblems.length - solvedProblemCount) }}</strong></article><article><span>学习路径完成</span><strong>{{ pathItems.filter((item) => item.status === 'completed').length }}/{{ pathItems.length }}</strong></article><article><span>已完成任务</span><strong>{{ activeGoalTasks.filter((item) => item.isCompleted).length }}/{{ activeGoalTasks.length }}</strong></article></div></section>
+          <p v-if="dataErrors.summary" class="error"><span>{{ dataErrors.summary }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p>
+
+          <section class="stats">
+            <article><span>已加入课程</span><strong>{{ summaryCourses.length }}</strong><small>门课程</small></article>
+            <article><span>已完成题目</span><strong>{{ summaryProblemStats.solvedCount || 0 }}</strong><small>{{ summaryProblemStats.solveRate || 0 }}% 完成度</small></article>
+            <article><span>项目节点</span><strong>{{ summaryProjectStats.completed || 0 }}/{{ summaryProjectStats.total || 0 }}</strong><small>已完成 / 全部</small></article>
+            <article><span>技能项</span><strong>{{ summarySkills.length }}</strong><small>个技能有进度</small></article>
+          </section>
+
+          <section class="panel section">
+            <div class="head"><div><small>技能成长</small><h2>技能进度</h2></div><button type="button" class="link" @click="selectTab('recommended')">查看推荐学习</button></div>
+            <div v-if="summarySkills.length" class="skill-progress-list">
+              <article v-for="skill in summarySkills.slice(0, 8)" :key="skill.code">
+                <div><strong>{{ skill.name }}</strong><small>{{ skill.category || '技能' }}</small></div>
+                <div class="progress"><i :style="{ width: `${skill.level}%` }" /></div>
+                <em>{{ skill.level }}</em>
+              </article>
+            </div>
+            <div v-else class="empty empty--small"><strong>还没有技能进度</strong><p>完成课程章节、通过算法题或完成项目节点后，这里会显示技能成长。</p></div>
+          </section>
+
+          <section class="panel section">
+            <div class="head"><div><small>最近 30 个学习日</small><h2>技能增长趋势</h2></div></div>
+            <div v-if="trendPoints.length" class="trend-chart">
+              <div v-for="point in trendPoints" :key="point.date" class="trend-col" :title="`${point.date} · 平均技能等级 ${point.averageLevel} · ${point.eventCount} 条记录`">
+                <i :style="{ height: trendHeight(point) }" />
+                <small>{{ point.date.slice(5) }}</small>
+              </div>
+            </div>
+            <div v-else class="empty empty--small"><strong>暂无趋势数据</strong><p>有学习记录后，会按天展示技能平均等级变化。</p></div>
+          </section>
+
+          <section class="panel section">
+            <div class="head"><div><small>课程学习</small><h2>课程进度</h2></div><button type="button" class="link" @click="selectTab('courses')">查看课程</button></div>
+            <div v-if="summaryCourses.length" class="summary-list">
+              <article v-for="course in summaryCourses" :key="course.courseId">
+                <div><strong>{{ course.name }}</strong><small>{{ course.skills.join('、') || '暂无技能标签' }}</small></div>
+                <div class="progress"><i :style="{ width: `${course.progressPercent}%` }" /></div>
+                <em>{{ course.completedChapters }}/{{ course.totalChapters }}</em>
+                <button type="button" class="link" @click="router.push(`/courses/${course.courseId}`)">继续</button>
+              </article>
+            </div>
+            <div v-else class="empty empty--small"><strong>还没有加入课程</strong><p>在「课程与专项」中加入课程后，这里会显示章节进度。</p></div>
+          </section>
+
+          <section class="panel section">
+            <div class="head"><div><small>项目实训</small><h2>项目节点进度</h2></div><button type="button" class="link" @click="selectTab('projects')">查看项目实训</button></div>
+            <div v-if="summaryProjectItems.length" class="summary-list">
+              <article v-for="item in summaryProjectItems" :key="item.itemId">
+                <div><strong>{{ item.title }}</strong><small>{{ item.skills.join('、') || '暂无技能标签' }}</small></div>
+                <em>{{ statusLabel(item.status) }}</em>
+              </article>
+            </div>
+            <div v-else class="empty empty--small"><strong>暂无项目节点</strong><p>生成学习路径后，项目节点会汇总到这里。</p></div>
+          </section>
         </template>
       </div>
     </main>
 
     <Teleport to="body">
       <div v-if="goalDialogOpen" class="dialog-mask" @click.self="closeGoalDialog">
-        <form class="dialog" @submit.prevent="saveGoal">
+        <form class="dialog" @submit.prevent="saveGoal()">
           <header><div><h2>设置学习目标</h2></div><button type="button" aria-label="关闭" @click="closeGoalDialog">×</button></header>
           <label><span>目标名称 *</span><input v-model="goalForm.title" maxlength="120" type="text" placeholder="例如：通过大学英语六级" /></label>
           <label><span>目标说明</span><textarea v-model="goalForm.description" rows="3" placeholder="说明目标、当前基础和希望达到的结果" /></label>
           <label><span>学习计划文本</span><textarea v-model="goalForm.planText" rows="5" placeholder="例如：每天背 30 个单词，周一三五练习听力，周末完成一套真题。填写后会调用 AI 拆解为任务。" /></label>
           <div class="dialog-row"><label><span>开始日期</span><input v-model="goalForm.startDate" type="date" /></label><label><span>目标日期</span><input v-model="goalForm.targetDate" type="date" /></label><label><span>每日分钟</span><input v-model.number="goalForm.dailyStudyMinutes" type="number" min="10" max="600" /></label></div>
           <p v-if="goalError" class="error">{{ goalError }}</p>
-          <footer><button type="button" class="btn" :disabled="goalSaving" @click="closeGoalDialog">取消</button><button type="submit" class="btn btn--primary" :disabled="goalSaving">{{ goalSaving ? '正在保存…' : (goalForm.planText.trim() ? 'AI 拆解并保存' : '保存目标') }}</button></footer>
+          <footer><button type="button" class="btn" :disabled="goalSaving" @click="closeGoalDialog">取消</button><button v-if="goalAiUnavailable" type="button" class="btn btn--primary" :disabled="goalSaving" @click="saveGoal(true)">{{ goalSaving ? '正在保存…' : '直接保存（不拆解）' }}</button><button v-else type="submit" class="btn btn--primary" :disabled="goalSaving">{{ goalSaving ? '正在保存…' : (goalForm.planText.trim() ? 'AI 拆解并保存' : '保存目标') }}</button></footer>
         </form>
       </div>
     </Teleport>
@@ -1089,6 +1376,12 @@ onMounted(loadLearningData)
   font-weight: 600;
 }
 
+.skill-line {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- 学习路径列表 ---------- */
 
 .path-list {
@@ -1193,6 +1486,117 @@ onMounted(loadLearningData)
   color: var(--hp-ink-2);
   font-size: 13.5px;
   line-height: 1.7;
+}
+
+/* ---------- 目标岗位筛选 ---------- */
+
+.expand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.expand-row .note {
+  margin: 0;
+}
+
+.expand-toggle {
+  padding: 8px 18px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.expand-toggle:hover {
+  border-color: var(--hp-blue-ink);
+  color: var(--hp-blue-ink);
+}
+
+.job-filter {
+  display: grid;
+  flex-shrink: 0;
+  gap: 8px;
+  justify-items: end;
+}
+
+.job-filter__label {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.job-filter__label strong {
+  color: var(--hp-ink);
+}
+
+.job-filter__buttons {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  background: var(--hp-surface-2);
+}
+
+.job-filter__buttons button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--hp-muted);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.job-filter__buttons button.active {
+  color: #fff;
+  background: var(--hp-ink);
+}
+
+.job-filter__buttons button span {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .22);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid #bcd2e2;
+  border-radius: 999px;
+  color: var(--hp-blue-ink);
+  background: #eef5fa;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.course-card .match-badge {
+  justify-self: start;
+  margin-left: 0;
+}
+
+.external-card__badges {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.external-card__badges .match-badge {
+  margin-left: 0;
 }
 
 .stats {
@@ -1307,6 +1711,182 @@ onMounted(loadLearningData)
   background: var(--hp-pink);
 }
 
+/* ---------- 我的练习聚合 ---------- */
+
+.skill-progress-list {
+  display: grid;
+  gap: 12px;
+}
+
+.skill-progress-list article {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+.skill-progress-list article > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.skill-progress-list strong {
+  font-size: 13px;
+}
+
+.skill-progress-list small {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.skill-progress-list em {
+  color: var(--hp-blue-ink);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 150px;
+  padding: 12px 4px 0;
+  border-bottom: 1px solid var(--hp-line);
+}
+
+.trend-col {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+  min-width: 0;
+}
+
+.trend-col i {
+  display: block;
+  width: 100%;
+  max-width: 26px;
+  border-radius: 4px 4px 0 0;
+  background: var(--hp-blue);
+}
+
+.trend-col small {
+  color: var(--hp-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.summary-list {
+  display: grid;
+  gap: 12px;
+}
+
+.summary-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 220px) auto auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-list article > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.summary-list strong {
+  font-size: 13.5px;
+}
+
+.summary-list small {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.summary-list em {
+  color: var(--hp-ink-2);
+  font-size: 12.5px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 外部精选课程 ---------- */
+
+.external-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.external-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.external-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-md);
+}
+
+.external-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.external-card__top small {
+  color: var(--hp-blue-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.external-badge {
+  padding: 2px 8px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
+  font-size: 11px;
+}
+
+.external-card strong {
+  color: var(--hp-ink);
+  font-size: 15px;
+}
+
+.external-card p {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.external-card em {
+  align-self: end;
+  color: var(--hp-blue-ink);
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 600;
+}
+
 /* ---------- 课程卡片 ---------- */
 
 .course-card {
@@ -1340,6 +1920,86 @@ onMounted(loadLearningData)
 .course-card small {
   color: var(--hp-muted);
   font-size: 11.5px;
+}
+
+.course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.course-tag {
+  padding: 3px 9px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.course-tag.is-primary {
+  border-color: var(--hp-line-strong);
+  color: var(--hp-blue-ink);
+}
+
+.course-tag--level {
+  color: var(--hp-ink-2);
+}
+
+.course-jobs {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+/* ---------- 考试与证书专项（展示真实备考目标） ---------- */
+
+.exam-goal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.exam-goal {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  background: var(--hp-surface);
+}
+
+.exam-goal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.exam-goal__head strong {
+  color: var(--hp-ink);
+  font-size: 14px;
+}
+
+.exam-goal p {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.exam-goal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.exam-goal__foot small {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- 规划中入口（紧凑占位，不展示虚构内容） ---------- */
@@ -1843,7 +2503,9 @@ onMounted(loadLearningData)
 
   .card-grid,
   .quick-grid,
-  .course-grid {
+  .course-grid,
+  .external-grid,
+  .exam-goal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1878,6 +2540,8 @@ onMounted(loadLearningData)
   .card-grid,
   .quick-grid,
   .course-grid,
+  .external-grid,
+  .exam-goal-grid,
   .stats {
     grid-template-columns: 1fr;
   }

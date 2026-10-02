@@ -32,6 +32,7 @@ public class CampusCourseService {
     private final WordParsingService wordParsingService;
     private final CampusCourseMaterialRepository materialRepository;
     private final CampusCourseTypeRepository typeRepository;
+    private final LearningRecordService learningRecordService;
 
     public CampusCourseService(
             CampusCourseRepository courseRepository,
@@ -45,7 +46,8 @@ public class CampusCourseService {
             MaterialIdsCodec materialIdsCodec,
             WordParsingService wordParsingService,
             CampusCourseMaterialRepository materialRepository,
-            CampusCourseTypeRepository typeRepository
+            CampusCourseTypeRepository typeRepository,
+            LearningRecordService learningRecordService
     ) {
         this.courseRepository = courseRepository;
         this.chapterRepository = chapterRepository;
@@ -59,6 +61,7 @@ public class CampusCourseService {
         this.wordParsingService = wordParsingService;
         this.materialRepository = materialRepository;
         this.typeRepository = typeRepository;
+        this.learningRecordService = learningRecordService;
     }
 
     @Transactional(readOnly = true)
@@ -296,7 +299,7 @@ public class CampusCourseService {
             throw new BusinessException(403, "无权学习该课程");
         }
         requireEnrolled(courseId, userId);
-        requireChapter(courseId, chapterId);
+        CampusCourseChapter chapter = requireChapter(courseId, chapterId);
         CampusCourseProgress progress = progressRepository
                 .findByCourseIdAndChapterIdAndUserId(courseId, chapterId, userId)
                 .orElseGet(CampusCourseProgress::new);
@@ -306,7 +309,17 @@ public class CampusCourseService {
         progress.setCompleted(completed);
         progress.setCompletedTime(completed ? LocalDateTime.now() : null);
         progressRepository.save(progress);
+        learningRecordService.recordCourseChapter(userId, course, chapter, completed, courseProgressPercent(courseId, userId));
         return detail(course, userId, false);
+    }
+
+    private int courseProgressPercent(Long courseId, Long userId) {
+        long total = chapterRepository.countByCourseId(courseId);
+        if (total <= 0) return 0;
+        long done = progressRepository.findByCourseIdAndUserId(courseId, userId).stream()
+                .filter(item -> Boolean.TRUE.equals(item.getCompleted()))
+                .count();
+        return (int) Math.round(done * 100.0 / total);
     }
 
     @Transactional
@@ -462,9 +475,12 @@ public class CampusCourseService {
         CampusCourseDTO.CourseSummary view = new CampusCourseDTO.CourseSummary();
         view.setId(course.getId());
         view.setName(course.getName());
+        view.setEnrolled(userId != null
+                && enrollmentRepository.existsByUserIdAndCourseId(userId, course.getId()));
         view.setBookTitle(course.getBookTitle());
         view.setTeacherName(course.getTeacherName());
         view.setLevel(course.getLevel());
+        view.setVideoBvid(course.getVideoBvid());
         view.setCoverUrl(course.getCoverUrl());
         view.setDisplayImageUrl(course.getDisplayImageUrl());
         view.setDescription(course.getDescription());
@@ -509,6 +525,7 @@ public class CampusCourseService {
         view.setEstimatedMinutes(chapter.getEstimatedMinutes());
         view.setRequired(chapter.getRequired());
         view.setSortOrder(chapter.getSortOrder());
+        view.setVideoPage(chapter.getVideoPage());
         view.setCompleted(progress != null && Boolean.TRUE.equals(progress.getCompleted()));
         view.setCompletedTime(progress == null ? null : progress.getCompletedTime());
         return view;
@@ -652,11 +669,13 @@ public class CampusCourseService {
         target.setBookTitle(source.getBookTitle());
         target.setTeacherName(source.getTeacherName());
         target.setLevel(source.getLevel());
+        target.setVideoBvid(source.getVideoBvid());
         target.setCoverUrl(source.getCoverUrl());
         target.setDisplayImageUrl(source.getDisplayImageUrl());
         target.setDescription(source.getDescription());
         target.setSemester(source.getSemester());
         target.setEstimatedHours(source.getEstimatedHours());
+        target.setEnrolled(source.getEnrolled());
         target.setOwnerId(source.getOwnerId());
         target.setOwnerName(source.getOwnerName());
         target.setOwnerType(source.getOwnerType());

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getExamResult } from '../api/exam'
+import AppTabBar from '../components/AppTabBar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -78,6 +79,7 @@ onMounted(async () => {
 
 <template>
   <div class="review-page">
+    <AppTabBar />
     <header class="review-header">
       <button type="button" @click="router.push(`/mine/papers/results/${route.params.attemptId}`)">‹ 返回成绩</button>
       <div><h1>Python基础能力随机考试</h1><p>共 {{ result?.questions.length || 0 }} 题　满分 {{ result?.objectiveTotalScore || 0 }} 分</p></div>
@@ -120,4 +122,121 @@ onMounted(async () => {
 
 <style scoped>
 .review-page{min-height:100vh;background:#f3f5f7}.review-header{display:grid;grid-template-columns:150px 1fr auto;align-items:center;gap:20px;padding:22px max(20px,calc((100% - 1440px)/2));border-bottom:1px solid #e4e7ec;background:#fff}.review-header>button{color:#2e73b6;background:transparent;text-align:left}.review-header h1{margin:0 0 7px;color:#16233b;font-size:23px}.review-header p{margin:0;color:#98a2b3}.review-header>strong{color:#f0644c;font-weight:500}.review-header>strong b{font-size:31px}.review-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;width:min(calc(100% - 36px),1440px);margin:20px auto}.question-list,.question-map{border:1px solid #e4e7ec;border-radius:10px;background:#fff}.question-list{padding:26px 34px}.question-group>h2{margin:10px 0 28px;color:#16233b;font-size:21px}.review-question{scroll-margin-top:20px;margin-bottom:38px;padding-bottom:30px;border-bottom:1px solid #edf0f2}.stem{color:#17233a;font-size:17px;line-height:1.8}.stem>b{margin-right:7px}.type{margin-right:10px;color:#98a2b3;font-size:13px}.option-list{display:grid;gap:10px;margin:17px 0;padding:0;list-style:none;color:#344054}.answer-box{margin-top:20px;border-left:5px solid;padding:15px 18px;background:#f8fafc}.answer-box--right{border-color:#3b82f6}.answer-box--wrong{border-color:#ef5b5b}.answer-box p{position:relative;margin:8px 0;color:#475467;line-height:1.65}.answer-box p>strong{position:absolute;right:0;color:#17233a}.answer-box--right>p:first-child{color:#2875de}.answer-box--wrong>p:first-child{color:#d94b4b}.answer-box .analysis{margin-top:13px;padding-top:13px;border-top:1px dashed #dfe4e9}.question-map{position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);padding:22px;overflow:auto}.map-legend{padding-bottom:14px;border-bottom:1px solid #edf0f2;color:#667085;font-size:13px}.map-legend span{display:inline-block;width:9px;height:9px;margin:0 5px 0 13px;border-radius:50%}.right-dot{background:#3b82f6}.wrong-dot{background:#ef5b5b}.question-map h3{margin:20px 0 12px;color:#344054;font-size:14px}.number-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.number-grid button{aspect-ratio:1;border:1px solid;border-radius:6px;background:#fff}.number-grid button.right{color:#2875de;border-color:#3b82f6;background:#eef6ff}.number-grid button.wrong{color:#d94040;border-color:#ef5b5b;background:#fff1f1}.loading{padding:80px;text-align:center;color:#667085}@media(max-width:900px){.review-header{grid-template-columns:auto 1fr}.review-header>strong{grid-column:2}.review-layout{grid-template-columns:1fr}.question-map{position:static;grid-row:1;max-height:none}.question-list{padding:20px}.number-grid{grid-template-columns:repeat(8,1fr)}}@media(max-width:560px){.review-header{grid-template-columns:1fr;padding:16px}.review-header>strong{grid-column:auto}.number-grid{grid-template-columns:repeat(6,1fr)}}
+</style>
+
+<style scoped>
+.review-page {
+  padding-top: 60px;
+  color: var(--hp-ink);
+  background: var(--hp-bg);
+}
+.review-header {
+  position: sticky;
+  top: 60px;
+  z-index: 8;
+  border-bottom-color: var(--hp-line);
+  background: var(--hp-tint);
+}
+.review-header > button {
+  color: var(--hp-blue-ink);
+  font-weight: 650;
+}
+.review-header h1 {
+  color: var(--hp-ink);
+}
+.review-header p,
+.stem .type {
+  color: var(--hp-muted);
+}
+.review-header > strong {
+  color: var(--hp-ink-2);
+}
+.review-header > strong b {
+  color: var(--hp-blue-ink);
+}
+.review-layout {
+  width: min(calc(100% - 48px), 1280px);
+  gap: 18px;
+  margin: 18px auto;
+}
+.question-list,
+.question-map {
+  border-color: var(--hp-line);
+  border-radius: var(--hp-r-lg);
+  background: var(--hp-surface);
+  box-shadow: var(--hp-shadow-sm);
+}
+.question-group > h2,
+.stem {
+  color: var(--hp-ink);
+}
+.review-question {
+  border-bottom-color: var(--hp-line);
+}
+.option-list {
+  color: var(--hp-ink-2);
+}
+.answer-box {
+  border-radius: 0 var(--hp-r-sm) var(--hp-r-sm) 0;
+  background: var(--hp-surface-2);
+}
+.answer-box--right {
+  border-color: var(--hp-green-ink);
+  background: #eff7f1;
+}
+.answer-box--wrong {
+  border-color: var(--hp-pink-ink);
+  background: #fbf1f2;
+}
+.answer-box p {
+  color: var(--hp-ink-2);
+}
+.answer-box p > strong {
+  color: var(--hp-ink);
+}
+.question-map {
+  top: 88px;
+  max-height: calc(100vh - 108px);
+}
+.map-legend {
+  border-bottom-color: var(--hp-line);
+  color: var(--hp-ink-2);
+}
+.right-dot {
+  background: var(--hp-green-ink);
+}
+.wrong-dot {
+  background: var(--hp-pink-ink);
+}
+.question-map h3 {
+  color: var(--hp-ink);
+}
+.number-grid button {
+  border-color: var(--hp-line-strong);
+}
+.number-grid button.right {
+  color: var(--hp-green-ink);
+  border-color: #b9d1bf;
+  background: #eff7f1;
+}
+.number-grid button.wrong {
+  color: #a45f66;
+  border-color: #dfc0c4;
+  background: #fbf1f2;
+}
+.loading {
+  color: var(--hp-muted);
+}
+@media (max-width: 900px) {
+  .review-header {
+    top: 60px;
+    grid-template-columns: auto 1fr;
+  }
+  .review-layout {
+    width: min(100% - 24px, 1280px);
+  }
+  .question-map {
+    top: 72px;
+  }
+}
 </style>

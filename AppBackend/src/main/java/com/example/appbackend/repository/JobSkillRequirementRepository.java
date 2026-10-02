@@ -1,0 +1,3 @@
+package com.example.appbackend.repository;
+import com.example.appbackend.entity.JobSkillRequirement; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface JobSkillRequirementRepository extends JpaRepository<JobSkillRequirement,Long>{ List<JobSkillRequirement> findByJobCodeOrderBySortOrderAscIdAsc(String jobCode); List<JobSkillRequirement> findAllByOrderByJobCodeAscSortOrderAscIdAsc(); List<JobSkillRequirement> findByJobNameOrderBySortOrderAscIdAsc(String jobName); List<JobSkillRequirement> findBySkillId(Long skillId); }

@@ -2,6 +2,7 @@ package com.example.appbackend.controller;
 
 import com.example.appbackend.dto.LearningPathDTO;
 import com.example.appbackend.exception.GlobalExceptionHandler;
+import com.example.appbackend.service.LearningRecordService;
 import com.example.appbackend.service.LearningWorkflowService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,7 +28,7 @@ class AppLearningControllerTest {
     @BeforeEach
     void setUp() {
         service = new RecordingLearningWorkflowService();
-        mvc = MockMvcBuilders.standaloneSetup(new AppLearningController(service))
+        mvc = MockMvcBuilders.standaloneSetup(new AppLearningController(service, mock(LearningRecordService.class)))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

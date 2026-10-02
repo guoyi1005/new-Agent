@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppTabBar from '../../components/AppTabBar.vue'
 import ChatMarkdown from '../../components/ChatMarkdown.vue'
+import { reportProblemSolved } from '../../api/learning'
 import { getPythonProblemDetail, streamPythonAssist } from '../../api/pythonProblem'
 import { usePythonProblemBank } from '../../composables/usePythonProblemBank'
 import {
@@ -58,6 +59,10 @@ const descParagraphs = computed(() => {
 
 const judgeable = computed(() =>
   !!(problem.value?.funcName && problem.value?.testcases?.length),
+)
+
+const currentSkills = computed(() =>
+  bank.questions.value.find((item) => item.id === problemId.value)?.skills || [],
 )
 
 const resultTitle = computed(() => {
@@ -185,6 +190,8 @@ function markSolved(id) {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(solved))
     const item = bank.questions.value.find((q) => q.id === id)
     if (item) item.done = true
+    // 回写统一学习记录：失败不影响本地做题状态。
+    reportProblemSolved(id).catch(() => {})
   }
 }
 
@@ -389,6 +396,7 @@ onBeforeUnmount(() => {
           <span class="py-workspace-no">{{ problem.number }}.</span>
           <span class="py-workspace-name">{{ problem.title }}</span>
           <span class="py-diff" :class="'py-diff--' + problem.difficulty">{{ difficultyLabel(problem.difficulty) }}</span>
+          <span v-for="s in currentSkills" :key="s.code" class="py-skill-chip">{{ s.name }}</span>
         </div>
       </div>
       <div class="py-workspace-toolbar__right">
@@ -664,6 +672,16 @@ onBeforeUnmount(() => {
 .py-diff--easy { color: #027a48; background: #ecfdf3; }
 .py-diff--medium { color: #6941c6; background: #f4f3ff; }
 .py-diff--hard { color: #b42318; background: #fef3f2; }
+
+.py-skill-chip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid #d3e0e9;
+  border-radius: 999px;
+  color: #2f76bd;
+  background: #eef5fa;
+  font-size: 11px;
+}
 
 .py-workspace-body {
   display: grid;
@@ -1098,174 +1116,6 @@ onBeforeUnmount(() => {
   padding: 80px 24px;
   text-align: center;
   color: #667085;
-}
-
-/* ── 深色未来感 Dashboard 主题（与星图探索保持一致）── */
-.py-workspace-page {
-  color: #edf2ff;
-  background:
-    radial-gradient(circle at 86% 6%, rgba(104, 82, 220, .16), transparent 30%),
-    radial-gradient(circle at 8% 30%, rgba(39, 124, 184, .12), transparent 26%),
-    linear-gradient(145deg, #060810 0%, #0a0d16 48%, #070911 100%);
-}
-
-.py-workspace-toolbar {
-  border-bottom-color: rgba(148, 163, 184, .16);
-  background: rgba(16, 20, 31, .86);
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .02);
-  backdrop-filter: blur(14px);
-}
-
-.py-toolbar-btn {
-  border-color: rgba(148, 163, 184, .16);
-  border-radius: 999px;
-  color: #cbd3e5;
-  background: rgba(23, 28, 43, .72);
-}
-
-.py-toolbar-btn--ghost { border-color: transparent; background: transparent; }
-.py-toolbar-btn--ghost:hover:not(:disabled),
-.py-toolbar-btn--active { color: #fff; background: rgba(83, 91, 199, .24); }
-
-.py-toolbar-btn--primary {
-  border-color: transparent;
-  color: #fff;
-  background: linear-gradient(135deg, #606af0, #8075e8);
-  box-shadow: 0 8px 20px rgba(82, 88, 203, .26);
-}
-
-.py-workspace-no { color: #6e7890; }
-.py-workspace-name { color: #eef2fb; }
-
-.py-diff--easy { color: #9ef0c4; background: rgba(60, 140, 105, .22); }
-.py-diff--medium { color: #c3b6ff; background: rgba(92, 80, 190, .22); }
-.py-diff--hard { color: #ffb4b0; background: rgba(170, 70, 64, .2); }
-
-.py-problem-list {
-  border-right-color: rgba(148, 163, 184, .16);
-  background: rgba(9, 12, 20, .78);
-}
-
-.py-problem-list__head {
-  border-bottom-color: rgba(148, 163, 184, .12);
-  color: #78829a;
-  background: rgba(9, 12, 20, .92);
-}
-
-.py-problem-list__item {
-  border-bottom-color: rgba(148, 163, 184, .08);
-  color: #aab4c8;
-  background: transparent;
-}
-
-.py-problem-list__item:hover { background: rgba(83, 91, 199, .16); }
-.py-problem-list__item--active {
-  color: #f4f6ff;
-  background: linear-gradient(135deg, rgba(83, 91, 199, .34), rgba(49, 44, 102, .3));
-}
-
-.py-problem-list__status { border-color: rgba(148, 163, 184, .32); }
-.py-problem-list__item--done .py-problem-list__status {
-  border-color: transparent;
-  background: #75ddb9;
-  box-shadow: 0 0 10px rgba(117, 221, 185, .5);
-}
-
-.py-problem-list__no { color: #6e7890; }
-
-.py-desc-panel {
-  border-right-color: rgba(148, 163, 184, .16);
-  background: rgba(16, 20, 31, .78);
-}
-
-.py-desc-panel__meta { color: #8893aa; }
-.py-desc-panel__body p { color: #c2cbdd; }
-
-.py-example {
-  border-left-color: #737cff;
-  border-radius: 0 14px 14px 0;
-  background: rgba(23, 28, 43, .7);
-}
-
-.py-example pre { color: #d8e2f5; }
-.py-example__explain { color: #8893aa; }
-
-.py-desc-panel__tags {
-  border-top-color: rgba(148, 163, 184, .12);
-}
-
-.py-desc-panel__tags span { color: #9aa4ba; background: rgba(148, 163, 184, .12); }
-
-.py-code-panel { background: #0d1017; }
-.py-code-panel--with-ai { border-right-color: rgba(148, 163, 184, .2); }
-
-.py-editor-head {
-  border-bottom-color: rgba(148, 163, 184, .18);
-  color: #9aa4ba;
-  background: #141822;
-}
-
-.py-editor-actions button { color: #cbd3e5; background: rgba(148, 163, 184, .16); }
-.py-editor { color: #d8e2f5; background: #0d1017; }
-
-.py-result-panel {
-  border-top-color: rgba(148, 163, 184, .18);
-  background: #141822;
-}
-
-.py-result-panel__head { border-bottom-color: rgba(148, 163, 184, .18); color: #cbd3e5; }
-.py-result-panel__head span { color: #8893aa; }
-.py-result-panel__actions button { color: #cbd3e5; background: rgba(148, 163, 184, .16); }
-.py-result-note { color: #9aa4ba; }
-.py-tc { border-radius: 12px; background: rgba(9, 12, 20, .8); }
-.py-tc--fail { border-color: rgba(239, 158, 183, .42); }
-.py-tc__head { color: #cbd3e5; }
-.py-tc pre { color: #d8e2f5; }
-.py-tc small { color: #8893aa; }
-.py-tc__actual { color: #ffb4b0; }
-
-.py-ai-panel {
-  border-left-color: rgba(148, 163, 184, .16);
-  background: rgba(16, 20, 31, .82);
-}
-
-.py-ai-panel__head { border-bottom-color: rgba(148, 163, 184, .12); color: #eef2fb; }
-.py-ai-panel__head button { color: #9aa4ba; background: rgba(148, 163, 184, .14); }
-
-.py-ai-quick { border-bottom-color: rgba(148, 163, 184, .12); }
-.py-ai-quick button {
-  border-color: rgba(148, 163, 184, .16);
-  color: #aab4c8;
-  background: rgba(23, 28, 43, .72);
-}
-
-.py-ai-quick button:hover { border-color: rgba(124, 137, 255, .45); color: #fff; }
-.py-ai-empty,
-.py-ai-thinking { color: #8893aa; }
-
-.py-ai-msg--user { color: #e9edff; background: rgba(83, 91, 199, .28); }
-.py-ai-msg--assistant { color: #c2cbdd; background: rgba(23, 28, 43, .72); }
-
-.py-ai-input { border-top-color: rgba(148, 163, 184, .12); }
-.py-ai-input input {
-  border-color: rgba(148, 163, 184, .16);
-  border-radius: 999px;
-  color: #eef2fb;
-  background: rgba(5, 8, 15, .66);
-}
-
-.py-ai-input button {
-  border-radius: 999px;
-  background: linear-gradient(135deg, #606af0, #8075e8);
-}
-
-.py-workspace-toast { background: rgba(16, 20, 31, .92); }
-.py-workspace-state { color: #8893aa; }
-
-.py-workspace-state .feature-button--primary {
-  border-color: transparent;
-  color: #fff;
-  background: linear-gradient(135deg, #606af0, #8075e8);
 }
 
 @media (max-width: 1100px) {

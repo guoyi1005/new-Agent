@@ -32,6 +32,7 @@ class CampusCourseServiceTest {
     private WordParsingService wordParsingService;
     private CampusCourseMaterialRepository materialRepository;
     private CampusCourseTypeRepository typeRepository;
+    private LearningRecordService learningRecordService;
     private CampusCourseService service;
 
     @BeforeEach
@@ -48,7 +49,8 @@ class CampusCourseServiceTest {
         wordParsingService = mock(WordParsingService.class);
         materialRepository = mock(CampusCourseMaterialRepository.class);
         typeRepository = mock(CampusCourseTypeRepository.class);
-        service = new CampusCourseService(courses, chapters, exams, progress, enrollments, papers, users, materialService, materialIdsCodec, wordParsingService, materialRepository, typeRepository);
+        learningRecordService = mock(LearningRecordService.class);
+        service = new CampusCourseService(courses, chapters, exams, progress, enrollments, papers, users, materialService, materialIdsCodec, wordParsingService, materialRepository, typeRepository, learningRecordService);
         when(chapters.findByCourseIdOrderBySortOrderAscIdAsc(any())).thenReturn(List.of());
         when(exams.findByCourseIdOrderBySortOrderAscIdAsc(any())).thenReturn(List.of());
         when(progress.findByCourseIdAndUserId(any(), any())).thenReturn(List.of());

@@ -65,10 +65,10 @@ const isLearningRoute = computed(() => (
   inSection('/courses')
 ))
 
+// Python 学习页归入「学习实践」，因此「岗位探索」要排除这棵子树，避免两个入口同时高亮
 const isCareerRoute = computed(() => (
-  inSection('/career') ||
-  inSection('/jobs/explore') ||
-  (inSection('/career/nebula') && !inSection('/career/nebula/python'))
+  (inSection('/career') && !inSection('/career/nebula/python')) ||
+  inSection('/jobs/explore')
 ))
 
 const isEmploymentRoute = computed(() => inSection('/employment'))
