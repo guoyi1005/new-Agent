@@ -71,7 +71,7 @@ const isCareerRoute = computed(() => (
   (inSection('/career/nebula') && !inSection('/career/nebula/python'))
 ))
 
-const isEmploymentRoute = computed(() => inSection('/employment') || inSection('/jobs/hot'))
+const isEmploymentRoute = computed(() => inSection('/employment'))
 const isCommunityRoute = computed(() => inSection('/community'))
 const isAiCareerRoute = computed(() => (
   inSection('/ai-career') || inSection('/interview') || inSection('/ai-tools/resume') || inSection('/mine/ai-history')

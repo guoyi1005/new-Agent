@@ -398,7 +398,7 @@ onMounted(loadLearningData)
               </template>
               <template v-else>
                 <p>选择目标岗位后，这里会显示待补技能和推荐学习内容。</p>
-                <button type="button" class="btn btn--primary" @click="router.push('/jobs/explore')">选择目标岗位</button>
+                <button type="button" class="btn btn--primary" @click="router.push('/career')">选择目标岗位</button>
               </template>
             </article>
 

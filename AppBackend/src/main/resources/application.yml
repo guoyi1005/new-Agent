@@ -205,3 +205,26 @@ springdoc:
     version: openapi_3_0
   swagger-ui:
     path: /swagger-ui.html
+
+# 成都本地就业岗位：每天定时从公共招聘网站抓取公开展示的岗位信息。
+# 只记录岗位名、单位、区域、薪资、学历等公开字段，不抓取联系方式。
+local-job:
+  crawl:
+    enabled: ${LOCAL_JOB_CRAWL_ENABLED:true}
+    cron: ${LOCAL_JOB_CRAWL_CRON:0 30 5 * * ?}
+    timeout-seconds: ${LOCAL_JOB_CRAWL_TIMEOUT_SECONDS:25}
+    # 每次翻页之间的间隔：招聘网站对短时间内的连续请求会返回 429，这里放慢一些
+    pause-millis: ${LOCAL_JOB_CRAWL_PAUSE_MILLIS:1500}
+    bootstrap-delay-ms: ${LOCAL_JOB_CRAWL_BOOTSTRAP_DELAY_MS:60000}
+    bootstrap-interval-ms: ${LOCAL_JOB_CRAWL_BOOTSTRAP_INTERVAL_MS:3600000}
+    # 各站最新页以非技术岗为主，额外用这些方向关键词各抓一页，保证库里也有学生目标方向的岗位
+    direction-keywords: ${LOCAL_JOB_CRAWL_DIRECTION_KEYWORDS:Python,Java,前端,数据}
+    rc114:      # 成都人才网
+      enabled: ${LOCAL_JOB_CRAWL_RC114_ENABLED:true}
+      pages: ${LOCAL_JOB_CRAWL_RC114_PAGES:2}
+    cd-sc91:    # 成都公共招聘网
+      enabled: ${LOCAL_JOB_CRAWL_CD_SC91_ENABLED:true}
+      pages: ${LOCAL_JOB_CRAWL_CD_SC91_PAGES:2}
+    sc91:       # 四川公共招聘网（成都岗位）
+      enabled: ${LOCAL_JOB_CRAWL_SC91_ENABLED:true}
+      pages: ${LOCAL_JOB_CRAWL_SC91_PAGES:2}

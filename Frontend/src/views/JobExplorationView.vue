@@ -5,14 +5,23 @@ import { useRouter } from 'vue-router'
 import { getCareerNebulaMap } from '../api/careerNebula'
 import { resolveBossJobSearchLink } from '../api/jobRecommendations'
 import AppTabBar from '../components/AppTabBar.vue'
+import {
+  JOB_PROFILES,
+  TARGET_JOB_STORAGE_KEY,
+  getJobDetailId,
+  getJobDirection,
+  getTargetProfile,
+  readStoredTargetJob,
+  resolveFitJobs,
+} from '../data/jobCatalog'
 
 const router = useRouter()
 
 /* ============================================================
  * 岗位探索展示层数据
  * 1) 目标岗位与首页共用同一份本地选择（home_target_job），两处保持一致；
- * 2) 匹配度、已掌握/待提升、岗位差距与推荐岗位来自本期给定的展示数据，
- *    后端岗位匹配能力就绪后，只需替换下面这几段常量，页面结构与逻辑不变；
+ * 2) 匹配度、已掌握/待提升、岗位差距与推荐岗位都来自 data/jobCatalog.js，
+ *    岗位详情页读的是同一份数据，后端岗位匹配能力就绪后整体替换该文件即可；
  * 3) 岗位星图直接读取现有星图接口，节点图与名称都是真实岗位数据。
  * ============================================================ */
 
@@ -25,180 +34,17 @@ function runSearch(keyword) {
   window.open(resolveBossJobSearchLink(query), '_blank', 'noopener,noreferrer')
 }
 
-const TARGET_JOB_STORAGE_KEY = 'home_target_job'
-const DEFAULT_TARGET_JOB = 'Python 开发工程师'
-
-/* 每个目标岗位对应自己的一组结果：匹配度、已掌握/待提升、能力差距与推荐岗位。
- * 后端暂无岗位匹配接口，这里是与首页同一套的展示层数据；补齐一个岗位，
- * 只需要在下面数组里追加一条即可，页面逻辑无需改动。 */
-const JOB_PROFILES = [
-  {
-    title: 'Python 开发工程师',
-    matchRate: 72,
-    mastered: ['Python', 'MySQL'],
-    toImprove: ['FastAPI', 'Linux'],
-    gaps: [
-      { name: 'FastAPI', current: 48, required: 70 },
-      { name: 'Linux', current: 30, required: 60 },
-      { name: '项目经验', current: 56, required: 80 },
-    ],
-    advice: '优先补齐 FastAPI、Linux 与项目实践',
-    fit: [
-      { id: 'py', title: 'Python开发', matchRate: 86, skills: ['Python', 'FastAPI', 'MySQL'] },
-      { id: 'ai-app', title: 'AI应用开发', matchRate: 73, skills: ['Python', 'LLM', 'FastAPI'] },
-      { id: 'data', title: '数据分析', matchRate: 68, skills: ['Python', 'SQL', '数据分析'] },
-    ],
-  },
-  {
-    title: '前端开发工程师',
-    matchRate: 68,
-    mastered: ['HTML / CSS', 'JavaScript'],
-    toImprove: ['Vue3', 'TypeScript'],
-    gaps: [
-      { name: 'Vue3', current: 55, required: 75 },
-      { name: 'TypeScript', current: 42, required: 70 },
-      { name: '工程化实践', current: 45, required: 70 },
-    ],
-    advice: '先补齐 Vue3 组件化，再补 TypeScript 与构建工程化',
-    fit: [
-      { id: 'fe', title: '前端开发', matchRate: 84, skills: ['Vue3', 'TypeScript', 'Vite'] },
-      { id: 'mini', title: '小程序开发', matchRate: 66, skills: ['JavaScript', '小程序', '接口联调'] },
-      { id: 'full', title: '全栈开发', matchRate: 61, skills: ['Vue3', 'Node.js', 'MySQL'] },
-    ],
-  },
-  {
-    title: 'Java 后端开发工程师',
-    matchRate: 61,
-    mastered: ['Java', 'MySQL'],
-    toImprove: ['Spring Boot', 'Redis'],
-    gaps: [
-      { name: 'Spring Boot', current: 46, required: 75 },
-      { name: 'Redis', current: 34, required: 65 },
-      { name: '并发与调优', current: 38, required: 70 },
-    ],
-    advice: '优先补齐 Spring Boot 与 Redis，再补并发与调优',
-    fit: [
-      { id: 'java', title: 'Java后端', matchRate: 80, skills: ['Java', 'Spring Boot', 'MySQL'] },
-      { id: 'micro', title: '微服务开发', matchRate: 58, skills: ['Spring Cloud', 'Redis', 'Docker'] },
-      { id: 'test-dev', title: '测试开发', matchRate: 55, skills: ['Java', '接口测试', 'Jenkins'] },
-    ],
-  },
-  {
-    title: 'AI 应用工程师',
-    matchRate: 70,
-    mastered: ['Python', '提示词'],
-    toImprove: ['LLM 应用', '向量检索'],
-    gaps: [
-      { name: 'LLM 应用', current: 52, required: 75 },
-      { name: '向量检索', current: 36, required: 65 },
-      { name: '服务部署', current: 44, required: 70 },
-    ],
-    advice: '优先补齐 LLM 应用与向量检索，再把服务部署跑通',
-    fit: [
-      { id: 'ai-app', title: 'AI应用开发', matchRate: 85, skills: ['Python', 'LLM', 'FastAPI'] },
-      { id: 'algo', title: '算法工程', matchRate: 68, skills: ['Python', 'PyTorch', '数据处理'] },
-      { id: 'py', title: 'Python开发', matchRate: 74, skills: ['Python', 'FastAPI', 'MySQL'] },
-    ],
-  },
-  {
-    title: '算法工程师',
-    matchRate: 57,
-    mastered: ['Python', '数学基础'],
-    toImprove: ['PyTorch', '模型调优'],
-    gaps: [
-      { name: 'PyTorch', current: 44, required: 70 },
-      { name: '模型调优', current: 38, required: 70 },
-      { name: '项目 / 竞赛', current: 30, required: 60 },
-    ],
-    advice: '先补齐 PyTorch 训练流程，再用项目或竞赛补经历',
-    fit: [
-      { id: 'algo', title: '算法工程', matchRate: 69, skills: ['Python', 'PyTorch', '数据处理'] },
-      { id: 'ai-app', title: 'AI应用开发', matchRate: 64, skills: ['Python', 'LLM', 'FastAPI'] },
-      { id: 'data', title: '数据分析', matchRate: 60, skills: ['Python', 'SQL', '统计分析'] },
-    ],
-  },
-  {
-    title: '数据分析师',
-    matchRate: 71,
-    mastered: ['SQL', 'Excel'],
-    toImprove: ['Python 数据分析', '可视化'],
-    gaps: [
-      { name: 'Python 数据分析', current: 50, required: 70 },
-      { name: '可视化看板', current: 45, required: 70 },
-      { name: '业务分析', current: 52, required: 75 },
-    ],
-    advice: '优先补齐 Python 数据分析与可视化看板',
-    fit: [
-      { id: 'data', title: '数据分析', matchRate: 83, skills: ['Python', 'SQL', '可视化'] },
-      { id: 'ops', title: '数据运营', matchRate: 65, skills: ['SQL', 'Excel', '指标体系'] },
-      { id: 'py', title: 'Python开发', matchRate: 62, skills: ['Python', 'FastAPI', 'MySQL'] },
-    ],
-  },
-  {
-    title: '软件测试工程师',
-    matchRate: 66,
-    mastered: ['测试基础', '用例设计'],
-    toImprove: ['自动化测试', '性能测试'],
-    gaps: [
-      { name: '自动化测试', current: 48, required: 70 },
-      { name: '性能测试', current: 32, required: 60 },
-      { name: 'Linux', current: 40, required: 65 },
-    ],
-    advice: '优先补齐自动化测试，再补性能测试与 Linux',
-    fit: [
-      { id: 'test-dev', title: '测试开发', matchRate: 74, skills: ['Python', '接口自动化', 'Jenkins'] },
-      { id: 'qa', title: '软件测试', matchRate: 78, skills: ['用例设计', 'SQL', '抓包分析'] },
-      { id: 'sre', title: '运维开发', matchRate: 58, skills: ['Linux', 'Shell', 'Docker'] },
-    ],
-  },
-  {
-    title: '产品经理',
-    matchRate: 59,
-    mastered: ['需求分析', '文档撰写'],
-    toImprove: ['数据分析', '原型设计'],
-    gaps: [
-      { name: '数据分析', current: 42, required: 70 },
-      { name: '原型设计', current: 46, required: 70 },
-      { name: '项目推进', current: 50, required: 75 },
-    ],
-    advice: '先补齐数据分析与原型设计，再补一个完整项目经历',
-    fit: [
-      { id: 'pm', title: '产品经理', matchRate: 72, skills: ['需求分析', '原型', '数据分析'] },
-      { id: 'ops', title: '数据运营', matchRate: 63, skills: ['SQL', '指标体系', '活动运营'] },
-      { id: 'ux', title: '交互设计', matchRate: 58, skills: ['原型', '用户研究', '交互稿'] },
-    ],
-  },
-]
-
-const jobProfileMap = new Map(JOB_PROFILES.map((profile) => [profile.title, profile]))
-
-function readStoredTargetJob() {
-  try {
-    return localStorage.getItem(TARGET_JOB_STORAGE_KEY) || DEFAULT_TARGET_JOB
-  } catch {
-    return DEFAULT_TARGET_JOB
-  }
-}
-
 const targetJobTitle = ref(readStoredTargetJob())
 
-const targetJob = computed(() => {
-  const profile = jobProfileMap.get(targetJobTitle.value)
-  if (profile) {
-    return profile
-  }
-  return {
-    title: targetJobTitle.value,
-    matchRate: null,
-    mastered: [],
-    toImprove: [],
-    gaps: [],
-    advice: '完成岗位体检后，这里会显示匹配度、能力差距与提升建议。',
-    fit: [],
-  }
-})
+const targetJob = computed(() => getTargetProfile(targetJobTitle.value))
 
-const fitJobs = computed(() => targetJob.value.fit || [])
+const fitJobs = computed(() => resolveFitJobs(targetJob.value))
+
+/* 「我的目标岗位」卡里的三条轻量信息，全部由现有数据推导，不额外维护一份。 */
+const targetDirection = computed(() => getJobDirection(targetJob.value.title))
+const targetSkills = computed(() => [...targetJob.value.mastered, ...targetJob.value.toImprove].slice(0, 3))
+const targetNextStep = computed(() => targetJob.value.toImprove[0] || targetJob.value.gaps[0]?.name || '')
+const targetDetailId = computed(() => getJobDetailId(targetJob.value.title))
 
 /* ---------- 更换目标岗位 ---------- */
 
@@ -244,7 +90,8 @@ const nebulaLoading = ref(true)
 const targetCareer = computed(() => nebulaCareers.value.find((career) => isTargetCareer(career.name)) || null)
 
 const starmapNodes = computed(() => {
-  const careers = nebulaCareers.value.slice(0, RING_COUNT)
+  // 中心节点已经是目标岗位，环绕一圈只放其它岗位，避免同一个岗位在图上出现两次。
+  const careers = nebulaCareers.value.filter((career) => !isTargetCareer(career.name)).slice(0, RING_COUNT)
   const total = careers.length
   return careers.map((career, index) => {
     // 半个步长起步，避免节点正好压在中心节点的正上/正下方。
@@ -282,10 +129,9 @@ function monogram(name = '') {
   return String(name).replace(/工程师|开发|应用|实习/g, '').slice(0, 2) || '星'
 }
 
-function gapPercent(gap) {
-  const required = Number(gap.required) || 0
-  if (!required) return 0
-  return Math.min(100, Math.round((Number(gap.current) / required) * 100))
+/* 双层进度条里「岗位要求」和「我的能力」都按 0-100 分转换成宽度。 */
+function barWidth(value) {
+  return clamp(Number(value) || 0, 0, 100)
 }
 
 async function loadNebula() {
@@ -401,8 +247,12 @@ onMounted(loadNebula)
           </div>
 
           <div class="jobexplore-panel__foot">
-            <p class="jobexplore-note">探索岗位之间的关系和职业发展路径</p>
-            <button class="feature-button jobexplore-cta" type="button" @click="router.push('/career/nebula')">
+            <p class="jobexplore-note">探索关联岗位与转岗路径</p>
+            <button
+              class="feature-button feature-button--primary jobexplore-cta"
+              type="button"
+              @click="router.push('/career/nebula')"
+            >
               进入岗位星图 →
             </button>
           </div>
@@ -428,29 +278,32 @@ onMounted(loadNebula)
             <p v-else class="jobexplore-match jobexplore-match--quiet">尚未完成岗位体检</p>
           </div>
 
-          <div v-if="targetJob.mastered.length || targetJob.toImprove.length" class="jobexplore-skills">
-            <div v-if="targetJob.mastered.length" class="jobexplore-skills__row">
-              <span class="jobexplore-skills__label">已掌握</span>
-              <span class="jobexplore-skills__group">
-                <span v-for="skill in targetJob.mastered" :key="skill" class="feature-status feature-status--mastered">
-                  {{ skill }}
-                </span>
-              </span>
+          <dl class="jobexplore-facts">
+            <div v-if="targetDirection" class="jobexplore-facts__row">
+              <dt>岗位方向</dt>
+              <dd>{{ targetDirection }}</dd>
             </div>
-            <div v-if="targetJob.toImprove.length" class="jobexplore-skills__row">
-              <span class="jobexplore-skills__label">待提升</span>
-              <span class="jobexplore-skills__group">
-                <span v-for="skill in targetJob.toImprove" :key="skill" class="feature-status feature-status--weak">
-                  {{ skill }}
-                </span>
-              </span>
+            <div v-if="targetSkills.length" class="jobexplore-facts__row">
+              <dt>核心技能</dt>
+              <dd>{{ targetSkills.join(' / ') }}</dd>
             </div>
-          </div>
-          <p v-else class="jobexplore-note">{{ targetJob.advice }}</p>
+            <div v-if="targetNextStep" class="jobexplore-facts__row">
+              <dt>下一步</dt>
+              <dd>优先补齐 {{ targetNextStep }}</dd>
+            </div>
+          </dl>
+          <p v-if="!targetJob.matchRate" class="jobexplore-note">{{ targetJob.advice }}</p>
 
-          <div class="jobexplore-panel__foot">
-            <button class="feature-button jobexplore-cta" type="button" @click="router.push('/jobs/hot')">
-              查看岗位详情
+          <div class="jobexplore-panel__foot jobexplore-panel__foot--actions">
+            <RouterLink
+              v-if="targetDetailId"
+              class="feature-button jobexplore-cta"
+              :to="`/career/job/${targetDetailId}`"
+            >
+              岗位画像 →
+            </RouterLink>
+            <button class="feature-button feature-button--primary jobexplore-cta" type="button" @click="router.push('/employment')">
+              查看在招岗位
             </button>
           </div>
         </article>
@@ -459,22 +312,36 @@ onMounted(loadNebula)
       <section class="jobexplore-section">
         <div class="feature-section__head">
           <h2>适合你的岗位</h2>
-          <button class="feature-link" type="button" @click="router.push('/jobs/hot')">查看全部 →</button>
+          <button class="feature-link" type="button" @click="router.push('/employment')">查看全部 →</button>
         </div>
 
         <div v-if="fitJobs.length" class="jobexplore-fit">
-          <article v-for="job in fitJobs" :key="job.id" class="feature-card jobexplore-fitcard">
+          <RouterLink
+            v-for="job in fitJobs"
+            :key="job.id"
+            class="jobexplore-fitcard"
+            :to="`/career/job/${job.id}`"
+          >
             <div class="jobexplore-fitcard__head">
               <h3>{{ job.title }}</h3>
-              <span class="jobexplore-badge">{{ job.matchRate }}% 匹配</span>
+              <span class="jobexplore-fitcard__rate">{{ job.matchRate }}%</span>
             </div>
-            <div class="jobexplore-fitcard__skills">
-              <span v-for="skill in job.skills" :key="skill" class="feature-chip">{{ skill }}</span>
+            <p class="jobexplore-fitcard__meta">{{ job.direction }} · {{ job.type }}</p>
+
+            <div class="jobexplore-fitcard__block">
+              <span class="jobexplore-fitcard__label">核心技能</span>
+              <div class="jobexplore-fitcard__skills">
+                <span v-for="skill in job.skills" :key="skill" class="feature-chip">{{ skill }}</span>
+              </div>
             </div>
-            <button class="feature-link jobexplore-fitcard__cta" type="button" @click="runSearch(job.title)">
-              查看岗位 →
-            </button>
-          </article>
+
+            <p class="jobexplore-fitcard__reason">
+              <span>推荐理由</span>你的{{ job.strength }}
+            </p>
+            <p class="jobexplore-fitcard__weak">需要提升：{{ job.improve }}</p>
+
+            <span class="feature-link jobexplore-fitcard__cta">查看岗位详情 →</span>
+          </RouterLink>
         </div>
         <p v-else class="feature-empty">更换目标岗位后，这里会显示与它匹配度更高、值得先投递的岗位方向。</p>
       </section>
@@ -482,30 +349,36 @@ onMounted(loadNebula)
       <section class="jobexplore-section">
         <article class="feature-card jobexplore-gap">
           <div class="feature-section__head">
-            <h2>你与目标岗位还有哪些差距</h2>
+            <h2>你与目标岗位的差距</h2>
           </div>
 
-          <div v-if="targetJob.gaps.length" class="feature-list">
-            <div v-for="gap in targetJob.gaps" :key="gap.name" class="feature-row jobexplore-gaprow">
-              <div class="feature-row__copy">
+          <div v-if="targetJob.gaps.length" class="jobexplore-gaps">
+            <div v-for="gap in targetJob.gaps" :key="gap.name" class="jobexplore-gaprow">
+              <div class="jobexplore-gaprow__head">
                 <strong>{{ gap.name }}</strong>
-                <span>当前 {{ gap.current }} · 岗位要求 {{ gap.required }}</span>
+                <span>我的 {{ gap.current }} · 岗位 {{ gap.required }}</span>
               </div>
-              <span class="jobexplore-bar" aria-hidden="true">
-                <i :style="{ width: `${gapPercent(gap)}%` }"></i>
+              <span class="jobexplore-gapbar" aria-hidden="true">
+                <i class="jobexplore-gapbar__require" :style="{ width: `${barWidth(gap.required)}%` }"></i>
+                <i class="jobexplore-gapbar__mine" :style="{ width: `${barWidth(gap.current)}%` }"></i>
               </span>
             </div>
           </div>
           <p v-else class="jobexplore-note">完成岗位体检后，这里会列出需要补齐的能力。</p>
 
           <footer class="jobexplore-gap__foot">
-            <p>当前建议：{{ targetJob.advice }}</p>
+            <div>
+              <p v-if="targetJob.gaps.length" class="jobexplore-gap__summary">
+                已识别 {{ targetJob.gaps.length }} 项关键能力缺口
+              </p>
+              <p class="jobexplore-gap__advice">当前建议：{{ targetJob.advice }}</p>
+            </div>
             <button
-              class="feature-button feature-button--primary"
+              class="feature-button feature-button--primary jobexplore-cta"
               type="button"
               @click="router.push('/interview/ai-career-plan')"
             >
-              生成提升计划 →
+              生成我的提升计划 →
             </button>
           </footer>
         </article>
@@ -557,33 +430,36 @@ onMounted(loadNebula)
 /* ---------- 顶部：标题 + 搜索 + 热门 ---------- */
 
 .jobexplore-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
-  gap: 18px 32px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  padding: 32px 34px 28px;
+  justify-content: space-between;
+  gap: 14px 32px;
+  padding: 20px 28px;
   border: 1px solid var(--hp-line);
-  border-radius: 26px;
+  border-radius: 22px;
   background: var(--hp-pink-soft);
 }
 
 .jobexplore-hero__tools {
+  flex: 1 1 420px;
+  max-width: 640px;
   min-width: 0;
 }
 
 .jobexplore-hero__copy h1 {
   margin: 0;
   color: var(--hp-ink);
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .jobexplore-hero__copy p {
-  margin: 10px 0 0;
+  margin: 6px 0 0;
   color: #6f6154;
-  font-size: 14.5px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .jobexplore-search {
@@ -672,7 +548,7 @@ onMounted(loadNebula)
 
 .jobexplore-top {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: var(--hp-gap);
   align-items: stretch;
   margin-top: var(--hp-gap);
@@ -692,6 +568,12 @@ onMounted(loadNebula)
   justify-content: space-between;
   gap: 18px;
   margin-top: auto;
+}
+
+.jobexplore-panel__foot--actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .jobexplore-meta {
@@ -904,28 +786,32 @@ onMounted(loadNebula)
   background: var(--hp-yellow);
 }
 
-.jobexplore-skills {
+/* 目标岗位卡里的三条轻量信息：岗位方向 / 核心技能 / 下一步 */
+
+.jobexplore-facts {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
 }
 
-.jobexplore-skills__row {
-  display: flex;
-  align-items: center;
+.jobexplore-facts__row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 12px;
+  align-items: baseline;
 }
 
-.jobexplore-skills__label {
-  flex: 0 0 auto;
-  width: 52px;
+.jobexplore-facts dt {
   color: var(--hp-muted);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
-.jobexplore-skills__group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.jobexplore-facts dd {
+  margin: 0;
+  color: var(--hp-ink);
+  font-size: 13.5px;
+  line-height: 1.6;
 }
 
 /* ---------- 适合你的岗位 ---------- */
@@ -943,14 +829,26 @@ onMounted(loadNebula)
 .jobexplore-fitcard {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid transparent;
   border-radius: var(--hp-r-lg);
+  background: var(--hp-surface-2);
+  color: var(--hp-ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.jobexplore-fitcard:hover {
+  border-color: var(--hp-line);
+  background: var(--hp-cream);
+  transform: translateY(-2px);
 }
 
 .jobexplore-fitcard__head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
@@ -962,22 +860,73 @@ onMounted(loadNebula)
   font-weight: 600;
 }
 
-.jobexplore-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--hp-yellow);
+.jobexplore-fitcard__rate {
+  flex: 0 0 auto;
   color: var(--hp-ink);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
   white-space: nowrap;
+}
+
+.jobexplore-fitcard__meta {
+  margin: -4px 0 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.jobexplore-fitcard__block {
+  display: grid;
+  gap: 8px;
+}
+
+.jobexplore-fitcard__label {
+  color: var(--hp-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.jobexplore-fitcard__reason {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--hp-blue);
+  color: var(--hp-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.jobexplore-fitcard__reason span {
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.jobexplore-fitcard__weak {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 12px;
 }
 
 .jobexplore-fitcard__skills {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* 核心技能是每张卡的重点，用页面强调色填充，与下面两段文字区分开 */
+.jobexplore-fitcard__skills .feature-chip {
+  padding: 6px 13px;
+  border-color: var(--hp-line);
+  color: var(--hp-ink);
+  background: var(--hp-yellow);
+  font-weight: 600;
+  cursor: default;
 }
 
 .jobexplore-fitcard__cta {
@@ -992,22 +941,59 @@ onMounted(loadNebula)
   border-radius: var(--hp-r-lg);
 }
 
+/* 双层进度条：浅灰是岗位要求，彩色是我的能力，露出来的灰段就是差距 */
+
+.jobexplore-gaps {
+  display: grid;
+  gap: 12px;
+}
+
 .jobexplore-gaprow {
-  gap: 20px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--hp-r-md);
+  background: var(--hp-surface-2);
 }
 
-.jobexplore-bar {
-  flex: 0 0 200px;
-  height: 10px;
-  border: 1px solid rgba(23, 23, 23, 0.16);
-  border-radius: 999px;
-  overflow: hidden;
+.jobexplore-gaprow__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.jobexplore-bar i {
+.jobexplore-gaprow__head strong {
+  color: var(--hp-ink);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.jobexplore-gaprow__head span {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.jobexplore-gapbar {
+  position: relative;
   display: block;
+  height: 12px;
+}
+
+.jobexplore-gapbar__require,
+.jobexplore-gapbar__mine {
+  position: absolute;
+  top: 0;
+  left: 0;
   height: 100%;
   border-radius: 999px;
+}
+
+.jobexplore-gapbar__require {
+  background: var(--hp-line);
+}
+
+.jobexplore-gapbar__mine {
   background: var(--hp-blue);
 }
 
@@ -1021,10 +1007,22 @@ onMounted(loadNebula)
   border-top: 1px solid rgba(23, 23, 23, 0.16);
 }
 
-.jobexplore-gap__foot p {
+.jobexplore-gap__foot > div {
+  min-width: 0;
+}
+
+.jobexplore-gap__summary {
   margin: 0;
+  color: var(--hp-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.jobexplore-gap__advice {
+  margin: 6px 0 0;
   color: var(--hp-muted);
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1.7;
 }
 
 /* ---------- 更换目标岗位 ---------- */
@@ -1200,13 +1198,17 @@ onMounted(loadNebula)
   }
 
   .jobexplore-hero {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-    padding: 26px 20px 22px;
+    align-items: stretch;
+    padding: 20px;
   }
 
   .jobexplore-hero__copy h1 {
-    font-size: 26px;
+    font-size: 24px;
+  }
+
+  .jobexplore-hero__tools {
+    flex: 1 1 100%;
+    max-width: none;
   }
 }
 
@@ -1231,13 +1233,10 @@ onMounted(loadNebula)
     align-items: flex-start;
   }
 
-  .jobexplore-gaprow {
+  .jobexplore-gaprow__head {
     flex-direction: column;
-    align-items: stretch;
-  }
-
-  .jobexplore-bar {
-    flex: 1 1 auto;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .jobexplore-gap__foot {

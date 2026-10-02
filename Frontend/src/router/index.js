@@ -67,8 +67,9 @@ import CampusDiscountView from '../views/CampusDiscountView.vue'
 import DocumentConvertView from '../views/DocumentConvertView.vue'
 import CareerNebulaView from '../views/CareerNebulaView.vue'
 import CareerPlanetView from '../views/CareerPlanetView.vue'
-import HotJobsView from '../views/HotJobsView.vue'
 import JobExplorationView from '../views/JobExplorationView.vue'
+import JobDetailView from '../views/JobDetailView.vue'
+import EmploymentView from '../views/EmploymentView.vue'
 import SectionHubView from '../views/SectionHubView.vue'
 import InterviewShell from '../views/interview/InterviewShell.vue'
 import InterviewIndex from '../views/interview/pages/Index.vue'
@@ -91,9 +92,10 @@ const routes = [
   { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
   { path: '/home', name: 'home', component: HomeView },
   { path: '/growth', name: 'growth-center', component: SectionHubView, meta: { section: 'growth' } },
-  { path: '/career', name: 'career-exploration', component: SectionHubView, meta: { section: 'career' } },
+  { path: '/career', name: 'career-exploration', component: JobExplorationView },
+  { path: '/career/job/:jobId', name: 'career-job-detail', component: JobDetailView },
   { path: '/learning', name: 'learning-practice', component: LearningPracticeView },
-  { path: '/employment', name: 'employment', component: SectionHubView, meta: { section: 'employment' } },
+  { path: '/employment', name: 'employment', component: EmploymentView },
   { path: '/community', name: 'community', component: CommunityView, meta: { public: true } },
   { path: '/ai-career', name: 'ai-career', component: SectionHubView, meta: { section: 'aiCareer' } },
   { path: '/growth/campus-map', redirect: '/map' },
@@ -111,10 +113,10 @@ const routes = [
   { path: '/growth/grades', redirect: '/mine/papers' },
   { path: '/growth/profile', redirect: '/profile-radar' },
   { path: '/career/star-map', redirect: '/career/nebula' },
-  { path: '/career/search', redirect: '/jobs/explore' },
-  { path: '/career/profile', redirect: '/jobs/explore?view=profile' },
-  { path: '/career/skills', redirect: '/jobs/explore?view=skills' },
-  { path: '/career/gap', redirect: '/jobs/explore?view=gap' },
+  { path: '/career/search', redirect: '/career' },
+  { path: '/career/profile', redirect: '/career?view=profile' },
+  { path: '/career/skills', redirect: '/career?view=skills' },
+  { path: '/career/gap', redirect: '/career?view=gap' },
   { path: '/learning/python', redirect: '/career/nebula/python' },
   { path: '/learning/python/plan', redirect: '/career/nebula/python/plan' },
   { path: '/learning/python/knowledge-graph', redirect: '/career/nebula/python/knowledge-graph' },
@@ -128,9 +130,9 @@ const routes = [
   { path: '/learning/projects/sandbox/rooms', name: 'business-sandbox-rooms', component: BusinessSandboxRoomsView },
   { path: '/learning/projects/sandbox/rooms/:roomId', name: 'business-sandbox-room', component: BusinessSandboxRoomView },
   { path: '/learning/my-practice', redirect: { name: 'learning-practice', query: { tab: 'practice' } } },
-  { path: '/employment/radar', redirect: '/jobs/hot' },
-  { path: '/employment/aggregate', redirect: '/jobs/hot' },
-  { path: '/employment/campus-recruitment', redirect: '/jobs/hot' },
+  { path: '/employment/radar', redirect: '/employment' },
+  { path: '/employment/aggregate', redirect: '/employment' },
+  { path: '/employment/campus-recruitment', redirect: '/employment' },
   { path: '/ai-career/resume', redirect: '/ai-tools/resume' },
   { path: '/ai-career/interview', redirect: '/interview' },
   { path: '/ai-career/report', redirect: '/mine/ai-history' },
@@ -139,8 +141,9 @@ const routes = [
   { path: '/python-learning', redirect: '/learning/python' },
   { path: '/ai-interview', redirect: '/ai-career/interview' },
   { path: '/star-map', redirect: '/growth/tree' },
-  { path: '/jobs/explore', name: 'job-exploration', component: JobExplorationView },
-  { path: '/jobs/hot', name: 'hot-jobs', component: HotJobsView },
+  { path: '/jobs/explore', name: 'job-exploration', redirect: '/career' },
+  // 岗位雷达页已下线，旧链接统一回到实习就业页的真实岗位列表
+  { path: '/jobs/hot', redirect: '/employment' },
   { path: '/map', name: 'map', component: MapView },
   { path: '/activities', name: 'activities', component: CampusActivitiesView },
   { path: '/ai', name: 'ai', component: AiAssistantView },
