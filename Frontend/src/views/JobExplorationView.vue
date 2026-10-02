@@ -13,7 +13,7 @@ import {
   getTargetProfile,
   readStoredTargetJob,
   resolveFitJobs,
-} from '../data/jobCatalog'
+} from '../data_tmp/jobCatalog'
 
 const router = useRouter()
 

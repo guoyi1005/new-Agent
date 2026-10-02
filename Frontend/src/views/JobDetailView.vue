@@ -12,7 +12,7 @@ import {
   getJobDetail,
   getJobMatchRate,
   readStoredTargetJob,
-} from '../data/jobCatalog'
+} from '../data_tmp/jobCatalog'
 
 /* 岗位详情页四段固定顺序：岗位画像 / 我的岗位能力对照 / 当前核心差距 / 我的提升路径。
  * 内容来自 data/jobCatalog.js；要求-我 的差值、重点补齐、达标数量都是算出来的。 */

@@ -14,8 +14,8 @@ import {
   EMPLOYMENT_RADAR,
   EMPLOYMENT_SOURCE_NAMES,
   EMPLOYMENT_TABS,
-} from '../data/employmentCatalog'
-import { getTargetProfile, readStoredTargetJob } from '../data/jobCatalog'
+} from '../data_tmp/employmentCatalog'
+import { getTargetProfile, readStoredTargetJob } from '../data_tmp/jobCatalog'
 
 /* 实习就业：顶部搜索 + 页签，下面依次是实习雷达 / 成都本地、推荐岗位、多平台聚合、校招与校友企业。
  * 页签和搜索框都作用于「为你推荐的岗位」这一份列表。 */
