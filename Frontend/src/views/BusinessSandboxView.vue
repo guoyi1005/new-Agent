@@ -20,17 +20,21 @@ import {
   listSandboxSessions,
   saveSandboxSession,
 } from '../utils/businessSandbox'
+import { buildSandboxProcessAnalysis } from '../utils/businessSandboxAnalysis.js'
 
 const route = useRoute()
 const router = useRouter()
 const scenarios = BUSINESS_SANDBOX_SCENARIOS
+const showAllScenarios = ref(false)
 const strategies = getSandboxStrategies()
+const visibleScenarios = computed(() => showAllScenarios.value ? scenarios : scenarios.slice(0, 3))
 
 const session = ref(null)
 const sessions = ref([])
 const roundResult = ref(null)
 const error = ref('')
 const saving = ref(false)
+const eventDetailOpen = ref(false)
 
 const decision = reactive({
   strategyId: 'steady',
@@ -59,12 +63,27 @@ const allocatedBudget = computed(() => (
 const remainingBudget = computed(() => roundBudget.value - allocatedBudget.value)
 const overBudget = computed(() => remainingBudget.value < 0)
 const ranking = computed(() => session.value?.ranking || [])
+const currentEventAllEffects = computed(() => {
+  const event = currentEvent.value
+  if (!event) return []
+  const effects = [
+    ratioEffect('需求', event.demand),
+    ratioEffect('增长', event.growth),
+    ratioEffect('收入', event.revenue),
+    ratioEffect('成本', event.cost),
+    deltaEffect('满意度', event.satisfaction),
+    deltaEffect('风险', event.risk),
+  ].filter(Boolean)
+  return effects.length ? effects : [{ label: '影响', text: '保持稳定', tone: 'neutral' }]
+})
+const currentEventEffects = computed(() => currentEventAllEffects.value.slice(0, 4))
 const roundProgress = computed(() => {
   if (!session.value) return 0
   const completed = session.value.status === 'completed' ? totalRounds.value : Math.max(0, currentRound.value - 1)
   return Math.round(completed / totalRounds.value * 100)
 })
 const report = computed(() => session.value?.report || null)
+const processAnalysis = computed(() => report.value ? buildSandboxProcessAnalysis(session.value) : [])
 const metrics = computed(() => {
   const value = session.value || {}
   const labels = currentScenario.value.labels
@@ -183,11 +202,32 @@ function strategyName(strategyId) {
   return strategies.find((item) => item.id === strategyId)?.name || '稳健运营'
 }
 
+function ratioEffect(label, value) {
+  const number = Number(value)
+  if (!Number.isFinite(number) || Math.abs(number - 1) < 0.001) return null
+  const percent = Math.round(Math.abs(number - 1) * 100)
+  return { label, text: `${number > 1 ? '+' : '-'}${percent}%`, tone: number > 1 ? 'up' : 'down' }
+}
+
+function deltaEffect(label, value) {
+  const number = Number(value)
+  if (!Number.isFinite(number) || Math.abs(number) < 0.001) return null
+  return { label, text: `${number > 0 ? '+' : ''}${number}`, tone: number > 0 ? 'up' : 'down' }
+}
 function formatTime(value) {
   if (!value) return ''
   return String(value).replace('T', ' ').slice(0, 16)
 }
 
+function formatSignedMoney(value) {
+  const number = Number(value) || 0
+  return `${number >= 0 ? '+' : ''}${formatSandboxMoney(number)}`
+}
+
+function formatSignedNumber(value) {
+  const number = Math.round(Number(value) || 0)
+  return `${number >= 0 ? '+' : ''}${number.toLocaleString('zh-CN')}`
+}
 function scoreTone(score) {
   if (Number(score) >= 85) return 'excellent'
   if (Number(score) >= 70) return 'good'
@@ -242,7 +282,7 @@ onMounted(syncFromRoute)
             <span>{{ scenarios.length }} 个项目</span>
           </div>
           <div class="scenario-grid">
-            <article v-for="(item, index) in scenarios" :key="item.id" class="scenario-card">
+            <article v-for="(item, index) in visibleScenarios" :key="item.id" class="scenario-card">
               <div class="scenario-card__head">
                 <span>项目 {{ String(index + 1).padStart(2, '0') }}</span>
                 <strong>{{ item.rounds }} 轮经营</strong>
@@ -259,6 +299,11 @@ onMounted(syncFromRoute)
                 <button type="button" class="sandbox-button sandbox-button--primary" @click="startSession(item.id)">开始经营</button>
               </div>
             </article>
+          </div>
+          <div v-if="scenarios.length > 3" class="scenario-toggle">
+            <button type="button" @click="showAllScenarios = !showAllScenarios">
+              {{ showAllScenarios ? '收起场景' : `展开查看更多（还有 ${scenarios.length - 3} 个）` }}
+            </button>
           </div>
         </section>
 
@@ -290,18 +335,6 @@ onMounted(syncFromRoute)
       </template>
 
       <template v-else-if="session.status === 'in_progress'">
-        <section class="panel event-panel">
-          <div class="event-panel__round">第 {{ currentRound }} 轮事件</div>
-          <div class="event-panel__copy">
-            <h2>{{ currentEvent?.title }}</h2>
-            <p>{{ currentEvent?.description }}</p>
-          </div>
-          <div class="event-impact">
-            <span>需求 ×{{ currentEvent?.demand }}</span>
-            <span>增长 ×{{ currentEvent?.growth }}</span>
-            <span>风险 {{ currentEvent?.risk >= 0 ? '+' : '' }}{{ currentEvent?.risk }}</span>
-          </div>
-        </section>
 
         <section class="metric-grid">
           <article v-for="item in metrics" :key="item.label" class="metric-card">
@@ -327,7 +360,16 @@ onMounted(syncFromRoute)
         <section class="decision-layout">
           <aside class="panel market-panel">
             <h2>决策说明</h2>
-            <p>{{ currentScenario.description }}</p>
+            <section class="decision-event">
+              <span class="decision-event__round">第 {{ currentRound }} 轮事件</span>
+              <h3>{{ currentEvent?.title }}</h3>
+              <p>{{ currentEvent?.description }}</p>
+              <div class="event-impact">
+                <span v-for="effect in currentEventEffects" :key="effect.label" :class="`is-${effect.tone}`">{{ effect.label }} {{ effect.text }}</span>
+              </div>
+              <button type="button" class="event-detail-link" @click="eventDetailOpen = true">查看完整事件</button>
+            </section>
+            <p class="scenario-brief">{{ currentScenario.description }}</p>
             <div v-if="ranking.length" class="ranking-list">
               <article v-for="item in ranking" :key="item.id" :class="{ 'is-user': item.isUser }">
                 <span>{{ item.rank }}</span>
@@ -343,6 +385,11 @@ onMounted(syncFromRoute)
           <section class="panel decision-panel">
             <div class="sandbox-head">
               <div><h2>本轮经营决策</h2><span>提交后立即结算并进入下一轮</span></div>
+            </div>
+
+            <div class="event-mobile-reminder">
+              <div><span>第 {{ currentRound }} 轮</span><strong>{{ currentEvent?.title }}</strong></div>
+              <button type="button" @click="eventDetailOpen = true">查看事件</button>
             </div>
 
             <section class="strategy-section">
@@ -448,6 +495,50 @@ onMounted(syncFromRoute)
           </div>
         </section>
 
+        <section v-if="processAnalysis.length" class="panel process-analysis">
+          <div class="sandbox-head">
+            <div><h2>过程复盘</h2><span>回放每一轮事件和选择，比较不同经营策略的结果</span></div>
+            <span>{{ processAnalysis.length }} 轮分析</span>
+          </div>
+          <div class="analysis-timeline">
+            <details v-for="item in processAnalysis" :key="item.round" :open="item.round === 1">
+              <summary>
+                <span class="analysis-round">第 {{ item.round }} 轮</span>
+                <div><strong>{{ item.event?.title }}</strong><p>{{ item.summary }}</p></div>
+                <em>{{ item.scoreGap > 0 ? `可提升 ${item.scoreGap} 分` : '接近综合最优' }}</em>
+              </summary>
+              <div class="analysis-body">
+                <div class="analysis-compare">
+                  <article>
+                    <span>你的实际方案</span>
+                    <h3>{{ item.actual.strategy?.name || '实际经营策略' }}</h3>
+                    <div><small>利润</small><strong>{{ formatSandboxMoney(item.actual.after?.profit) }}</strong></div>
+                    <div><small>用户增长</small><strong>{{ formatSignedNumber(item.actual.delta?.users) }}</strong></div>
+                    <div><small>满意度</small><strong>{{ formatSandboxPercent(item.actual.after?.satisfaction) }}</strong></div>
+                    <div><small>风险</small><strong>{{ formatSandboxPercent(item.actual.after?.risk) }}</strong></div>
+                  </article>
+                  <article class="is-best">
+                    <span>综合最优候选</span>
+                    <h3>{{ item.bestOverall.name }}</h3>
+                    <div><small>利润</small><strong>{{ formatSandboxMoney(item.bestOverall.after?.profit) }}</strong></div>
+                    <div><small>用户增长</small><strong>{{ formatSignedNumber(item.bestOverall.delta?.users) }}</strong></div>
+                    <div><small>满意度</small><strong>{{ formatSandboxPercent(item.bestOverall.after?.satisfaction) }}</strong></div>
+                    <div><small>风险</small><strong>{{ formatSandboxPercent(item.bestOverall.after?.risk) }}</strong></div>
+                  </article>
+                </div>
+                <div class="analysis-alternatives">
+                  <article><span>利润最高</span><strong>{{ item.profitBest.name }}</strong><em>{{ formatSignedMoney(item.profitBest.after?.profit - item.actual.after?.profit) }}</em></article>
+                  <article><span>增长最快</span><strong>{{ item.growthBest.name }}</strong><em>{{ formatSignedNumber(item.growthBest.delta?.users - item.actual.delta?.users) }}</em></article>
+                  <article><span>风险最低</span><strong>{{ item.riskBest.name }}</strong><em>{{ formatSignedNumber(item.riskBest.after?.risk - item.actual.after?.risk) }} 风险</em></article>
+                </div>
+                <div class="analysis-reasons">
+                  <h4>为什么结果不同</h4>
+                  <ul><li v-for="reason in item.reasons" :key="reason">{{ reason }}</li></ul>
+                </div>
+              </div>
+            </details>
+          </div>
+        </section>
         <section class="report-layout">
           <section class="panel report-history">
             <div class="sandbox-head"><div><h2>每轮经营结果</h2><span>复盘四轮决策变化</span></div></div>
@@ -476,6 +567,24 @@ onMounted(syncFromRoute)
       </template>
     </main>
 
+    <Teleport to="body">
+      <div v-if="eventDetailOpen" class="event-mask" @click.self="eventDetailOpen = false">
+        <section class="event-dialog">
+          <header>
+            <div><span>第 {{ currentRound }} 轮事件</span><h2>{{ currentEvent?.title }}</h2></div>
+            <button type="button" aria-label="关闭事件详情" @click="eventDetailOpen = false">×</button>
+          </header>
+          <p>{{ currentEvent?.description }}</p>
+          <div class="event-detail-grid">
+            <article v-for="effect in currentEventAllEffects" :key="effect.label">
+              <span>{{ effect.label }}</span>
+              <strong :class="`is-${effect.tone}`">{{ effect.text }}</strong>
+            </article>
+          </div>
+          <footer><button type="button" class="sandbox-button sandbox-button--primary" @click="eventDetailOpen = false">知道了</button></footer>
+        </section>
+      </div>
+    </Teleport>
     <Teleport to="body">
       <div v-if="roundResult" class="result-mask" @click.self="continueNextRound">
         <section class="result-dialog">
@@ -703,6 +812,165 @@ onMounted(syncFromRoute)
   font-weight: 700;
 }
 
+.event-impact span.is-up {
+  border-color: #bfd6c6;
+  color: #47725a;
+  background: #f0f8f3;
+}
+
+.event-impact span.is-down {
+  border-color: #e3c2c5;
+  color: #8a535a;
+  background: #fbf1f2;
+}
+
+.decision-event {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #eadab0;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.decision-event__round {
+  justify-self: start;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #8a6a35;
+  background: #f5e8bd;
+  font-size: 10.5px;
+  font-weight: 750;
+}
+
+.decision-event h3 {
+  margin: 0;
+  color: var(--hp-ink);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.decision-event p {
+  margin: 0;
+  color: var(--hp-ink-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.decision-event .event-impact {
+  justify-content: flex-start;
+}
+
+.event-detail-link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  color: var(--hp-blue-ink);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scenario-brief {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.event-mobile-reminder {
+  display: none;
+}
+
+.event-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 2050;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(27, 35, 41, .36);
+}
+
+.event-dialog {
+  width: min(620px, 100%);
+  padding: 26px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-lg);
+  background: var(--hp-surface);
+  box-shadow: var(--hp-shadow-lg);
+}
+
+.event-dialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.event-dialog header span {
+  color: #8a6a35;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.event-dialog h2 {
+  margin: 7px 0 0;
+}
+
+.event-dialog header button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface-2);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.event-dialog > p {
+  margin: 20px 0 0;
+  color: var(--hp-ink-2);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.event-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.event-detail-grid article {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+  border-radius: 11px;
+  background: var(--hp-surface-2);
+}
+
+.event-detail-grid span {
+  color: var(--hp-muted);
+  font-size: 12px;
+}
+
+.event-detail-grid strong.is-up {
+  color: var(--hp-green-ink);
+}
+
+.event-detail-grid strong.is-down {
+  color: #9b575d;
+}
+
+.event-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
 .sandbox-flow {
   display: grid;
   grid-template-columns: auto minmax(20px, 1fr) auto minmax(20px, 1fr) auto minmax(20px, 1fr) auto minmax(20px, 1fr) auto;
@@ -761,6 +1029,179 @@ onMounted(syncFromRoute)
 .progress-panel,
 .decision-layout,
 .report-ranking,
+.process-analysis {
+  margin-top: 16px;
+  padding: 24px 28px;
+}
+
+.analysis-timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.analysis-timeline details {
+  overflow: hidden;
+  border: 1px solid var(--hp-line);
+  border-radius: 14px;
+  background: var(--hp-surface);
+}
+
+.analysis-timeline summary {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.analysis-timeline summary::-webkit-details-marker {
+  display: none;
+}
+
+.analysis-round {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.analysis-timeline summary strong {
+  display: block;
+  font-size: 15px;
+}
+
+.analysis-timeline summary p {
+  margin: 4px 0 0;
+  color: var(--hp-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.analysis-timeline summary em {
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.analysis-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.analysis-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 16px;
+}
+
+.analysis-compare article {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px;
+  border-radius: 13px;
+  background: var(--hp-surface-2);
+}
+
+.analysis-compare article > span,
+.analysis-compare article > h3 {
+  grid-column: 1 / -1;
+}
+
+.analysis-compare article > span {
+  color: var(--hp-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.analysis-compare article h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.analysis-compare article > div {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.analysis-compare small {
+  color: var(--hp-muted);
+  font-size: 10.5px;
+}
+
+.analysis-compare strong {
+  font-size: 13px;
+}
+
+.analysis-compare article.is-best {
+  border: 1px solid #bfd6c6;
+  background: #f1f8f3;
+}
+
+.analysis-alternatives {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.analysis-alternatives article {
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--hp-line);
+  border-radius: 11px;
+  background: var(--hp-surface-2);
+}
+
+.analysis-alternatives span {
+  color: var(--hp-muted);
+  font-size: 11px;
+}
+
+.analysis-alternatives strong {
+  font-size: 13px;
+}
+
+.analysis-alternatives em {
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.analysis-reasons {
+  padding: 16px;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.analysis-reasons h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.analysis-reasons ul {
+  display: grid;
+  gap: 7px;
+  margin: 11px 0 0;
+  padding-left: 18px;
+  color: var(--hp-ink-2);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
 .report-layout {
   margin-top: 16px;
 }
@@ -1313,6 +1754,179 @@ onMounted(syncFromRoute)
   border-color: var(--hp-pink);
 }
 
+.process-analysis {
+  margin-top: 16px;
+  padding: 24px 28px;
+}
+
+.analysis-timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.analysis-timeline details {
+  overflow: hidden;
+  border: 1px solid var(--hp-line);
+  border-radius: 14px;
+  background: var(--hp-surface);
+}
+
+.analysis-timeline summary {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.analysis-timeline summary::-webkit-details-marker {
+  display: none;
+}
+
+.analysis-round {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.analysis-timeline summary strong {
+  display: block;
+  font-size: 15px;
+}
+
+.analysis-timeline summary p {
+  margin: 4px 0 0;
+  color: var(--hp-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.analysis-timeline summary em {
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.analysis-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.analysis-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 16px;
+}
+
+.analysis-compare article {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px;
+  border-radius: 13px;
+  background: var(--hp-surface-2);
+}
+
+.analysis-compare article > span,
+.analysis-compare article > h3 {
+  grid-column: 1 / -1;
+}
+
+.analysis-compare article > span {
+  color: var(--hp-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.analysis-compare article h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.analysis-compare article > div {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.analysis-compare small {
+  color: var(--hp-muted);
+  font-size: 10.5px;
+}
+
+.analysis-compare strong {
+  font-size: 13px;
+}
+
+.analysis-compare article.is-best {
+  border: 1px solid #bfd6c6;
+  background: #f1f8f3;
+}
+
+.analysis-alternatives {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.analysis-alternatives article {
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--hp-line);
+  border-radius: 11px;
+  background: var(--hp-surface-2);
+}
+
+.analysis-alternatives span {
+  color: var(--hp-muted);
+  font-size: 11px;
+}
+
+.analysis-alternatives strong {
+  font-size: 13px;
+}
+
+.analysis-alternatives em {
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.analysis-reasons {
+  padding: 16px;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.analysis-reasons h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.analysis-reasons ul {
+  display: grid;
+  gap: 7px;
+  margin: 11px 0 0;
+  padding-left: 18px;
+  color: var(--hp-ink-2);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
 .report-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, .75fr);
@@ -1547,6 +2161,29 @@ onMounted(syncFromRoute)
   margin-top: 22px;
 }
 
+.scenario-toggle {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.scenario-toggle button {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  color: var(--hp-ink);
+  background: var(--hp-surface-2);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.scenario-toggle button:hover {
+  border-color: var(--hp-ink);
+}
 .multiplayer-entry {
   display: flex;
   align-items: center;
@@ -1586,7 +2223,180 @@ onMounted(syncFromRoute)
   }
 
   .decision-layout,
-  .report-layout {
+  .process-analysis {
+  margin-top: 16px;
+  padding: 24px 28px;
+}
+
+.analysis-timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.analysis-timeline details {
+  overflow: hidden;
+  border: 1px solid var(--hp-line);
+  border-radius: 14px;
+  background: var(--hp-surface);
+}
+
+.analysis-timeline summary {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.analysis-timeline summary::-webkit-details-marker {
+  display: none;
+}
+
+.analysis-round {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.analysis-timeline summary strong {
+  display: block;
+  font-size: 15px;
+}
+
+.analysis-timeline summary p {
+  margin: 4px 0 0;
+  color: var(--hp-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.analysis-timeline summary em {
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.analysis-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.analysis-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 16px;
+}
+
+.analysis-compare article {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px;
+  border-radius: 13px;
+  background: var(--hp-surface-2);
+}
+
+.analysis-compare article > span,
+.analysis-compare article > h3 {
+  grid-column: 1 / -1;
+}
+
+.analysis-compare article > span {
+  color: var(--hp-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.analysis-compare article h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.analysis-compare article > div {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.analysis-compare small {
+  color: var(--hp-muted);
+  font-size: 10.5px;
+}
+
+.analysis-compare strong {
+  font-size: 13px;
+}
+
+.analysis-compare article.is-best {
+  border: 1px solid #bfd6c6;
+  background: #f1f8f3;
+}
+
+.analysis-alternatives {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.analysis-alternatives article {
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--hp-line);
+  border-radius: 11px;
+  background: var(--hp-surface-2);
+}
+
+.analysis-alternatives span {
+  color: var(--hp-muted);
+  font-size: 11px;
+}
+
+.analysis-alternatives strong {
+  font-size: 13px;
+}
+
+.analysis-alternatives em {
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.analysis-reasons {
+  padding: 16px;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.analysis-reasons h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.analysis-reasons ul {
+  display: grid;
+  gap: 7px;
+  margin: 11px 0 0;
+  padding-left: 18px;
+  color: var(--hp-ink-2);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+.report-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1596,6 +2406,72 @@ onMounted(syncFromRoute)
 }
 
 @media (max-width: 680px) {
+.analysis-timeline summary {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .analysis-timeline summary em {
+    grid-column: 2;
+  }
+
+  .analysis-compare,
+  .analysis-alternatives {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-compare article {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+.event-mobile-reminder {
+  position: sticky;
+  top: 72px;
+  z-index: 14;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #eadab0;
+  border-radius: 12px;
+  background: rgba(255, 250, 240, .98);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.event-mobile-reminder > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.event-mobile-reminder span {
+  color: #8a6a35;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.event-mobile-reminder strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-mobile-reminder button {
+  flex: none;
+  padding: 0;
+  border: 0;
+  color: var(--hp-blue-ink);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.event-detail-grid {
+  grid-template-columns: 1fr;
+}
+
   .sandbox-shell {
     width: min(100% - 24px, 1280px);
     padding-top: 82px;

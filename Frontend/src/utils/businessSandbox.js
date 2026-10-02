@@ -1,3 +1,5 @@
+import { ADDITIONAL_SANDBOX_SCENARIOS } from './businessSandboxExtraScenarios.js'
+
 const STORAGE_KEY = 'campus-business-sandbox-v3'
 const TOTAL_ROUNDS = 4
 
@@ -297,6 +299,8 @@ export const BUSINESS_SANDBOX_SCENARIOS = [
     ],
   },
 ]
+
+BUSINESS_SANDBOX_SCENARIOS.push(...ADDITIONAL_SANDBOX_SCENARIOS)
 
 export const BUSINESS_SANDBOX_SCENARIO = BUSINESS_SANDBOX_SCENARIOS[0]
 

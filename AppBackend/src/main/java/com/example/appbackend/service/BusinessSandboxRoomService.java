@@ -18,7 +18,7 @@ import java.util.*;
 @Service
 public class BusinessSandboxRoomService {
     private static final List<String> ROLES = List.of("PRESIDENT", "MARKET", "OPERATIONS", "FINANCE", "PRODUCT");
-    private static final Set<String> SCENARIOS = Set.of("campus-marketplace", "campus-coffee", "career-service");
+    private static final Set<String> SCENARIOS = Set.of("campus-marketplace", "campus-coffee", "career-service", "campus-convenience", "campus-fitness", "campus-delivery", "campus-study-room", "campus-pet-service", "campus-digital-repair", "campus-travel");
     private final BusinessSandboxRoomRepository repository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
