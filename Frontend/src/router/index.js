@@ -14,6 +14,9 @@ import PythonPracticeView from '../views/pythonOnline/PythonPracticeView.vue'
 import KnowledgeGraphView from '../views/KnowledgeGraphView.vue'
 import LearningResourceView from '../views/LearningResourceView.vue'
 import LearningPracticeView from '../views/LearningPracticeView.vue'
+import BusinessSandboxView from '../views/BusinessSandboxView.vue'
+import BusinessSandboxRoomsView from '../views/BusinessSandboxRoomsView.vue'
+import BusinessSandboxRoomView from '../views/BusinessSandboxRoomView.vue'
 import CommunityView from '../views/CommunityView.vue'
 import AiWritingView from '../views/aiStudio/AiWritingView.vue'
 import AiImageView from '../views/aiStudio/AiImageView.vue'
@@ -121,6 +124,9 @@ const routes = [
   { path: '/learning/python-and-algorithm', redirect: { name: 'learning-practice', query: { tab: 'python' } } },
   { path: '/learning/courses-and-special', redirect: { name: 'learning-practice', query: { tab: 'courses' } } },
   { path: '/learning/project-practice', redirect: { name: 'learning-practice', query: { tab: 'projects' } } },
+  { path: '/learning/projects/sandbox', name: 'business-sandbox', component: BusinessSandboxView },
+  { path: '/learning/projects/sandbox/rooms', name: 'business-sandbox-rooms', component: BusinessSandboxRoomsView },
+  { path: '/learning/projects/sandbox/rooms/:roomId', name: 'business-sandbox-room', component: BusinessSandboxRoomView },
   { path: '/learning/my-practice', redirect: { name: 'learning-practice', query: { tab: 'practice' } } },
   { path: '/employment/radar', redirect: '/jobs/hot' },
   { path: '/employment/aggregate', redirect: '/jobs/hot' },

@@ -477,7 +477,19 @@ onMounted(loadLearningData)
             </section>
           </template>
           <div v-else class="empty"><strong>当前学习路径中暂无项目节点</strong><p>先完成基础学习路径，项目实践任务会出现在这里。</p><button type="button" class="btn" @click="router.push('/learning/python/plan')">进入个性化学习路径</button></div>
-          <section class="panel section"><div class="head"><div><small>规划中</small><h2>拓展实训</h2></div></div><div class="special-row"><span class="special-chip">企业模拟</span><span class="special-chip">商业沙盘</span><p class="note">用于后续接入企业任务、角色协作与经营沙盘，开放前不会显示虚构项目。</p></div></section>
+          <section class="panel section">
+            <div class="head">
+              <div><small>拓展实训</small><h2>商业沙盘</h2></div>
+              <button type="button" class="btn btn--primary" @click="router.push('/learning/projects/sandbox')">进入沙盘</button>
+            </div>
+            <p class="note">经营一家校园二手交易平台，连续完成四轮推广、服务、手续费和校区扩张决策，结束后生成经营报告和能力证据。</p>
+            <div class="special-row">
+              <span class="special-chip">经营决策</span>
+              <span class="special-chip">用户增长</span>
+              <span class="special-chip">风险控制</span>
+              <span class="special-chip">企业模拟 · 后续开放</span>
+            </div>
+          </section>
         </template>
 
         <template v-else>
