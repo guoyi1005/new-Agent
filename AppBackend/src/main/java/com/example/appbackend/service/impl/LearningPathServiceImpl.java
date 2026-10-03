@@ -32,6 +32,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import com.example.appbackend.util.KnowledgePointNames;
 
 @Service
 public class LearningPathServiceImpl implements LearningPathService {
@@ -437,8 +438,8 @@ public class LearningPathServiceImpl implements LearningPathService {
         view.setId(item.getId());
         view.setPathId(item.getPathId());
         view.setItemKey(item.getItemKey());
-        view.setKnowledgePoint(item.getKnowledgePoint());
-        view.setObjective(item.getObjective());
+        view.setKnowledgePoint(KnowledgePointNames.display(item.getKnowledgePoint()));
+        view.setObjective(KnowledgePointNames.display(item.getObjective()));
         view.setTargetMastery(item.getTargetMastery());
         view.setPriority(item.getPriority());
         view.setSequenceNo(item.getSequenceNo());
@@ -502,7 +503,7 @@ public class LearningPathServiceImpl implements LearningPathService {
         view.setUserId(mastery.getUserId());
         view.setCourseKey(mastery.getCourseKey());
         view.setKnowledgePointKey(mastery.getKnowledgePointKey());
-        view.setKnowledgePointName(mastery.getKnowledgePointName());
+        view.setKnowledgePointName(KnowledgePointNames.display(mastery.getKnowledgePointName()));
         view.setLastAttemptId(mastery.getLastAttemptId());
         view.setAttemptCount(mastery.getAttemptCount());
         view.setCorrectCount(mastery.getCorrectCount());

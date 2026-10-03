@@ -47,18 +47,8 @@ import ExamTakingView from '../views/ExamTakingView.vue'
 import ExamResultView from '../views/ExamResultView.vue'
 import ExamDetailView from '../views/ExamDetailView.vue'
 import ExamHistoryView from '../views/ExamHistoryView.vue'
+import PaperHistoryView from '../views/paper/PaperHistoryView.vue'
 import PaperHomeView from '../views/paper/PaperHomeView.vue'
-import PaperMineView from '../views/paper/PaperMineView.vue'
-import PaperInfoView from '../views/paper/PaperInfoView.vue'
-import PaperSelectView from '../views/paper/PaperSelectView.vue'
-import PaperSelectedView from '../views/paper/PaperSelectedView.vue'
-import PaperPreviewView from '../views/paper/PaperPreviewView.vue'
-import PaperLayoutView from '../views/paper/PaperLayoutView.vue'
-import PaperPrintPreviewView from '../views/paper/PaperPrintPreviewView.vue'
-import PaperBankView from '../views/paper/PaperBankView.vue'
-import PaperBankEditView from '../views/paper/PaperBankEditView.vue'
-import PaperBankDetailView from '../views/paper/PaperBankDetailView.vue'
-import PaperQuestionDetailView from '../views/paper/PaperQuestionDetailView.vue'
 import ResumeView from '../views/ResumeView.vue'
 import ResumeWorkspaceView from '../views/ResumeWorkspaceView.vue'
 import ResumeDesigner from '../views/ResumeDesigner.vue'
@@ -168,17 +158,7 @@ const routes = [
   { path: '/ai-studio/image', name: 'ai-studio-image', component: AiImageView },
   { path: '/ai-studio/exam', redirect: '/paper' },
   { path: '/paper', name: 'paper-home', component: PaperHomeView },
-  { path: '/paper/mine', name: 'paper-mine', component: PaperMineView },
-  { path: '/paper/info', name: 'paper-info', component: PaperInfoView },
-  { path: '/paper/select', name: 'paper-select', component: PaperSelectView },
-  { path: '/paper/selected', name: 'paper-selected', component: PaperSelectedView },
-  { path: '/paper/preview', name: 'paper-preview', component: PaperPreviewView },
-  { path: '/paper/layout', name: 'paper-layout', component: PaperLayoutView },
-  { path: '/paper/print', name: 'paper-print', component: PaperPrintPreviewView },
-  { path: '/paper/banks', name: 'paper-banks', component: PaperBankView },
-  { path: '/paper/banks/edit', name: 'paper-bank-edit', component: PaperBankEditView },
-  { path: '/paper/banks/:id', name: 'paper-bank-detail', component: PaperBankDetailView },
-  { path: '/paper/questions/:questionId', name: 'paper-question-detail', component: PaperQuestionDetailView },
+  { path: '/paper/mine', name: 'paper-mine', component: PaperHistoryView },
   { path: '/ai-studio/presentation', name: 'ai-studio-presentation', component: AiPresentationView },
   { path: '/ai-studio/mind_map', name: 'ai-studio-mind-map', component: AiMindMapView },
   { path: '/ai-studio/architecture', name: 'ai-studio-architecture', component: AiArchitectureView },

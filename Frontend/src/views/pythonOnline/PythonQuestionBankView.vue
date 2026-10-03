@@ -203,9 +203,9 @@ onMounted(loadProblems)
 
 <style scoped>
 .py-bank-shell {
-  width: min(100%, 1280px);
+  width: min(1400px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 12px 20px 48px;
+  padding: 12px 0 48px;
 }
 
 .py-bank-header {
@@ -219,7 +219,7 @@ onMounted(loadProblems)
   .py-bank-header__intro h1 {
     margin: 0;
     color: var(--hp-ink);
-  font-size: 28px;
+  font-size: 26px;
 }
 
   .py-bank-header__intro p {
@@ -261,19 +261,19 @@ onMounted(loadProblems)
 .py-bank-progress__track {
   height: 6px;
   border-radius: 999px;
-  background: #eef2f6;
+  background: var(--hp-surface-2);
   overflow: hidden;
 }
 
 .py-bank-progress__fill {
   height: 100%;
   border-radius: 999px;
-  background: #2f76bd;
+  background: var(--hp-blue-ink);
 }
 
 .py-bank-progress__note {
   margin: 10px 0 18px;
-  color: #98a2b3;
+  color: var(--hp-muted);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -281,12 +281,12 @@ onMounted(loadProblems)
 .py-bank-filter + .py-bank-filter {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #eef2f6;
+  border-top: 1px solid var(--hp-surface-2);
 }
 
 .py-bank-filter h2 {
   margin: 0 0 10px;
-  color: #667085;
+  color: var(--hp-muted);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -304,22 +304,22 @@ onMounted(loadProblems)
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  border: 1px solid #e1e7ed;
+  border: 1px solid var(--hp-line);
   border-radius: 6px;
-  color: #344054;
-  background: #fff;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface);
   font-size: 13px;
 }
 
 .py-bank-chip span {
-  color: #98a2b3;
+  color: var(--hp-muted);
   font-size: 11px;
 }
 
 .py-bank-chip--active {
-  border-color: #b8d4ef;
-  color: #2f76bd;
-  background: #eaf4fd;
+  border-color: var(--hp-line-strong);
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
 }
 
 .py-bank-tags {
@@ -333,26 +333,26 @@ onMounted(loadProblems)
   align-items: center;
   gap: 4px;
   padding: 5px 9px;
-  border: 1px solid #e1e7ed;
+  border: 1px solid var(--hp-line);
   border-radius: 999px;
-  color: #667085;
-  background: #f8fafc;
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
   font-size: 12px;
 }
 
 .py-bank-tag--active {
-  border-color: #b8d4ef;
-  color: #2f76bd;
-  background: #eaf4fd;
+  border-color: var(--hp-line-strong);
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
 }
 
 .py-bank-clear {
   width: 100%;
   margin-top: 16px;
   padding: 8px;
-  border: 1px dashed #d0d5dd;
+  border: 1px dashed var(--hp-line-strong);
   border-radius: 6px;
-  color: #667085;
+  color: var(--hp-muted);
   background: transparent;
   font-size: 13px;
 }
@@ -367,7 +367,7 @@ onMounted(loadProblems)
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid #eef2f6;
+  border-bottom: 1px solid var(--hp-surface-2);
 }
 
 .py-bank-search {
@@ -377,9 +377,9 @@ onMounted(loadProblems)
   flex: 1;
   max-width: 420px;
   padding: 0 12px;
-  border: 1px solid #e1e7ed;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--hp-surface-2);
 }
 
 .py-bank-search img {
@@ -403,8 +403,8 @@ onMounted(loadProblems)
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  color: #98a2b3;
-  background: #eef2f6;
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
   font-size: 16px;
   line-height: 1;
 }
@@ -412,17 +412,17 @@ onMounted(loadProblems)
 .py-bank-ai {
   min-height: 34px;
   padding: 0 12px;
-  border: 1px solid #b9c8d2;
+  border: 1px solid var(--hp-line-strong);
   border-radius: 999px;
-  color: #36566c;
-  background: #eef4f7;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface-2);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .py-bank-count {
-  color: #98a2b3;
+  color: var(--hp-muted);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -438,9 +438,9 @@ onMounted(loadProblems)
 
 .py-bank-table th {
   padding: 12px 14px;
-  border-bottom: 1px solid #eef2f6;
-  color: #667085;
-  background: #fafbfc;
+  border-bottom: 1px solid var(--hp-surface-2);
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
   font-size: 12px;
   font-weight: 700;
   text-align: left;
@@ -449,7 +449,7 @@ onMounted(loadProblems)
 
 .py-bank-table td {
   padding: 14px;
-  border-bottom: 1px solid #f1f3f6;
+  border-bottom: 1px solid var(--hp-surface-2);
   vertical-align: middle;
 }
 
@@ -460,14 +460,14 @@ onMounted(loadProblems)
 
 .py-bank-row:hover,
 .py-bank-row:focus-visible {
-  background: #f8fbff;
+  background: var(--hp-tint);
   outline: none;
 }
 
 .col-status { width: 52px; }
-.col-no { width: 56px; color: #667085; font-size: 13px; }
+.col-no { width: 56px; color: var(--hp-muted); font-size: 13px; }
 .col-diff { width: 72px; }
-.col-rate { width: 80px; color: #667085; font-size: 13px; }
+.col-rate { width: 80px; color: var(--hp-muted); font-size: 13px; }
 .col-action { width: 100px; text-align: right; }
 
 .py-bank-status {
@@ -475,15 +475,15 @@ onMounted(loadProblems)
   place-items: center;
   width: 22px;
   height: 22px;
-  border: 1.5px solid #d0d5dd;
+  border: 1.5px solid var(--hp-line-strong);
   border-radius: 50%;
   color: transparent;
 }
 
 .py-bank-status--done {
-  border-color: #12b76a;
-  background: #12b76a;
-  color: #fff;
+  border-color: var(--hp-green-ink);
+  background: var(--hp-green-ink);
+  color: var(--hp-surface);
 }
 
 .py-bank-status svg {
@@ -501,8 +501,8 @@ onMounted(loadProblems)
   margin-left: 8px;
   padding: 2px 6px;
   border-radius: 4px;
-  color: #667085;
-  background: #f2f4f7;
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
   font-size: 11px;
 }
 
@@ -514,17 +514,17 @@ onMounted(loadProblems)
   font-weight: 600;
 }
 
-.py-diff--easy { color: #027a48; background: #ecfdf3; }
-.py-diff--medium { color: #6941c6; background: #f4f3ff; }
-.py-diff--hard { color: #b42318; background: #fef3f2; }
+.py-diff--easy { color: var(--hp-green-ink); background: var(--hp-green); }
+.py-diff--medium { color: var(--hp-pink-ink); background: var(--hp-pink); }
+.py-diff--hard { color: var(--hp-pink-ink); background: var(--hp-pink); }
 
 .py-bank-tag-inline {
   display: inline-block;
   margin-right: 4px;
   padding: 2px 7px;
   border-radius: 4px;
-  color: #667085;
-  background: #f2f4f7;
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
   font-size: 11px;
 }
 
@@ -538,18 +538,18 @@ onMounted(loadProblems)
 
 .py-bank-skill {
   padding: 2px 7px;
-  border: 1px solid #d3e0e9;
+  border: 1px solid var(--hp-line);
   border-radius: 999px;
-  color: #2f76bd;
-  background: #eef5fa;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
   font-size: 11px;
 }
 
 .py-bank-go {
   padding: 6px 12px;
   border-radius: 6px;
-  color: #2f76bd;
-  background: #eaf4fd;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
   font-size: 13px;
   font-weight: 600;
   opacity: 0;
@@ -565,7 +565,7 @@ onMounted(loadProblems)
 .py-bank-state {
   padding: 48px 24px;
   text-align: center;
-  color: #667085;
+  color: var(--hp-muted);
 }
 
 .py-bank-empty p,

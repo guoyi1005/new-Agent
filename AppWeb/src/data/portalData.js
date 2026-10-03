@@ -16,6 +16,15 @@ export const portalGroups = [
     ],
   },
   {
+    label: '校友社区',
+    items: [
+      { path: '/forum/posts', label: '帖子管理', icon: 'message' },
+      { path: '/forum/topics', label: '话题管理', icon: 'tag' },
+      { path: '/forum/comments', label: '评论管理', icon: 'comment' },
+      { path: '/forum/reports', label: '举报处理', icon: 'warning' },
+    ],
+  },
+  {
     label: '会议模块',
     items: [
       { path: '/meeting/history', label: '会议历史', icon: 'video-camera', pageKey: 'meeting-history' },
@@ -23,10 +32,13 @@ export const portalGroups = [
     ],
   },
   {
-    label: '课程学习',
+    label: '学习实践管理',
     items: [
       { path: '/learning/courses', label: '校园课程管理', icon: 'book' },
       { path: '/learning/python-problems', label: 'Python 题库管理', icon: 'appstore' },
+      { path: '/learning/external-courses', label: '外部精选资源', icon: 'file-search' },
+      { path: '/learning/taxonomy', label: '学习内容配置', icon: 'tags' },
+      { path: '/learning/stats', label: '学习数据看板', icon: 'line-chart' },
     ],
   },
   {

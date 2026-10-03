@@ -1,0 +1,1909 @@
+[
+  {
+    "course": "测试基础",
+    "paperTitle": "《测试基础》课程测验",
+    "knowledgePoints": [
+      "software-testing",
+      "test-case-design"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "关于软件缺陷的生命周期，下列顺序正确的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "新建 → 修复 → 关闭 → 验证"
+          },
+          {
+            "key": "B",
+            "text": "新建 → 指派 → 修复 → 验证 → 关闭"
+          },
+          {
+            "key": "C",
+            "text": "指派 → 新建 → 验证 → 修复 → 关闭"
+          },
+          {
+            "key": "D",
+            "text": "新建 → 验证 → 指派 → 修复 → 关闭"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "缺陷通常经历新建、指派、修复，验证通过后关闭。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "下列哪一项属于非功能性测试？",
+        "options": [
+          {
+            "key": "A",
+            "text": "登录功能测试"
+          },
+          {
+            "key": "B",
+            "text": "购物车结算流程测试"
+          },
+          {
+            "key": "C",
+            "text": "系统在 500 并发下的响应时间测试"
+          },
+          {
+            "key": "D",
+            "text": "订单状态流转测试"
+          }
+        ],
+        "correctOption": "C",
+        "correct": null,
+        "analysis": "性能、安全、兼容性等不属于“功能是否正确”，统称非功能性测试。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "发现一个缺陷后，最重要的第一步是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "直接修改代码"
+          },
+          {
+            "key": "B",
+            "text": "稳定复现并记录复现步骤、预期结果与实际结果"
+          },
+          {
+            "key": "C",
+            "text": "先通知所有相关同事"
+          },
+          {
+            "key": "D",
+            "text": "先标记为不修复"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "缺陷必须可复现且信息完整，修复者才能高效定位问题。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "测试用例必须写明预期结果，否则无法判定用例是否通过。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "没有预期结果就无法对比实际结果，用例无法判定通过与否。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "只要测试全部通过，就说明软件不存在任何缺陷。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "测试只能说明未发现缺陷，不能证明软件没有缺陷。"
+      }
+    ]
+  },
+  {
+    "course": "Linux 与网络",
+    "paperTitle": "《Linux 与网络》课程测验",
+    "knowledgePoints": [
+      "linux",
+      "networking"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "要查看某台机器上 8080 端口被哪个进程占用，最合适的命令是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "ls -l 8080"
+          },
+          {
+            "key": "B",
+            "text": "netstat -tunlp | grep 8080"
+          },
+          {
+            "key": "C",
+            "text": "cat 8080"
+          },
+          {
+            "key": "D",
+            "text": "ps 8080"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "netstat 配合 grep 可以查看端口监听状态与对应进程。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "HTTP 状态码 404 表示？",
+        "options": [
+          {
+            "key": "A",
+            "text": "服务器内部错误"
+          },
+          {
+            "key": "B",
+            "text": "请求已成功处理"
+          },
+          {
+            "key": "C",
+            "text": "请求的资源不存在"
+          },
+          {
+            "key": "D",
+            "text": "没有访问权限"
+          }
+        ],
+        "correctOption": "C",
+        "correct": null,
+        "analysis": "404 Not Found 表示服务器找不到请求的资源。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "要实时查看日志文件新增的内容，应使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "cat app.log"
+          },
+          {
+            "key": "B",
+            "text": "tail -f app.log"
+          },
+          {
+            "key": "C",
+            "text": "head app.log"
+          },
+          {
+            "key": "D",
+            "text": "wc -l app.log"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "tail -f 会持续输出文件新增内容，适合观察实时日志。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "Linux 中每个文件都有读、写、执行三类权限，可分别针对属主、属组和其他用户设置。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "这正是 Linux 权限模型的基本设计，用 rwx 三类权限乘三种身份表示。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "HTTP 是无状态协议，因此服务器默认不会记住两次请求来自同一个用户。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "HTTP 本身不保存状态，需要靠 Cookie、Session 或 Token 维持会话。"
+      }
+    ]
+  },
+  {
+    "course": "Web 功能测试",
+    "paperTitle": "《Web 功能测试》课程测验",
+    "knowledgePoints": [
+      "web-testing",
+      "test-case-design"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "测试登录功能时，用例最应该覆盖的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "只测正确的用户名和密码"
+          },
+          {
+            "key": "B",
+            "text": "正确凭证、错误密码、空值、超长输入等正常与边界场景"
+          },
+          {
+            "key": "C",
+            "text": "只测空值"
+          },
+          {
+            "key": "D",
+            "text": "只测超长输入"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "功能测试要同时覆盖正常路径与异常、边界输入。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "浏览器兼容性测试的主要目的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "提升服务器性能"
+          },
+          {
+            "key": "B",
+            "text": "验证页面在不同浏览器与版本下功能与样式一致"
+          },
+          {
+            "key": "C",
+            "text": "减少代码量"
+          },
+          {
+            "key": "D",
+            "text": "提高数据库查询速度"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "兼容性测试关注的是同一功能在不同环境下是否表现一致。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "页面上传文件的功能，除正常文件外还应重点测试？",
+        "options": [
+          {
+            "key": "A",
+            "text": "只测大文件"
+          },
+          {
+            "key": "B",
+            "text": "文件类型限制、超大文件、空文件、重复上传"
+          },
+          {
+            "key": "C",
+            "text": "只测图片"
+          },
+          {
+            "key": "D",
+            "text": "只测空文件"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "上传类功能的风险集中在类型、体积、空文件和重复提交。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "前端已经做了必填校验，后端就不需要再校验参数。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "任何人都可以绕过前端直接调接口，后端必须独立校验。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "功能测试应依据需求或用例判定结果，而不是凭个人感觉。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "判定依据是需求与用例中的预期结果，主观感觉不能作为通过标准。"
+      }
+    ]
+  },
+  {
+    "course": "自动化测试",
+    "paperTitle": "《自动化测试》课程测验",
+    "knowledgePoints": [
+      "automation-testing",
+      "software-testing"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "UI 自动化中最不稳定的元素定位方式是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "id 属性"
+          },
+          {
+            "key": "B",
+            "text": "页面绝对坐标或随机生成的 class"
+          },
+          {
+            "key": "C",
+            "text": "稳定的 data-testid"
+          },
+          {
+            "key": "D",
+            "text": "name 属性"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "坐标和随机 class 会随页面调整而失效，维护成本极高。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "自动化用例执行失败时，第一步应该做什么？",
+        "options": [
+          {
+            "key": "A",
+            "text": "直接删除该用例"
+          },
+          {
+            "key": "B",
+            "text": "先判断是产品缺陷、用例问题还是环境问题，再决定修代码还是修用例"
+          },
+          {
+            "key": "C",
+            "text": "直接忽略"
+          },
+          {
+            "key": "D",
+            "text": "反复重跑直到通过"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "失败原因不同，处理方式完全不同，先定位再动手。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "关于自动化测试的适用范围，说法正确的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "所有手工用例都应自动化"
+          },
+          {
+            "key": "B",
+            "text": "优先覆盖回归频繁、流程稳定的核心用例"
+          },
+          {
+            "key": "C",
+            "text": "自动化可以完全替代手工测试"
+          },
+          {
+            "key": "D",
+            "text": "自动化只用于性能测试"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "自动化的收益来自高频回归与稳定流程，探索性测试仍依赖人工。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "脚本里固定等待时间（sleep）写得越多，用例就越稳定。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "固定等待既拖慢执行又无法应对波动，应改用显式等待条件。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "自动化用例也应纳入版本管理，并随需求变化及时维护。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "用例是代码资产，不维护就会大面积失效。"
+      }
+    ]
+  },
+  {
+    "course": "性能测试",
+    "paperTitle": "《性能测试》课程测验",
+    "knowledgePoints": [
+      "performance-testing"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "衡量系统每秒能处理多少请求的指标是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "RT（响应时间）"
+          },
+          {
+            "key": "B",
+            "text": "TPS / QPS"
+          },
+          {
+            "key": "C",
+            "text": "CPU 使用率"
+          },
+          {
+            "key": "D",
+            "text": "IOPS"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "TPS/QPS 表示单位时间处理的事务或请求数。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "开始压测之前，最应该先明确的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "脚本用什么语言写"
+          },
+          {
+            "key": "B",
+            "text": "业务场景、目标并发量与性能指标基线"
+          },
+          {
+            "key": "C",
+            "text": "用哪台机器"
+          },
+          {
+            "key": "D",
+            "text": "报告模板长什么样"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "没有场景与指标基线，压测结果无法判断是否达标。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "压测中响应时间随并发上升急剧变长、错误率明显升高，通常说明？",
+        "options": [
+          {
+            "key": "A",
+            "text": "系统容量已接近瓶颈"
+          },
+          {
+            "key": "B",
+            "text": "系统性能表现优异"
+          },
+          {
+            "key": "C",
+            "text": "网络中断"
+          },
+          {
+            "key": "D",
+            "text": "测试脚本存在语法错误"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "这是典型的容量拐点信号，需要定位瓶颈并评估扩容或优化。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "性能测试只需关注响应时间，不必关注吞吐量和资源占用。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "响应时间、吞吐量与资源占用需要结合分析才能定位瓶颈。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "压测应在接近生产环境的配置与数据量下进行，结论才更有参考价值。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "环境与数据差距过大会让压测结论失去指导意义。"
+      }
+    ]
+  },
+  {
+    "course": "Python 编程基础",
+    "paperTitle": "《Python 编程基础》课程测验",
+    "knowledgePoints": [
+      "python-basic",
+      "python-advanced"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "表达式 len([1, 2, 3]) 的结果是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "2"
+          },
+          {
+            "key": "B",
+            "text": "3"
+          },
+          {
+            "key": "C",
+            "text": "4"
+          },
+          {
+            "key": "D",
+            "text": "抛出异常"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "len 返回序列长度，列表有 3 个元素。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "下列哪一个是不可变序列？",
+        "options": [
+          {
+            "key": "A",
+            "text": "list"
+          },
+          {
+            "key": "B",
+            "text": "tuple"
+          },
+          {
+            "key": "C",
+            "text": "set"
+          },
+          {
+            "key": "D",
+            "text": "dict"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "tuple 创建后不能修改元素，属于不可变序列。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "在 Python 中定义函数使用的关键字是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "function"
+          },
+          {
+            "key": "B",
+            "text": "def"
+          },
+          {
+            "key": "C",
+            "text": "define"
+          },
+          {
+            "key": "D",
+            "text": "func"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "Python 用 def 定义函数。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "Python 的 dict 中，键必须是可哈希的对象。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "dict 依赖哈希定位键，因此键必须可哈希，例如数字、字符串、元组。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "捕获异常时应尽量写成 except Exception，范围越宽越好。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "过宽的捕获会掩盖真正的错误，应尽量精确捕获具体异常类型。"
+      }
+    ]
+  },
+  {
+    "course": "MySQL 数据库基础",
+    "paperTitle": "《MySQL 数据库基础》课程测验",
+    "knowledgePoints": [
+      "mysql"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "查询 users 表中年龄大于 18 的记录，正确的语句是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "SELECT * FROM users WHERE age > 18"
+          },
+          {
+            "key": "B",
+            "text": "SELECT * FROM users WHEN age > 18"
+          },
+          {
+            "key": "C",
+            "text": "SELECT users WHERE age > 18"
+          },
+          {
+            "key": "D",
+            "text": "SELECT * users WHERE age > 18"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "条件筛选使用 WHERE 子句。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "为了避免大表查询时全表扫描，通常应在高频查询列上建立？",
+        "options": [
+          {
+            "key": "A",
+            "text": "视图"
+          },
+          {
+            "key": "B",
+            "text": "索引"
+          },
+          {
+            "key": "C",
+            "text": "触发器"
+          },
+          {
+            "key": "D",
+            "text": "存储过程"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "索引能显著减少检索时需要扫描的数据行。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "统计订单表总记录数应使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "COUNT(*)"
+          },
+          {
+            "key": "B",
+            "text": "SUM(*)"
+          },
+          {
+            "key": "C",
+            "text": "TOTAL(*)"
+          },
+          {
+            "key": "D",
+            "text": "LEN(*)"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "COUNT(*) 用于统计行数；SUM 用于数值求和。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "主键列的值必须唯一，且不能为 NULL。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "主键用于唯一标识一行，不允许重复也不允许为空。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "查询时使用 SELECT * 总是比只取需要的字段更高效。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "SELECT * 会读取并传输多余字段，按需取字段更高效。"
+      }
+    ]
+  },
+  {
+    "course": "FastAPI 接口开发",
+    "paperTitle": "《FastAPI 接口开发》课程测验",
+    "knowledgePoints": [
+      "fastapi",
+      "python-advanced"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "在 FastAPI 中定义一个 GET 接口，使用的装饰器是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "@app.route(\"/\")"
+          },
+          {
+            "key": "B",
+            "text": "@app.get(\"/\")"
+          },
+          {
+            "key": "C",
+            "text": "@app.request(\"/\")"
+          },
+          {
+            "key": "D",
+            "text": "@app.path(\"/\")"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "FastAPI 用 @app.get 等方法按 HTTP 动词声明路由。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "FastAPI 自动生成的交互式接口文档默认地址是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "/docs"
+          },
+          {
+            "key": "B",
+            "text": "/api"
+          },
+          {
+            "key": "C",
+            "text": "/swagger.json"
+          },
+          {
+            "key": "D",
+            "text": "/readme"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "/docs 是内置的交互式文档页面。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "对请求体做类型校验与结构化定义，推荐使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "手写 if 判断"
+          },
+          {
+            "key": "B",
+            "text": "Pydantic 模型"
+          },
+          {
+            "key": "C",
+            "text": "全局变量"
+          },
+          {
+            "key": "D",
+            "text": "字符串替换"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "Pydantic 模型声明字段类型与约束，由框架自动校验。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "FastAPI 基于 Python 类型注解自动完成参数校验与接口文档生成。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "类型注解是 FastAPI 校验与文档能力的来源。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "接口出错时也应统一返回 200，把错误信息写在响应体里即可。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "应按语义返回 4xx/5xx 状态码，便于调用方与监控识别异常。"
+      }
+    ]
+  },
+  {
+    "course": "Java 程序设计基础",
+    "paperTitle": "《Java 程序设计基础》课程测验",
+    "knowledgePoints": [
+      "java-basic"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "Java 中表示“继承一个类”的关键字是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "implements"
+          },
+          {
+            "key": "B",
+            "text": "extends"
+          },
+          {
+            "key": "C",
+            "text": "inherit"
+          },
+          {
+            "key": "D",
+            "text": "super"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "extends 用于类继承；implements 用于实现接口。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "关于 Java 的 String，说法正确的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "String 是可变对象"
+          },
+          {
+            "key": "B",
+            "text": "String 对象创建后内容不可变"
+          },
+          {
+            "key": "C",
+            "text": "String 不能用 + 拼接"
+          },
+          {
+            "key": "D",
+            "text": "String 不能比较内容是否相等"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "String 不可变，每次“修改”都会产生新对象。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "Java 中用于捕获异常的结构是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "if-else"
+          },
+          {
+            "key": "B",
+            "text": "try-catch"
+          },
+          {
+            "key": "C",
+            "text": "switch-case"
+          },
+          {
+            "key": "D",
+            "text": "for-each"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "try-catch 用于捕获并处理异常。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "Java 是强类型语言，声明变量时必须指定类型。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "Java 变量声明需要明确类型，编译期即做类型检查。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "Java 中一个类可以同时继承多个类。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "类只能单继承，但可以实现多个接口。"
+      }
+    ]
+  },
+  {
+    "course": "Spring Boot 后端开发",
+    "paperTitle": "《Spring Boot 后端开发》课程测验",
+    "knowledgePoints": [
+      "spring-boot",
+      "mysql",
+      "redis"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "在 Spring 中声明一个返回 JSON 的 REST 控制器，应使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "@Controller"
+          },
+          {
+            "key": "B",
+            "text": "@RestController"
+          },
+          {
+            "key": "C",
+            "text": "@Service"
+          },
+          {
+            "key": "D",
+            "text": "@Repository"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "@RestController 等价于 @Controller 加 @ResponseBody。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "把 URL 路径中的占位符绑定到方法参数，应使用哪个注解？",
+        "options": [
+          {
+            "key": "A",
+            "text": "@RequestParam"
+          },
+          {
+            "key": "B",
+            "text": "@PathVariable"
+          },
+          {
+            "key": "C",
+            "text": "@RequestBody"
+          },
+          {
+            "key": "D",
+            "text": "@Autowired"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "@PathVariable 用于绑定路径变量，@RequestParam 绑定查询参数。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "把一个普通类交给 Spring 容器管理，最常用的注解是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "@Component"
+          },
+          {
+            "key": "B",
+            "text": "@Override"
+          },
+          {
+            "key": "C",
+            "text": "@Deprecated"
+          },
+          {
+            "key": "D",
+            "text": "@SafeVarargs"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "@Component 及其派生注解（@Service、@Repository）用于声明 Bean。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "Spring Boot 的自动配置会根据引入的依赖自动装配常用组件，减少样板配置。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "自动配置是 Spring Boot 的核心特性之一。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "在 Controller 中直接编写 SQL 访问数据库是推荐的分层做法。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "应按 Controller-Service-Repository 分层，SQL 属于数据访问层。"
+      }
+    ]
+  },
+  {
+    "course": "前端开发基础",
+    "paperTitle": "《前端开发基础》课程测验",
+    "knowledgePoints": [
+      "html-css",
+      "javascript"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "表示页面主要内容区域的语义化标签是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "<main>"
+          },
+          {
+            "key": "B",
+            "text": "<div>"
+          },
+          {
+            "key": "C",
+            "text": "<font>"
+          },
+          {
+            "key": "D",
+            "text": "<center>"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "<main> 明确表达主要内容区域，利于可访问性与 SEO。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "让子元素横向弹性排布并自动分配剩余空间，应设置？",
+        "options": [
+          {
+            "key": "A",
+            "text": "display: block"
+          },
+          {
+            "key": "B",
+            "text": "display: flex"
+          },
+          {
+            "key": "C",
+            "text": "display: table"
+          },
+          {
+            "key": "D",
+            "text": "display: inline"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "flex 布局可沿主轴排列子元素并自动分配空间。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "在 JavaScript 中声明一个不会被重新赋值的变量，应优先使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "var"
+          },
+          {
+            "key": "B",
+            "text": "let"
+          },
+          {
+            "key": "C",
+            "text": "const"
+          },
+          {
+            "key": "D",
+            "text": "static"
+          }
+        ],
+        "correctOption": "C",
+        "correct": null,
+        "analysis": "const 声明后不能重新赋值，语义更明确。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "语义化标签只影响样式，对可访问性和 SEO 没有帮助。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "语义化标签能帮助屏幕阅读器与搜索引擎理解页面结构。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "移动端适配需要设置视口并使用弹性布局，而不是写死像素宽度。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "固定像素宽度在多种屏幕尺寸下会溢出或错位。"
+      }
+    ]
+  },
+  {
+    "course": "Vue 3 组件开发",
+    "paperTitle": "《Vue 3 组件开发》课程测验",
+    "knowledgePoints": [
+      "vue3",
+      "javascript"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "Vue 3 中创建响应式对象最常用的 API 是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "reactive"
+          },
+          {
+            "key": "B",
+            "text": "useState"
+          },
+          {
+            "key": "C",
+            "text": "createStore"
+          },
+          {
+            "key": "D",
+            "text": "observable"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "reactive 用于创建响应式对象，ref 用于包装基本类型。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "父组件向子组件传递数据应使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "props"
+          },
+          {
+            "key": "B",
+            "text": "emit"
+          },
+          {
+            "key": "C",
+            "text": "slot"
+          },
+          {
+            "key": "D",
+            "text": "provide"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "父传子用 props；子传父用 emit 触发事件。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "子组件向父组件发送事件应使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "emit"
+          },
+          {
+            "key": "B",
+            "text": "props"
+          },
+          {
+            "key": "C",
+            "text": "$refs"
+          },
+          {
+            "key": "D",
+            "text": "$slots"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "子组件通过 emit 派发事件把数据回传给父组件。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "使用组合式 API 时，把相关逻辑抽成可复用的函数是推荐做法。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "组合式 API 的初衷就是让逻辑可以按功能组合与复用。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "v-for 渲染列表时应提供稳定的 key，否则可能引起复用错乱。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "稳定 key 帮助 Vue 正确复用与移动节点，避免状态错位。"
+      }
+    ]
+  },
+  {
+    "course": "TypeScript 与前端工程化",
+    "paperTitle": "《TypeScript 与前端工程化》课程测验",
+    "knowledgePoints": [
+      "typescript",
+      "frontend-engineering"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "TypeScript 相比 JavaScript 最核心的增强是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "运行速度更快"
+          },
+          {
+            "key": "B",
+            "text": "静态类型系统，可在编译期发现类型错误"
+          },
+          {
+            "key": "C",
+            "text": "不再需要编译"
+          },
+          {
+            "key": "D",
+            "text": "只能在浏览器运行"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "TypeScript 的价值在于类型检查带来的可维护性与重构安全。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "表示“这个值可能是 string 或 number”的联合类型写法是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "string & number"
+          },
+          {
+            "key": "B",
+            "text": "string | number"
+          },
+          {
+            "key": "C",
+            "text": "string + number"
+          },
+          {
+            "key": "D",
+            "text": "string, number"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "联合类型使用竖线表示“或”。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "多人协作中用于统一代码风格、提前发现问题的工具通常是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "ESLint 与 Prettier"
+          },
+          {
+            "key": "B",
+            "text": "Photoshop"
+          },
+          {
+            "key": "C",
+            "text": "Postman"
+          },
+          {
+            "key": "D",
+            "text": "Nginx"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "ESLint 负责规则检查，Prettier 负责格式化。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "TypeScript 中的 any 会绕过类型检查，应尽量避免滥用。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "滥用 any 会让类型系统形同虚设，失去静态检查的价值。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "构建时使用代码分割与按需加载，可以减小首屏体积。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "按需加载把非首屏代码延后加载，从而降低首屏体积。"
+      }
+    ]
+  },
+  {
+    "course": "大模型应用开发",
+    "paperTitle": "《大模型应用开发》课程测验",
+    "knowledgePoints": [
+      "llm-app",
+      "python-basic"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "调用大模型接口时，用于控制输出随机性的参数通常是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "temperature"
+          },
+          {
+            "key": "B",
+            "text": "timeout"
+          },
+          {
+            "key": "C",
+            "text": "retry"
+          },
+          {
+            "key": "D",
+            "text": "thread"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "temperature 越低输出越确定，越高越发散。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "希望模型按固定结构输出，最有效的做法通常是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "在提示词中明确字段与格式要求"
+          },
+          {
+            "key": "B",
+            "text": "多调用几次取平均"
+          },
+          {
+            "key": "C",
+            "text": "提高温度"
+          },
+          {
+            "key": "D",
+            "text": "缩短提示词"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "明确的输出契约能显著提升结构化输出的稳定性。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "大模型的“幻觉”指的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "推理速度慢"
+          },
+          {
+            "key": "B",
+            "text": "编造看似合理但并不真实的内容"
+          },
+          {
+            "key": "C",
+            "text": "无法联网"
+          },
+          {
+            "key": "D",
+            "text": "显存占用高"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "幻觉指模型生成了事实错误但表述流畅的内容。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "为大模型提供检索到的资料可以降低幻觉，但仍需校验引用来源。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "检索增强能提供事实依据，但检索结果本身也可能有误。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "提示词越长越好，信息越多模型效果一定越好。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "冗余信息会干扰模型，提示词应精准、结构清晰。"
+      }
+    ]
+  },
+  {
+    "course": "向量检索与服务部署",
+    "paperTitle": "《向量检索与服务部署》课程测验",
+    "knowledgePoints": [
+      "vector-db",
+      "deployment"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "判断两段文本语义是否相近，向量检索通常计算？",
+        "options": [
+          {
+            "key": "A",
+            "text": "向量之间的相似度（如余弦相似度）"
+          },
+          {
+            "key": "B",
+            "text": "字符串长度差"
+          },
+          {
+            "key": "C",
+            "text": "字母顺序"
+          },
+          {
+            "key": "D",
+            "text": "文件大小"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "向量检索通过距离或相似度衡量语义接近程度。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "把长文档放入向量库之前，通常需要先做什么？",
+        "options": [
+          {
+            "key": "A",
+            "text": "切分为合适的文本块并向量化"
+          },
+          {
+            "key": "B",
+            "text": "压缩成 zip"
+          },
+          {
+            "key": "C",
+            "text": "转成图片"
+          },
+          {
+            "key": "D",
+            "text": "删除所有标点"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "合理切分决定检索粒度，切分过粗或过细都会影响召回质量。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "容器化部署服务时，用于描述镜像构建过程的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "Dockerfile"
+          },
+          {
+            "key": "B",
+            "text": "README"
+          },
+          {
+            "key": "C",
+            "text": "package.json"
+          },
+          {
+            "key": "D",
+            "text": "nginx.conf"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "Dockerfile 定义基础镜像、依赖安装与启动命令。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "向量库的召回数量越多越好，不需要考虑噪声与响应时间。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "召回过多会引入噪声并拖慢生成，需要权衡召回数量与精度。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "服务上线前应配置健康检查与环境变量，而不是把密钥写死在代码里。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "密钥入库入代码会造成泄露风险，健康检查便于发现异常实例。"
+      }
+    ]
+  },
+  {
+    "course": "数据分析与可视化",
+    "paperTitle": "《数据分析与可视化》课程测验",
+    "knowledgePoints": [
+      "data-analysis",
+      "statistics"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "分析消费金额分布时，哪项指标不易受极端值影响？",
+        "options": [
+          {
+            "key": "A",
+            "text": "平均值"
+          },
+          {
+            "key": "B",
+            "text": "中位数"
+          },
+          {
+            "key": "C",
+            "text": "最大值"
+          },
+          {
+            "key": "D",
+            "text": "总和"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "中位数以中间位置衡量集中趋势，对极端值不敏感。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "呈现各院系报名人数对比，最合适的图表是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "柱状图"
+          },
+          {
+            "key": "B",
+            "text": "折线图"
+          },
+          {
+            "key": "C",
+            "text": "散点图"
+          },
+          {
+            "key": "D",
+            "text": "热力图"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "分类之间的数量对比用柱状图最直观。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "数据清洗中发现缺失值，首先应该？",
+        "options": [
+          {
+            "key": "A",
+            "text": "全部填 0"
+          },
+          {
+            "key": "B",
+            "text": "判断缺失比例与业务含义，再决定填充或剔除"
+          },
+          {
+            "key": "C",
+            "text": "删除整张表"
+          },
+          {
+            "key": "D",
+            "text": "忽略不管"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "处理方式取决于缺失机制，盲目填 0 会引入偏差。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "相关不等于因果，两个指标同向变化不能直接断定因果关系。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "可能存在共同原因或巧合，因果需要实验或更强证据支撑。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "图表应服务于结论，标注单位与口径比配色更重要。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "单位与统计口径不清会导致结论被误读。"
+      }
+    ]
+  },
+  {
+    "course": "PyTorch 深度学习入门",
+    "paperTitle": "《PyTorch 深度学习入门》课程测验",
+    "knowledgePoints": [
+      "pytorch",
+      "math-stat"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "PyTorch 中实现自动求导的核心机制是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "计算图与 autograd"
+          },
+          {
+            "key": "B",
+            "text": "定时器"
+          },
+          {
+            "key": "C",
+            "text": "线程池"
+          },
+          {
+            "key": "D",
+            "text": "缓存"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "autograd 根据计算图自动计算梯度。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "训练神经网络时，用于按梯度逐步更新参数的是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "优化器（如 SGD、Adam）"
+          },
+          {
+            "key": "B",
+            "text": "数据集"
+          },
+          {
+            "key": "C",
+            "text": "损失函数"
+          },
+          {
+            "key": "D",
+            "text": "激活函数"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "损失函数给出目标，优化器负责按梯度更新参数。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "按批次把数据喂给模型，通常使用？",
+        "options": [
+          {
+            "key": "A",
+            "text": "DataLoader"
+          },
+          {
+            "key": "B",
+            "text": "DataFrame"
+          },
+          {
+            "key": "C",
+            "text": "Buffer"
+          },
+          {
+            "key": "D",
+            "text": "Queue"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "DataLoader 负责分批、打乱与并行加载数据。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "训练集表现很好但验证集表现很差，通常说明出现了过拟合。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "模型记住了训练集细节而未能泛化到新数据，即过拟合。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "训练前对输入特征做归一化，有助于模型更稳定地收敛。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "归一化能缓解量纲差异带来的梯度不稳定。"
+      }
+    ]
+  },
+  {
+    "course": "产品需求与原型设计",
+    "paperTitle": "《产品需求与原型设计》课程测验",
+    "knowledgePoints": [
+      "product-planning",
+      "user-research",
+      "prototyping"
+    ],
+    "questions": [
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "用“重要性 × 紧迫性”对需求排序，属于哪种方法？",
+        "options": [
+          {
+            "key": "A",
+            "text": "四象限法"
+          },
+          {
+            "key": "B",
+            "text": "冒泡排序"
+          },
+          {
+            "key": "C",
+            "text": "二分查找"
+          },
+          {
+            "key": "D",
+            "text": "哈希映射"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "四象限法把需求按重要与紧迫两个维度分类排序。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "用户访谈中，最应该避免的提问方式是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "开放式提问"
+          },
+          {
+            "key": "B",
+            "text": "引导性提问，如“你是不是也觉得这个功能很好用”"
+          },
+          {
+            "key": "C",
+            "text": "追问具体使用场景"
+          },
+          {
+            "key": "D",
+            "text": "记录用户原话"
+          }
+        ],
+        "correctOption": "B",
+        "correct": null,
+        "analysis": "引导性提问会暗示答案，导致收集到失真的信息。"
+      },
+      {
+        "type": "single_choice",
+        "difficulty": "easy",
+        "stem": "低保真原型在需求阶段的主要作用是？",
+        "options": [
+          {
+            "key": "A",
+            "text": "快速验证流程与信息结构"
+          },
+          {
+            "key": "B",
+            "text": "交付最终视觉稿"
+          },
+          {
+            "key": "C",
+            "text": "直接上线"
+          },
+          {
+            "key": "D",
+            "text": "编写数据库脚本"
+          }
+        ],
+        "correctOption": "A",
+        "correct": null,
+        "analysis": "低保真原型成本低，适合在早期快速验证与迭代。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "需求文档中写明验收标准，有助于开发与测试对“做完”达成一致。",
+        "options": null,
+        "correctOption": null,
+        "correct": true,
+        "analysis": "验收标准是判定需求是否完成的客观依据。"
+      },
+      {
+        "type": "true_false",
+        "difficulty": "easy",
+        "stem": "用户说“想要某个功能”就等于真实需求，产品经理照做即可。",
+        "options": null,
+        "correctOption": null,
+        "correct": false,
+        "analysis": "用户表达的是方案，需要挖掘其背后的真实问题与目标。"
+      }
+    ]
+  }
+]

@@ -171,7 +171,7 @@ function PostManage() {
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)} />
           </Tooltip>
           <Tooltip title="查看该帖评论">
-            <Button type="text" size="small" icon={<MessageOutlined />} onClick={() => navigate(`/forum/comment?postId=${record.id}&postTitle=${encodeURIComponent(record.title || '')}`)} />
+            <Button type="text" size="small" icon={<MessageOutlined />} onClick={() => navigate(`/forum/comments?postId=${record.id}&postTitle=${encodeURIComponent(record.title || '')}`)} />
           </Tooltip>
           <Tooltip title={record.pinOrder > 0 ? '取消置顶' : '置顶'}>
             <Button type="text" size="small" icon={<PushpinOutlined />} onClick={() => handleTogglePin(record.id)} />
@@ -273,7 +273,7 @@ function PostManage() {
               <h3 className="pm-drawer-title">{currentPost.title}</h3>
               <Space wrap className="pm-drawer-tags">
                 <Tag color={statusMap[currentPost.status]?.color}>{statusMap[currentPost.status]?.text}</Tag>
-                {currentPost.pinOrder > 0 && <Tag color="gold">📌 置顶</Tag>}
+                {currentPost.pinOrder > 0 && <Tag color="gold"><PushpinOutlined /> 置顶</Tag>}
               </Space>
             </div>
             <div className="pm-drawer-info">
@@ -285,7 +285,7 @@ function PostManage() {
               <div className="pm-info-row"><span className="pm-info-label">发布时间</span><span>{formatTime(currentPost.createTime)}</span></div>
             </div>
             <div className="pm-drawer-content">
-              <h4 className="pm-drawer-subtitle">📝 正文内容</h4>
+              <h4 className="pm-drawer-subtitle">正文内容</h4>
               <div className="pm-content-box">{currentPost.content}</div>
             </div>
           </div>

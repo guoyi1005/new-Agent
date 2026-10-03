@@ -269,6 +269,29 @@ public class ExamPaperServiceImpl implements ExamPaperService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<PaperVO> listAll(Integer current, Integer size, String keyword) {
+        int pageNumber = current == null || current < 1 ? 1 : current;
+        int pageSize = size == null || size < 1 ? 10 : Math.min(size, 100);
+        PageRequest pageable = PageRequest.of(pageNumber - 1, pageSize);
+        String titleKeyword = keyword == null ? "" : keyword.trim();
+        Page<ExamPaper> page = titleKeyword.isEmpty()
+                ? paperRepository.findByStatusOrderByCreateTimeDesc(1, pageable)
+                : paperRepository.findByStatusAndTitleContainingOrderByCreateTimeDesc(1, titleKeyword, pageable);
+        return new PageResponse<>(
+                page.getContent().stream().map(paper -> toVO(paper, null)).toList(),
+                page.getTotalElements(),
+                pageNumber,
+                pageSize);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaperVO detailAsAdmin(Long id) {
+        return toVO(activePaper(id), paperQuestionRepository.findByPaperIdOrderBySortOrderAscIdAsc(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PaperVO detail(Long id, Long userId) {
         ExamPaper paper = paperRepository.findById(id)
                 .filter(item -> Integer.valueOf(1).equals(item.getStatus()))
@@ -282,7 +305,16 @@ public class ExamPaperServiceImpl implements ExamPaperService {
     @Override
     @Transactional
     public PaperVO publish(Long id, Long adminUserId) {
-        ExamPaper paper = ownedActivePaper(id, adminUserId);
+        return doPublish(ownedActivePaper(id, adminUserId));
+    }
+
+    @Override
+    @Transactional
+    public PaperVO publishAsAdmin(Long id) {
+        return doPublish(activePaper(id));
+    }
+
+    private PaperVO doPublish(ExamPaper paper) {
         if (Boolean.TRUE.equals(paper.getPublished())) {
             return toVO(paper, null);
         }
@@ -300,7 +332,16 @@ public class ExamPaperServiceImpl implements ExamPaperService {
     @Override
     @Transactional
     public PaperVO unpublish(Long id, Long adminUserId) {
-        ExamPaper paper = ownedActivePaper(id, adminUserId);
+        return doUnpublish(ownedActivePaper(id, adminUserId));
+    }
+
+    @Override
+    @Transactional
+    public PaperVO unpublishAsAdmin(Long id) {
+        return doUnpublish(activePaper(id));
+    }
+
+    private PaperVO doUnpublish(ExamPaper paper) {
         if (!Boolean.TRUE.equals(paper.getPublished())) {
             return toVO(paper, null);
         }
@@ -312,7 +353,16 @@ public class ExamPaperServiceImpl implements ExamPaperService {
     @Override
     @Transactional(readOnly = true)
     public DownloadFile download(Long id, Long userId, DownloadContent content) {
-        PaperVO paper = detail(id, userId);
+        return renderDocument(detail(id, userId), content);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DownloadFile downloadAsAdmin(Long id, DownloadContent content) {
+        return renderDocument(detailAsAdmin(id), content);
+    }
+
+    private DownloadFile renderDocument(PaperVO paper, DownloadContent content) {
         byte[] bytes;
         if (documentDispatcher == null) {
             bytes = documentGenerator.generate(paper, content);
@@ -322,9 +372,13 @@ public class ExamPaperServiceImpl implements ExamPaperService {
         return new DownloadFile(paper.getTitle(), bytes);
     }
 
-    private ExamPaper ownedActivePaper(Long id, Long userId) {
-        ExamPaper paper = paperRepository.findByIdAndStatus(id, 1)
+    private ExamPaper activePaper(Long id) {
+        return paperRepository.findByIdAndStatus(id, 1)
                 .orElseThrow(() -> new BusinessException(Result.BAD_REQUEST_CODE, "试卷不存在"));
+    }
+
+    private ExamPaper ownedActivePaper(Long id, Long userId) {
+        ExamPaper paper = activePaper(id);
         if (!Objects.equals(paper.getCreatedBy(), userId)) {
             throw new BusinessException(Result.FORBIDDEN_CODE, "无权访问该试卷");
         }

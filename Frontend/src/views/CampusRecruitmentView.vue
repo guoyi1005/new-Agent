@@ -41,6 +41,14 @@ const upcoming = computed(() => {
   return items.value.filter((item) => item.eventDate && item.eventDate >= today).length
 })
 
+const stats = computed(() => ([
+  { label: '宣讲会', value: talks.value.length, unit: '场' },
+  { label: '双选会', value: fairs.value.length, unit: '场' },
+  { label: '校招企业', value: companies.value.length, unit: '家' },
+  { label: '校招岗位', value: roleTotal.value, unit: '个' },
+  { label: '待进行日程', value: upcoming.value, unit: '场' },
+]))
+
 function formatMonthDay(value) {
   if (!value) return '待定'
   const parts = String(value).slice(0, 10).split('-')
@@ -74,16 +82,13 @@ function openCampusJobs() {
     <main class="feature-container campus-container">
       <header class="campus-head">
         <div class="campus-head__copy">
+          <p v-if="season" class="campus-head__eyebrow">{{ season }}</p>
           <h1>校园招聘</h1>
-          <p v-if="season">{{ season }} · 宣讲会 {{ talks.length }} 场 · 双选会 {{ fairs.length }} 场 · 校招岗位 {{ roleTotal }} 个</p>
-          <p v-else>宣讲会、双选会与校招企业岗位汇总</p>
+          <p class="campus-head__desc">宣讲会、双选会与校招企业岗位汇总</p>
         </div>
         <div class="campus-head__actions">
           <button class="feature-button" type="button" @click="router.push('/employment')">
             ← 返回实习就业
-          </button>
-          <button class="feature-button feature-button--primary" type="button" @click="openCampusJobs">
-            查看校招岗位
           </button>
         </div>
       </header>
@@ -99,109 +104,98 @@ function openCampusJobs() {
       </div>
 
       <template v-else>
-        <section class="campus-summary">
-          <div class="campus-summary__item">
-            <span>宣讲会</span>
-            <strong>{{ talks.length }}</strong>
-            <em>场</em>
-          </div>
-          <div class="campus-summary__item">
-            <span>双选会</span>
-            <strong>{{ fairs.length }}</strong>
-            <em>场</em>
-          </div>
-          <div class="campus-summary__item">
-            <span>校招企业</span>
-            <strong>{{ companies.length }}</strong>
-            <em>家</em>
-          </div>
-          <div class="campus-summary__item">
-            <span>校招岗位</span>
-            <strong>{{ roleTotal }}</strong>
-            <em>个</em>
-          </div>
-          <div class="campus-summary__item">
-            <span>待进行日程</span>
-            <strong>{{ upcoming }}</strong>
-            <em>场</em>
+        <section class="campus-stats">
+          <div v-for="item in stats" :key="item.label" class="campus-stat">
+            <span>{{ item.label }}</span>
+            <p>
+              <strong>{{ item.value }}</strong>
+              <em>{{ item.unit }}</em>
+            </p>
           </div>
         </section>
 
-        <section class="campus-block">
-          <div class="campus-block__head">
-            <h2>宣讲会</h2>
-            <span>企业进校宣讲安排</span>
-          </div>
-          <div v-if="talks.length" class="campus-events">
-            <article v-for="item in talks" :key="item.id" class="campus-event">
-              <span class="campus-event__date">{{ formatMonthDay(item.eventDate) }}</span>
-              <div class="campus-event__copy">
-                <h3>{{ item.title }}</h3>
-                <p>{{ item.company || '主办单位待定' }}</p>
-              </div>
-              <span class="campus-event__place">{{ placeOf(item) }}</span>
-            </article>
-          </div>
-          <p v-else class="campus-block__empty">暂无宣讲会安排</p>
-        </section>
+        <div class="campus-boards">
+          <section class="campus-board">
+            <header class="campus-board__head">
+              <h2>宣讲会</h2>
+              <span>{{ talks.length }} 场</span>
+            </header>
+            <ul v-if="talks.length" class="campus-board__list">
+              <li v-for="item in talks" :key="item.id" class="campus-event">
+                <span class="campus-event__date">{{ formatMonthDay(item.eventDate) }}</span>
+                <div class="campus-event__copy">
+                  <h3>{{ item.title }}</h3>
+                  <p>{{ item.company || '主办单位待定' }}</p>
+                </div>
+                <span class="campus-event__place">{{ placeOf(item) }}</span>
+              </li>
+            </ul>
+            <p v-else class="campus-board__empty">暂无宣讲会安排</p>
+          </section>
 
-        <section class="campus-block">
-          <div class="campus-block__head">
-            <h2>双选会</h2>
-            <span>集中双选与专场招聘</span>
-          </div>
-          <div v-if="fairs.length" class="campus-events">
-            <article v-for="item in fairs" :key="item.id" class="campus-event">
-              <span class="campus-event__date">{{ formatMonthDay(item.eventDate) }}</span>
-              <div class="campus-event__copy">
-                <h3>{{ item.title }}</h3>
-                <p>{{ item.company || '主办单位待定' }}</p>
-              </div>
-              <span class="campus-event__place">{{ placeOf(item) }}</span>
-            </article>
-          </div>
-          <p v-else class="campus-block__empty">暂无双选会安排</p>
-        </section>
+          <section class="campus-board">
+            <header class="campus-board__head">
+              <h2>双选会</h2>
+              <span>{{ fairs.length }} 场</span>
+            </header>
+            <ul v-if="fairs.length" class="campus-board__list">
+              <li v-for="item in fairs" :key="item.id" class="campus-event">
+                <span class="campus-event__date">{{ formatMonthDay(item.eventDate) }}</span>
+                <div class="campus-event__copy">
+                  <h3>{{ item.title }}</h3>
+                  <p>{{ item.company || '主办单位待定' }}</p>
+                </div>
+                <span class="campus-event__place">{{ placeOf(item) }}</span>
+              </li>
+            </ul>
+            <p v-else class="campus-board__empty">暂无双选会安排</p>
+          </section>
+        </div>
 
-        <section class="campus-block">
-          <div class="campus-block__head">
+        <section class="campus-company-block">
+          <header class="campus-company-block__head">
             <h2>校招企业</h2>
-            <span>开放校招岗位的企业详情</span>
-          </div>
-          <div v-if="companies.length" class="campus-companies">
-            <article v-for="item in companies" :key="item.id" class="campus-company">
-              <header class="campus-company__head">
+            <span v-if="companies.length">{{ companies.length }} 家企业 · {{ roleTotal }} 个岗位</span>
+            <span v-else>开放校招岗位的企业详情</span>
+          </header>
+
+          <ul v-if="companies.length" class="campus-company-list">
+            <li v-for="item in companies" :key="item.id" class="campus-company">
+              <div class="campus-company__id">
                 <span class="campus-company__mark" aria-hidden="true">{{ markOf(item.company || item.title) }}</span>
                 <div class="campus-company__title">
                   <h3>{{ item.company || item.title }}</h3>
-                  <p>{{ item.city || '城市待定' }}</p>
+                  <p>{{ [item.city, item.title].filter(Boolean).join(' · ') || '企业信息待补充' }}</p>
                 </div>
-                <span class="campus-company__roles">{{ item.roleCount || 0 }} 个岗位</span>
-              </header>
+              </div>
+
+              <dl class="campus-company__facts">
+                <div>
+                  <dt>项目</dt>
+                  <dd>{{ item.title || '待定' }}</dd>
+                </div>
+                <div>
+                  <dt>时间</dt>
+                  <dd>{{ formatFullDate(item.eventDate) }}</dd>
+                </div>
+                <div>
+                  <dt>地点</dt>
+                  <dd>{{ placeOf(item) }}</dd>
+                </div>
+                <div>
+                  <dt>开放岗位</dt>
+                  <dd>{{ item.roleCount || 0 }} 个</dd>
+                </div>
+              </dl>
 
               <p v-if="item.description" class="campus-company__desc">{{ item.description }}</p>
 
-              <ul class="campus-company__facts">
-                <li>
-                  <span>项目</span>
-                  <strong>{{ item.title }}</strong>
-                </li>
-                <li>
-                  <span>时间</span>
-                  <strong>{{ formatFullDate(item.eventDate) }}</strong>
-                </li>
-                <li>
-                  <span>地点</span>
-                  <strong>{{ placeOf(item) }}</strong>
-                </li>
-              </ul>
-
-              <footer class="campus-company__foot">
-                <button class="feature-link" type="button" @click="openCampusJobs">查看岗位 →</button>
-              </footer>
-            </article>
-          </div>
-          <p v-else class="campus-block__empty">暂无校招企业岗位</p>
+              <button class="feature-button campus-company__cta" type="button" @click="openCampusJobs">
+                查看岗位 →
+              </button>
+            </li>
+          </ul>
+          <p v-else class="campus-company-block__empty">暂无校招企业岗位</p>
         </section>
       </template>
     </main>
@@ -215,35 +209,44 @@ function openCampusJobs() {
 
 .campus-container {
   display: grid;
-  gap: var(--hp-gap);
+  gap: 18px;
 }
+
+/* ---------- 页头 ---------- */
 
 .campus-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 26px 28px;
+  padding: 20px 24px;
   border: 1px solid var(--hp-line);
   border-radius: var(--hp-r-lg);
   background: var(--hp-surface);
   box-shadow: var(--hp-shadow-sm);
 }
 
+.campus-head__eyebrow {
+  margin: 0 0 6px;
+  color: var(--hp-blue-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
 .campus-head__copy h1 {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--hp-ink);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.campus-head__copy p {
-  margin: 0;
+.campus-head__desc {
+  margin: 6px 0 0;
   color: var(--hp-ink-2);
-  font-size: 13.5px;
-  line-height: 1.7;
+  font-size: 13px;
 }
 
 .campus-head__actions {
@@ -252,15 +255,16 @@ function openCampusJobs() {
   flex-wrap: wrap;
 }
 
-.campus-summary {
+/* ---------- 数据条 ---------- */
+
+.campus-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
-.campus-summary__item {
-  display: flex;
-  align-items: baseline;
+.campus-stat {
+  display: grid;
   gap: 6px;
   padding: 14px 18px;
   border: 1px solid var(--hp-line);
@@ -268,88 +272,93 @@ function openCampusJobs() {
   background: var(--hp-surface);
 }
 
-.campus-summary__item span {
-  flex: 1;
+.campus-stat span {
   color: var(--hp-muted);
   font-size: 12.5px;
 }
 
-.campus-summary__item strong {
-  color: var(--hp-ink);
-  font-size: 22px;
-  font-weight: 700;
+.campus-stat p {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
 }
 
-.campus-summary__item em {
+.campus-stat strong {
+  color: var(--hp-ink);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.campus-stat em {
   color: var(--hp-ink-2);
   font-size: 12px;
   font-style: normal;
 }
 
-.campus-block {
+/* ---------- 宣讲会 / 双选会 双栏 ---------- */
+
+.campus-boards {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
 }
 
-.campus-block__head {
+.campus-board {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-lg);
+  background: var(--hp-surface);
+}
+
+.campus-board__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
 }
 
-.campus-block__head h2 {
+.campus-board__head h2 {
   margin: 0;
   color: var(--hp-ink);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
 }
 
-.campus-block__head span {
+.campus-board__head span {
   color: var(--hp-muted);
   font-size: 12.5px;
 }
 
-.campus-block__empty {
-  margin: 0;
-  padding: 26px 20px;
-  border: 1px dashed var(--hp-line-strong);
-  border-radius: var(--hp-r-md);
-  background: var(--hp-surface);
-  color: var(--hp-muted);
-  font-size: 13px;
-  text-align: center;
-}
-
-.campus-events {
+.campus-board__list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .campus-event {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  border: 1px solid var(--hp-line);
+  gap: 12px;
+  padding: 12px 14px;
   border-radius: var(--hp-r-md);
-  background: var(--hp-surface);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.campus-event:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--hp-shadow-sm);
+  background: var(--hp-surface-2);
 }
 
 .campus-event__date {
   display: grid;
-  width: 56px;
-  height: 52px;
+  width: 50px;
+  height: 46px;
   border-radius: var(--hp-r-sm);
   background: var(--hp-yellow);
   color: var(--hp-ink);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   place-items: center;
   flex-shrink: 0;
@@ -361,54 +370,102 @@ function openCampusJobs() {
 }
 
 .campus-event__copy h3 {
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   color: var(--hp-ink);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
 }
 
 .campus-event__copy p {
   margin: 0;
+  overflow: hidden;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campus-event__place {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--hp-surface);
+  color: var(--hp-ink-2);
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.campus-board__empty,
+.campus-company-block__empty {
+  margin: 0;
+  padding: 22px 16px;
+  border: 1px dashed var(--hp-line-strong);
+  border-radius: var(--hp-r-md);
+  color: var(--hp-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ---------- 校招企业 ---------- */
+
+.campus-company-block {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-lg);
+  background: var(--hp-surface);
+}
+
+.campus-company-block__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.campus-company-block__head h2 {
+  margin: 0;
+  color: var(--hp-ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.campus-company-block__head span {
   color: var(--hp-muted);
   font-size: 12.5px;
 }
 
-.campus-event__place {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--hp-surface-2);
-  color: var(--hp-ink-2);
-  font-size: 12.5px;
-  white-space: nowrap;
-}
-
-.campus-companies {
+.campus-company-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--hp-gap);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .campus-company {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.8fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
   border: 1px solid var(--hp-line);
   border-radius: var(--hp-r-md);
-  background: var(--hp-surface);
-  box-shadow: var(--hp-shadow-sm);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  background: var(--hp-surface-2);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .campus-company:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--hp-shadow-md);
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-sm);
 }
 
-.campus-company__head {
+.campus-company__id {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .campus-company__mark {
@@ -426,13 +483,12 @@ function openCampusJobs() {
 
 .campus-company__title {
   min-width: 0;
-  flex: 1;
 }
 
 .campus-company__title h3 {
   margin: 0 0 4px;
   color: var(--hp-ink);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
 }
@@ -443,60 +499,47 @@ function openCampusJobs() {
   font-size: 12.5px;
 }
 
-.campus-company__roles {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--hp-green);
-  color: var(--hp-green-ink);
-  font-size: 12px;
+.campus-company__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.campus-company__facts div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.campus-company__facts dt {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.campus-company__facts dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--hp-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .campus-company__desc {
+  grid-column: 1 / -1;
   margin: 0;
   color: var(--hp-ink-2);
   font-size: 13px;
   line-height: 1.7;
 }
 
-.campus-company__facts {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.campus-company__cta {
+  white-space: nowrap;
 }
 
-.campus-company__facts li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: var(--hp-r-sm);
-  background: var(--hp-surface-2);
-}
-
-.campus-company__facts span {
-  color: var(--hp-muted);
-  font-size: 11.5px;
-}
-
-.campus-company__facts strong {
-  color: var(--hp-ink);
-  font-size: 13px;
-  font-weight: 600;
-  text-align: right;
-}
-
-.campus-company__foot {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px dashed var(--hp-line);
-}
+/* ---------- 加载 / 空状态 ---------- */
 
 .campus-state {
   display: grid;
@@ -540,23 +583,50 @@ function openCampusJobs() {
   }
 }
 
+@media (max-width: 1080px) {
+  .campus-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .campus-company {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .campus-company__facts {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 860px) {
+  .campus-boards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   .campus-head {
-    padding: 20px;
+    padding: 18px 20px;
   }
 
   .campus-head__copy h1 {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  .campus-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .campus-event {
     align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
+    flex-wrap: wrap;
   }
 
-  .campus-companies {
+  .campus-company {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .campus-company__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

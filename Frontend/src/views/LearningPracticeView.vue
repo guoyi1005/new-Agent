@@ -4,8 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../components/AppTabBar.vue'
 import { getCampusCourses } from '../api/campusCourse'
+import { listExamPapers } from '../api/exam'
 import { completePathItem, completeProjectTask, getContentTags, getExternalCourses, getLearningRecommendations, getPracticeSummary, getPythonHome, startPathItem } from '../api/learning'
 import { getPythonProblemList } from '../api/pythonProblem'
+import { listPythonPapers } from '../api/pythonPaper'
 import {
   decomposeStudyText,
   getStudyGoalDetail,
@@ -33,6 +35,23 @@ const pythonHome = ref({})
 const unifiedRecommendations = ref([])
 const courseTags = ref({})
 const practiceSummary = ref(null)
+/* 已保存的练习卷：用于「我的练习」里的回看入口 */
+const myPapers = ref([])
+/* 课程考试记录：用于「课程与专项」里的历史试卷入口 */
+const examPapers = ref([])
+
+/** 参加过的试卷（按作答次数排序），用于列表展示 */
+const takenExamPapers = computed(() => examPapers.value
+  .filter((item) => Number(item.attemptCount || 0) > 0)
+  .sort((left, right) => Number(right.attemptCount || 0) - Number(left.attemptCount || 0)))
+
+/** 考试概览：试卷总数 / 参加过几套 / 累计作答次数 / 未完成场次 */
+const examSummary = computed(() => ({
+  total: examPapers.value.length,
+  taken: takenExamPapers.value.length,
+  attempts: examPapers.value.reduce((sum, item) => sum + Number(item.attemptCount || 0), 0),
+  unfinished: examPapers.value.filter((item) => item.inProgressAttemptId).length,
+}))
 const externalCourses = ref([])
 const problems = ref([])
 const courses = ref([])
@@ -55,6 +74,8 @@ const goalForm = reactive({
   targetDate: '',
   dailyStudyMinutes: 60,
 })
+// 「按能力缺口生成」时置为 true：任务由缺口直接确定，保存时不再调用 AI 拆解
+const goalFromGaps = ref(false)
 
 const activeTab = computed(() => {
   const tab = String(route.query.tab || 'recommended')
@@ -301,6 +322,33 @@ function friendlyError(message) {
   return text || '加载失败'
 }
 
+async function loadExamPapers() {
+  try {
+    const page = await listExamPapers({ page: 0, size: 100 })
+    examPapers.value = Array.isArray(page?.content) ? page.content : []
+  } catch {
+    examPapers.value = []
+  }
+}
+
+/** 有未完成的考试就直接继续，否则看这门试卷的历史记录 */
+function openExamPaper(item) {
+  if (item?.inProgressAttemptId) {
+    router.push(`/mine/papers/attempts/${item.inProgressAttemptId}`)
+    return
+  }
+  router.push(`/mine/papers/${item.id}/history`)
+}
+
+async function loadMyPapers() {
+  try {
+    const list = await listPythonPapers()
+    myPapers.value = Array.isArray(list) ? list : []
+  } catch {
+    myPapers.value = []
+  }
+}
+
 async function loadLearningData() {
   loading.value = true
   pageMessage.value = ''
@@ -446,8 +494,84 @@ function openGoalForCheckin(goalId) {
 function openGoalDialog() {
   resetGoalForm()
   goalAiUnavailable.value = false
+  goalFromGaps.value = false
   goalDialogOpen.value = true
 }
+
+/** 用岗位探索页算出的真实能力缺口，拼一份可以直接拆解的学习计划。 */
+function buildGapGoalPlan() {
+  const jobName = targetJobTitle.value || '目标岗位'
+  const gaps = targetSkillGaps.value.slice(0, 5)
+  if (!gaps.length) return null
+  const lines = gaps.map((gap, index) => {
+    const need = Math.max(0, Number(gap.required || 0) - Number(gap.current || 0))
+    return `${index + 1}. ${gap.name}（当前 ${gap.current} / 岗位要求 ${gap.required}，需要提升 ${need}）`
+  })
+  const names = gaps.map((gap) => gap.name).join('、')
+  return {
+    title: `${jobName}能力提升计划`,
+    description: `针对 ${jobName} 的能力缺口，优先补齐 ${names}。`,
+    planText: [
+      `目标岗位：${jobName}`,
+      '需要补齐的能力缺口：',
+      ...lines,
+      '请按缺口优先级安排学习任务，每天学习 60 分钟，30 天内完成。',
+    ].join('\n'),
+  }
+}
+
+/** 打开「按能力缺口生成」：预填缺口计划，保存时仍走原有的 AI 拆解流程。 */
+function openGapGoalDialog() {
+  const plan = buildGapGoalPlan()
+  if (!plan) {
+    pageMessage.value = '还没有可用的能力缺口数据：先设置目标岗位，或在题库、课程里积累一些学习记录'
+    openGoalDialog()
+    return
+  }
+  resetGoalForm()
+  goalForm.title = plan.title
+  goalForm.description = plan.description
+  goalForm.planText = plan.planText
+  goalAiUnavailable.value = false
+  goalFromGaps.value = true
+  goalDialogOpen.value = true
+}
+
+/** 每个能力缺口直接生成一项任务，不依赖 AI 拆解。 */
+function buildGapGoalTasks() {
+  const recommended = new Map(jobPathSteps.value.map((step) => [step.skillCode, step.next]))
+  const gaps = targetSkillGaps.value.slice(0, 5)
+  // 每项任务的天数按「开始日期 → 目标日期」的总跨度平均分配，避免排期超出目标日期
+  const spanDays = goalSpanDays()
+  const daysPerTask = Math.max(1, Math.floor(spanDays / Math.max(1, gaps.length)))
+  return gaps.map((gap, index) => {
+    const need = Math.max(0, Number(gap.required || 0) - Number(gap.current || 0))
+    const next = recommended.get(gap.code)
+    return {
+      taskName: `${gap.name}：从 ${gap.current} 提升到 ${gap.required}`.slice(0, 120),
+      stage: '能力补齐',
+      estimatedDays: daysPerTask,
+      plannedStartDate: todayString(),
+      priority: index === 0 ? '高' : '中',
+      orderNum: index + 1,
+      isCompleted: false,
+      progressPercent: 0,
+      description: `当前 ${gap.current}，岗位要求 ${gap.required}，需要提升 ${need}。${next?.title ? `建议先从「${next.title}」开始。` : ''}`,
+      subtasks: [],
+    }
+  })
+}
+
+/** 目标日期与开始日期之间的天数，缺省按 30 天。 */
+function goalSpanDays() {
+  const start = goalForm.startDate ? new Date(goalForm.startDate) : null
+  const end = goalForm.targetDate ? new Date(goalForm.targetDate) : null
+  if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+    return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000))
+  }
+  return 30
+}
+
 function closeGoalDialog() {
   if (!goalSaving.value) goalDialogOpen.value = false
 }
@@ -486,7 +610,19 @@ async function saveGoal(skipDecompose = false) {
   goalError.value = ''
   try {
     let payload
-    if (goalForm.planText.trim() && !skipDecompose) {
+    if (goalFromGaps.value && !skipDecompose && targetSkillGaps.value.length) {
+      // 能力缺口已经拆好每一项任务，直接入库，不依赖 AI 拆解服务
+      payload = {
+        goal: {
+          title: goalForm.title.trim(),
+          description: goalForm.description.trim(),
+          startDate: goalForm.startDate || null,
+          targetDate: goalForm.targetDate || null,
+          dailyStudyMinutes: Number(goalForm.dailyStudyMinutes) || 60,
+        },
+        tasks: buildGapGoalTasks(),
+      }
+    } else if (goalForm.planText.trim() && !skipDecompose) {
       let preview
       try {
         preview = await decomposeStudyText(goalForm.planText.trim())
@@ -534,6 +670,7 @@ async function saveGoal(skipDecompose = false) {
     const saved = await saveStudyGoal(payload)
     goalDialogOpen.value = false
     goalAiUnavailable.value = false
+    goalFromGaps.value = false
     await reloadGoals(saved?.goal?.id)
     pageMessage.value = '学习目标已保存'
   } catch (error) {
@@ -665,7 +802,15 @@ function openProblem(id) {
   router.push(`/career/nebula/python/practice/${id}`)
 }
 
-onMounted(loadLearningData)
+onMounted(async () => {
+  await loadLearningData()
+  // 从岗位探索页的「生成我的提升计划」进来时，直接按能力缺口预填学习目标
+  if (String(route.query.plan || '') === 'gaps') {
+    openGapGoalDialog()
+  }
+  await loadMyPapers()
+  await loadExamPapers()
+})
 </script>
 
 <template>
@@ -741,6 +886,7 @@ onMounted(loadLearningData)
               <template v-else>
                 <p>设置四六级、证书或技能学习目标，系统会按任务记录进度。</p>
                 <button type="button" class="link" @click="openGoalDialog">立即设置目标</button>
+                <button type="button" class="link" @click="openGapGoalDialog">按能力缺口生成</button>
               </template>
             </article>
           </section>
@@ -811,6 +957,30 @@ onMounted(loadLearningData)
           <div v-if="!displayedCourses.length && courseFilter !== 'enrolled' && courses.length" class="empty empty--small"><strong>目标岗位暂无匹配的校内课程</strong><p>「{{ targetJobTitle }}」目前没有直接相关的课程，可以切回全部课程浏览完整目录。</p><button type="button" class="btn" @click="setCourseFilter('all')">查看全部课程</button></div>
           <div v-if="!displayedCourses.length && !courses.length" class="empty"><strong>暂无可展示的校园课程</strong><p>管理员发布课程后，会在这里显示真实课程和章节进度。可以先去刷题，或浏览下面的公开课程。</p><button type="button" class="btn" @click="selectTab('python')">去 Python 与算法</button></div>
           
+          <section class="panel section">
+            <div class="head">
+              <div><small>课程考试</small><h2>我的考试记录</h2></div>
+              <button type="button" class="link" @click="router.push('/mine/papers')">查看全部试卷</button>
+            </div>
+            <p class="exam-summary">
+              共 {{ examSummary.total }} 套试卷 · 已参加 {{ examSummary.taken }} 套 · 累计作答 {{ examSummary.attempts }} 次<span v-if="examSummary.unfinished"> · {{ examSummary.unfinished }} 场未完成</span>
+            </p>
+            <div v-if="takenExamPapers.length" class="exam-record-list">
+              <button v-for="paper in takenExamPapers.slice(0, 5)" :key="paper.id" type="button" class="exam-record" @click="openExamPaper(paper)">
+                <div>
+                  <strong>{{ paper.title }}</strong>
+                  <small>{{ paper.questionCount }} 题 · 满分 {{ paper.totalScore }} 分 · 已作答 {{ paper.attemptCount }} 次</small>
+                </div>
+                <em>{{ paper.inProgressAttemptId ? '继续考试' : '查看历史记录' }} →</em>
+              </button>
+            </div>
+            <div v-else class="empty empty--small">
+              <strong>还没有考试记录</strong>
+              <p>进入任意课程的「课程考试」完成一次作答，记录就会汇总到这里。</p>
+              <button type="button" class="btn" @click="router.push('/mine/papers')">浏览全部试卷</button>
+            </div>
+          </section>
+
           <section v-if="courseFilter !== 'enrolled'" class="panel section"><div class="head"><div><small>外部精选</small><h2>公开课程与官方文档</h2></div><span class="note">{{ targetJobTitle ? `匹配目标岗位 ${matchedExternalCount} 门 · 跳转原站学习` : '跳转原站学习' }}</span></div><p v-if="dataErrors.external" class="error"><span>{{ dataErrors.external }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><div v-if="displayedExternalCourses.length" class="external-grid"><a v-for="course in displayedExternalCourses" :key="course.id" class="external-card" :href="course.url" target="_blank" rel="noreferrer noopener"><div class="external-card__top"><small>{{ course.provider }}</small><span class="external-card__badges"><span v-if="matchesTargetJob(course.jobs)" class="match-badge">匹配目标岗位</span><span v-if="course.free" class="external-badge">免费</span></span></div><strong>{{ course.title }}</strong><p>{{ course.description || '前往原站查看课程详情。' }}</p><div v-if="course.skills && course.skills.length" class="course-tags"><span v-for="skill in course.skills.slice(0, 3)" :key="skill" class="course-tag">{{ skill }}</span></div><em>去原站学习 ↗</em></a></div><div v-if="displayedExternalCourses.length && visibleExternalCourses.length > PREVIEW_COUNT" class="expand-row"><span class="note">共 {{ visibleExternalCourses.length }} 门</span><button type="button" class="expand-toggle" @click="externalExpanded = !externalExpanded">{{ externalExpanded ? '收起' : '展开全部 ' + visibleExternalCourses.length + ' 门' }}</button></div><div v-if="!displayedExternalCourses.length && courseFilter !== 'enrolled' && externalCourses.length" class="empty empty--small"><strong>目标岗位暂无匹配的外部课程</strong><p>可以切回全部课程查看公开课程与官方文档。</p><button type="button" class="btn" @click="setCourseFilter('all')">查看全部课程</button></div><div v-if="!displayedExternalCourses.length && !externalCourses.length" class="empty empty--small"><strong>暂无外部课程</strong><p>登记外部精选课程后会显示在这里。</p></div></section>
           <section class="panel section"><div class="head"><div><small>备考与证书</small><h2>考试与证书专项</h2></div><button type="button" class="link" @click="openGoalDialog">新建备考目标</button></div><div v-if="examGoals.length" class="exam-goal-grid"><article v-for="goal in examGoals" :key="goal.id" class="exam-goal"><div class="exam-goal__head"><strong>{{ goal.title }}</strong><span class="tag">{{ goalStatusLabel(goal.status) }}</span></div><p>{{ goal.description || '按任务推进备考计划' }}</p><div class="progress"><i :style="{ width: `${goal.progress || 0}%` }" /></div><div class="exam-goal__foot"><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务 · {{ goal.progress || 0 }}%</small><button type="button" class="link" @click="openGoalForCheckin(goal.id)">去打卡</button></div></article></div><div v-else class="empty empty--small"><strong>还没有备考目标</strong><p>四六级、证书考试都可以建目标，系统会拆解成任务并记录打卡进度。</p><button type="button" class="btn" @click="openGoalDialog">新建备考目标</button></div></section>
         </template>
@@ -833,7 +1003,7 @@ onMounted(loadLearningData)
         </template>
 
         <template v-else>
-          <section class="panel toolbar"><div><h2>我的练习</h2><p>课程、刷题、项目和技能进度汇总在同一个视图里。</p></div><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></section>
+          <section class="panel toolbar"><div><h2>我的练习</h2><p>课程、刷题、项目和技能进度汇总在同一个视图里。</p></div><div class="toolbar-actions"><button type="button" class="btn" @click="openGapGoalDialog">按能力缺口生成</button><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></div></section>
           <section class="practice-layout panel">
             <aside class="goal-list"><div class="head"><h2>学习目标</h2><span>{{ studyGoals.length }} 个</span></div><p v-if="dataErrors.goals" class="error"><span>{{ dataErrors.goals }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><button v-for="goal in studyGoals" :key="goal.id" type="button" :class="{ active: selectedGoalId === goal.id }" @click="loadGoalDetail(goal.id)"><span><strong>{{ goal.title }}</strong><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务</small><small v-if="goal.nextTaskName" class="goal-list__next">下一步 · {{ goal.nextTaskName }}</small></span><em>{{ goal.progress || 0 }}%</em></button><div v-if="!studyGoals.length" class="empty empty--small"><strong>还没有学习目标</strong><p>创建四六级、证书或技能目标后，任务会显示在这里。</p></div></aside>
             <section class="goal-detail"><template v-if="selectedGoalDetail?.goal"><div class="head"><div><h2>{{ selectedGoalDetail.goal.title }}</h2></div><span class="tag">{{ goalStatusLabel(selectedGoalDetail.goal.status) }}</span></div><p>{{ selectedGoalDetail.goal.description || '暂无目标说明' }}</p><div class="meta"><span>开始 {{ formatDate(selectedGoalDetail.goal.startDate) }}</span><span>目标 {{ formatDate(selectedGoalDetail.goal.targetDate) }}</span><span>每日 {{ selectedGoalDetail.goal.dailyStudyMinutes || 60 }} 分钟</span></div><div class="progress"><i :style="{ width: `${selectedGoalDetail.goal.progress || 0}%` }" /></div><div v-if="nextGoalTask" class="next-task"><div><small>下一步</small><strong>{{ nextGoalTask.taskName }}</strong><p>{{ nextGoalTask.description || nextGoalTask.stage || '完成这项任务，推进当前学习目标' }}</p></div><button type="button" class="btn" :disabled="busyAction === `task-${nextGoalTask.id}`" @click="toggleTask(nextGoalTask)">标记完成</button></div><div v-if="activeGoalTasks.length" class="task-list">
@@ -908,6 +1078,17 @@ onMounted(loadLearningData)
             </div>
             <div v-else class="empty empty--small"><strong>暂无学习任务</strong><p>生成学习路径后，路径里的任务节点会汇总到这里。</p></div>
           </section>
+
+          <section class="panel section">
+            <div class="head"><div><small>试卷生成</small><h2>我的练习卷</h2></div><button type="button" class="link" @click="router.push('/paper')">生成新试卷</button></div>
+            <div v-if="myPapers.length" class="summary-list">
+              <article v-for="paper in myPapers.slice(0, 5)" :key="paper.id">
+                <div><strong>{{ paper.title }}</strong><small>{{ paper.questionCount }} 题 · 满分 {{ paper.totalScore }} 分 · {{ paper.createdAt }}</small></div>
+                <button type="button" class="link" @click="router.push({ path: '/paper', query: { paperId: paper.id, from: 'learning' } })">打开</button>
+              </article>
+            </div>
+            <div v-else class="empty empty--small"><strong>还没有保存过试卷</strong><p>到「Python 试卷生成」按知识点组一份卷子，保存后就能在这里回看和打印。</p><button type="button" class="btn" @click="router.push('/paper')">去生成试卷</button></div>
+          </section>
         </template>
       </div>
     </main>
@@ -921,7 +1102,7 @@ onMounted(loadLearningData)
           <label><span>学习计划文本</span><textarea v-model="goalForm.planText" rows="5" placeholder="例如：每天背 30 个单词，周一三五练习听力，周末完成一套真题。填写后会调用 AI 拆解为任务。" /></label>
           <div class="dialog-row"><label><span>开始日期</span><input v-model="goalForm.startDate" type="date" /></label><label><span>目标日期</span><input v-model="goalForm.targetDate" type="date" /></label><label><span>每日分钟</span><input v-model.number="goalForm.dailyStudyMinutes" type="number" min="10" max="600" /></label></div>
           <p v-if="goalError" class="error">{{ goalError }}</p>
-          <footer><button type="button" class="btn" :disabled="goalSaving" @click="closeGoalDialog">取消</button><button v-if="goalAiUnavailable" type="button" class="btn btn--primary" :disabled="goalSaving" @click="saveGoal(true)">{{ goalSaving ? '正在保存…' : '直接保存（不拆解）' }}</button><button v-else type="submit" class="btn btn--primary" :disabled="goalSaving">{{ goalSaving ? '正在保存…' : (goalForm.planText.trim() ? 'AI 拆解并保存' : '保存目标') }}</button></footer>
+          <footer><button type="button" class="btn" :disabled="goalSaving" @click="closeGoalDialog">取消</button><button v-if="goalAiUnavailable" type="button" class="btn btn--primary" :disabled="goalSaving" @click="saveGoal(true)">{{ goalSaving ? '正在保存…' : '直接保存（不拆解）' }}</button><button v-else type="submit" class="btn btn--primary" :disabled="goalSaving">{{ goalSaving ? '正在保存…' : (goalFromGaps ? '生成学习目标' : (goalForm.planText.trim() ? 'AI 拆解并保存' : '保存目标')) }}</button></footer>
         </form>
       </div>
     </Teleport>
@@ -1638,6 +1819,13 @@ onMounted(loadLearningData)
   gap: 18px;
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .toolbar p {
   margin: 9px 0 0;
   color: var(--hp-ink-2);
@@ -2108,6 +2296,65 @@ onMounted(loadLearningData)
   margin: 0;
   color: var(--hp-muted);
   font-size: 11.5px;
+}
+
+/* ---------- 我的考试记录（课程与专项页） ---------- */
+
+.exam-summary {
+  margin: 12px 0 0;
+  color: var(--hp-muted);
+  font-size: 13px;
+}
+
+.exam-record-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.exam-record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.exam-record:hover {
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.exam-record > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.exam-record strong {
+  font-size: 14.5px;
+}
+
+.exam-record small {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.exam-record em {
+  flex: none;
+  color: var(--hp-blue-ink);
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ---------- 考试与证书专项（展示真实备考目标） ---------- */

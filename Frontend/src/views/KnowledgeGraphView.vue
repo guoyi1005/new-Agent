@@ -14,7 +14,7 @@ const filters = [
   ['all', '全部'], ['weak', '需巩固'], ['learning', '学习中'],
   ['mastered', '已掌握'], ['available', '可学习'], ['locked', '待解锁'],
 ]
-const labels = { weak:'需巩固', learning:'学习中', mastered:'已掌握', available:'可学习', locked:'待解锁' }
+const labels = { weak: '需巩固', learning: '学习中', mastered: '已掌握', available: '可学习', locked: '待解锁' }
 
 const nodes = computed(() => graph.value.nodes.filter((node) => {
   const hitStatus = status.value === 'all' || node.status === status.value
@@ -22,64 +22,125 @@ const nodes = computed(() => graph.value.nodes.filter((node) => {
   return hitStatus && (!query || `${node.title} ${node.group}`.toLowerCase().includes(query))
 }))
 const nodeById = computed(() => new Map(graph.value.nodes.map((node) => [node.id, node])))
-const visibleIds = computed(() => new Set(nodes.value.map((node) => node.id)))
-const edges = computed(() => graph.value.edges.filter((edge) => visibleIds.value.has(edge.source) && visibleIds.value.has(edge.target)))
-const point = (node) => ({ x: 42 + Number(node.level || 0) * 190, y: 92 + Number(node.order || 0) * 150 })
-const prerequisites = computed(() => (selected.value?.prerequisiteIds || []).map((id) => nodeById.value.get(id)).filter(Boolean))
+const prerequisites = computed(() => (selected.value?.prerequisiteIds || [])
+  .map((id) => nodeById.value.get(id)).filter(Boolean))
+
+/* 按阶段（level）分栏：不再用固定画布 + 绝对定位，宽度自适应 */
+const columns = computed(() => {
+  const grouped = new Map()
+  for (const node of nodes.value) {
+    const level = Number(node.level || 0)
+    if (!grouped.has(level)) {
+      grouped.set(level, { level, title: node.group || `阶段 ${level + 1}`, items: [] })
+    }
+    const column = grouped.get(level)
+    if (!column.title && node.group) column.title = node.group
+    column.items.push(node)
+  }
+  return [...grouped.values()].sort((left, right) => left.level - right.level)
+})
+
+/* 前置知识直接写在节点上，替代原来的跨列连线 */
+function prerequisiteText(node) {
+  const names = (node.prerequisiteIds || [])
+    .map((id) => nodeById.value.get(id))
+    .filter(Boolean)
+    .map((item) => item.title)
+  return names.length ? `前置：${names.join('、')}` : ''
+}
+
+function statusLabel(value) {
+  return labels[value] || '待解锁'
+}
 
 async function load() {
   loading.value = true
   try {
     graph.value = await getPythonKnowledgeGraph() || { nodes: [], edges: [], summary: {} }
     selected.value = graph.value.nodes.find((node) => node.status === 'weak') || graph.value.nodes[0] || null
-  } catch (cause) { error.value = cause.message } finally { loading.value = false }
+  } catch (cause) {
+    error.value = cause.message
+  } finally {
+    loading.value = false
+  }
 }
-function generate() {
-  router.push({ path: '/career/nebula/python/resources', query: { topic: selected.value?.title || '' } })
-}
+
 onMounted(load)
 </script>
 
 <template>
   <div class="feature-page">
-    <main class="graph-page">
-      <header class="graph-header">
+    <main class="feature-container">
+      <header class="feature-heading">
         <div>
-<h1>Python 知识图谱</h1><p>基于真实答题与学习路径动态更新</p>
-        </div>
-        <input v-model="keyword" class="feature-input" placeholder="搜索知识点" />
-        <div class="feature-chip-row">
-          <button v-for="[value,label] in filters" :key="value" class="feature-chip" :class="{ 'feature-chip--active':status===value }" @click="status=value">{{ label }}</button>
+          <h1>Python 知识图谱</h1>
+          <p>按阶段查看知识点关系与掌握状态，点击任一知识点查看详情</p>
         </div>
       </header>
+
+      <section class="kg-toolbar">
+        <input v-model="keyword" class="kg-search" type="search" placeholder="搜索知识点" />
+        <div class="kg-chips">
+          <button v-for="[value, label] in filters" :key="value" type="button" class="kg-chip"
+            :class="{ 'kg-chip--active': status === value }" @click="status = value">{{ label }}</button>
+        </div>
+      </section>
+
       <div v-if="error" class="feature-error">{{ error }}</div>
       <div v-if="loading" class="feature-empty">正在加载知识图谱…</div>
-      <div v-else class="graph-workspace">
-        <section class="feature-card graph-canvas">
-          <div class="stage-heads"><span v-for="title in ['基础语法','数据结构','函数与模块','异常与调试','算法与性能']" :key="title">{{ title }}</span></div>
-          <div class="graph-plane">
-            <svg viewBox="0 0 960 540" preserveAspectRatio="none" aria-hidden="true">
-              <line v-for="edge in edges" :key="`${edge.source}-${edge.target}`"
-                :x1="point(nodeById.get(edge.source)).x+140" :y1="point(nodeById.get(edge.source)).y+28"
-                :x2="point(nodeById.get(edge.target)).x" :y2="point(nodeById.get(edge.target)).y+28" />
-            </svg>
-            <button v-for="node in nodes" :key="node.id" class="graph-node" :class="[`graph-node--${node.status}`,{'selected':selected?.id===node.id}]"
-              :style="{left:`${point(node).x}px`,top:`${point(node).y}px`}" @click="selected=node">
-              <span></span><strong>{{ node.title }}</strong><small>{{ labels[node.status] || node.status }}</small>
-            </button>
-            <div v-if="!nodes.length" class="feature-empty graph-no-result">没有符合条件的知识点</div>
+
+      <div v-else class="kg-workspace">
+        <section class="feature-card kg-map">
+          <div v-if="!columns.length" class="feature-empty">没有符合条件的知识点</div>
+          <div v-else class="kg-columns">
+            <div v-for="column in columns" :key="column.level" class="kg-column">
+              <header class="kg-column__head">
+                <strong>{{ column.title }}</strong>
+                <span>{{ column.items.length }} 个</span>
+              </header>
+              <div class="kg-column__items">
+                <button v-for="node in column.items" :key="node.id" type="button" class="kg-node"
+                  :class="[`kg-node--${node.status}`, { 'kg-node--selected': selected?.id === node.id }]"
+                  @click="selected = node">
+                  <span class="kg-node__dot"></span>
+                  <strong>{{ node.title }}</strong>
+                  <small>{{ statusLabel(node.status) }}</small>
+                  <em v-if="prerequisiteText(node)">{{ prerequisiteText(node) }}</em>
+                </button>
+              </div>
+            </div>
           </div>
-          <footer class="graph-legend"><span v-for="[value,label] in filters.slice(1)" :key="value"><i :class="`legend-${value}`"></i>{{ label }}</span></footer>
         </section>
-        <aside class="feature-card graph-detail">
+
+        <aside class="feature-card feature-section kg-detail">
           <template v-if="selected">
-            <div class="feature-section__head"><h2>知识点详情</h2><span :class="`feature-status feature-status--${selected.status}`">{{ labels[selected.status] || selected.status }}</span></div>
-            <h3>{{ selected.title }}</h3><p class="graph-description">{{ selected.description || '该知识点暂无补充说明' }}</p>
-            <div class="evidence"><div><span>掌握度</span><strong>{{ selected.attemptCount ? `${Math.round(selected.score || 0)}%` : '—' }}</strong></div><div><span>答题次数</span><strong>{{ selected.attemptCount || '—' }}</strong></div><div><span>错误次数</span><strong>{{ selected.attemptCount ? selected.wrongCount : '—' }}</strong></div></div>
-            <section class="detail-block"><h4>前置知识</h4><div v-if="prerequisites.length" class="feature-list"><div v-for="item in prerequisites" :key="item.id" class="feature-row"><span>{{ item.title }}</span><span :class="`feature-status feature-status--${item.status}`">{{ labels[item.status] }}</span></div></div><p v-else>无需前置知识</p></section>
-            <section class="detail-block"><h4>学习建议</h4><p>{{ selected.pathObjective || (selected.status === 'weak' ? '建议生成专项资源后完成针对性练习。' : '按当前学习路径继续学习。') }}</p></section>
-            <div class="detail-actions"><button class="feature-button" @click="generate">生成专项资源</button><button class="feature-button feature-button--primary" @click="router.push('/mine/papers')">开始练习</button></div>
+            <div class="feature-section__head">
+              <h2>知识点详情</h2>
+              <span :class="`kg-status kg-status--${selected.status}`">{{ statusLabel(selected.status) }}</span>
+            </div>
+            <h3>{{ selected.title }}</h3>
+            <p class="kg-description">{{ selected.description || '该知识点暂无补充说明' }}</p>
+            <div class="kg-evidence">
+              <div><span>掌握度</span><strong>{{ selected.attemptCount ? `${Math.round(selected.score || 0)}%` : '—' }}</strong></div>
+              <div><span>答题次数</span><strong>{{ selected.attemptCount || '—' }}</strong></div>
+              <div><span>错误次数</span><strong>{{ selected.attemptCount ? selected.wrongCount : '—' }}</strong></div>
+            </div>
+            <section class="kg-block">
+              <h4>前置知识</h4>
+              <div v-if="prerequisites.length" class="kg-prereq">
+                <span v-for="item in prerequisites" :key="item.id">{{ item.title }}<em>{{ statusLabel(item.status) }}</em></span>
+              </div>
+              <p v-else>无需前置知识</p>
+            </section>
+            <section class="kg-block">
+              <h4>学习建议</h4>
+              <p>{{ selected.pathObjective || (selected.status === 'weak' ? '这个知识点偏薄弱，建议回到题库做几道对应练习。' : '按当前学习路径继续学习。') }}</p>
+            </section>
+            <div class="kg-actions">
+              <button class="feature-button feature-button--primary" @click="router.push('/career/nebula/python')">去题库练习</button>
+            </div>
           </template>
+          <div v-else class="feature-empty">请选择左侧任一知识点</div>
         </aside>
       </div>
     </main>
@@ -87,56 +148,334 @@ onMounted(load)
 </template>
 
 <style scoped>
-.graph-page{width:min(1500px,calc(100% - 32px));margin:auto;padding:12px 0 36px}.graph-header{display:grid;grid-template-columns:1fr 240px auto;align-items:center;gap:16px;margin-bottom:18px}.graph-header h1{margin:0;color:#17233a;font-size:27px}.graph-header p{margin:5px 0 0;color:#718096;font-size:13px}.graph-workspace{display:grid;grid-template-columns:minmax(880px,1fr) 340px;gap:16px}.graph-canvas{overflow:auto}.stage-heads{display:grid;grid-template-columns:repeat(5,190px);width:960px;padding:22px 16px 0}.stage-heads span{margin:0 13px;padding:12px;border:1px solid #dce3ea;border-radius:7px;color:#334a62;background:#f7f9fb;text-align:center;font-weight:750}.graph-plane{position:relative;width:960px;height:540px}.graph-plane:before{content:'';position:absolute;inset:18px 0;background:repeating-linear-gradient(90deg,transparent 0,transparent 189px,#e2e8ef 190px)}.graph-plane svg{position:absolute;inset:0;width:960px;height:540px}.graph-plane line{stroke:#8499ad;stroke-width:1.5}.graph-node{position:absolute;width:140px;min-height:57px;padding:8px 10px;border:1px solid #aab8c6;border-radius:8px;color:#344a60;background:#fff;text-align:left}.graph-node>span{display:inline-block;width:9px;height:9px;margin-right:7px;border-radius:50%;background:#758ca2}.graph-node strong{font-size:14px}.graph-node small{display:block;margin:5px 0 0 16px;color:#788899}.graph-node--mastered{border-color:#62a180;background:#f4faf7}.graph-node--mastered>span{background:#4d9270}.graph-node--weak{border-color:#bd7069;background:#fff7f6}.graph-node--weak>span{background:#b85e56}.graph-node--learning,.graph-node--available{border-color:#6f95b8;background:#f5f9fc}.graph-node--learning>span,.graph-node--available>span{background:#527da5}.graph-node--locked{opacity:.58}.graph-node.selected{box-shadow:0 0 0 3px rgba(49,95,140,.15)}.graph-no-result{position:absolute;inset:150px 220px}.graph-legend{display:flex;gap:20px;width:960px;padding:16px 24px;border-top:1px solid #e5eaf0;color:#65758a;font-size:12px}.graph-legend span{display:flex;align-items:center;gap:6px}.graph-legend i{width:9px;height:9px;border-radius:50%;background:#8296aa}.graph-legend .legend-mastered{background:#4d9270}.graph-legend .legend-weak{background:#b85e56}.graph-legend .legend-learning,.graph-legend .legend-available{background:#527da5}.graph-legend .legend-locked{background:#aab4bf}.graph-detail{position:sticky;top:82px;height:fit-content;padding:22px}.graph-detail h3{margin:26px 0 8px;font-size:25px;word-break:break-word}.graph-description{color:#718096;line-height:1.6}.evidence{display:grid;grid-template-columns:repeat(3,1fr);margin:22px 0;border-block:1px solid #e7ecf1}.evidence div{padding:17px 5px;text-align:center}.evidence div+div{border-left:1px solid #e7ecf1}.evidence span,.evidence strong{display:block}.evidence span{color:#718096;font-size:12px}.evidence strong{margin-top:7px;font-size:20px}.detail-block{margin-top:22px}.detail-block h4{margin:0 0 10px}.detail-block p{color:#65758a;line-height:1.7}.detail-block .feature-row{padding:11px}.detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}@media(max-width:1200px){.graph-workspace{grid-template-columns:1fr}.graph-detail{position:static}.graph-header{grid-template-columns:1fr}.graph-header .feature-chip-row{grid-column:1}}
-/* ===== 本站配色覆盖（奶油底 + 黑色描边 + 低饱和马卡龙色） ===== */
-.graph-header h1 { color: var(--hp-ink); }
-.graph-header p,
-.graph-description,
-.detail-block p,
-.evidence span,
-.graph-legend,
-.graph-node small { color: var(--hp-muted); }
-.stage-heads span {
-  border-color: var(--hp-line);
-  border-radius: 999px;
-  color: var(--hp-ink);
-  background: var(--hp-cream);
-}
-.graph-plane:before { background: repeating-linear-gradient(90deg, transparent 0, transparent 189px, rgba(23, 23, 23, 0.12) 190px); }
-.graph-plane line { stroke: rgba(23, 23, 23, 0.28); }
-.graph-node {
-  border-color: var(--hp-line);
-  border-radius: 14px;
-  color: var(--hp-ink);
-  background: var(--hp-cream);
-}
-.graph-node > span { background: var(--hp-muted); }
-.graph-node--mastered { border-color: var(--hp-line); background: #e7ead9; }
-.graph-node--mastered > span { background: #7d8a5c; }
-.graph-node--weak { border-color: var(--hp-line); background: #f7e2de; }
-.graph-node--weak > span { background: #b4544c; }
-.graph-node--learning,
-.graph-node--available { border-color: var(--hp-line); background: #e3ebf2; }
-.graph-node--learning > span,
-.graph-node--available > span { background: #5b7b93; }
-.graph-node.selected { box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.12); }
-.graph-legend i { background: var(--hp-muted); }
-.evidence,
-.evidence div + div { border-color: rgba(23, 23, 23, 0.12); }
-.graph-detail h3,
-.detail-block h4 { color: var(--hp-ink); }
-/* 面包屑返回链接：弱化处理，与站内次级文字一致 */
-.py-back {
-  display: inline-block;
-  margin: 0 6px 6px 0;
-  color: var(--hp-muted);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: color .2s ease;
+/* 外层已有二级导航，收紧顶部留白，与题库/规划页保持一致 */
+.feature-container {
+  padding: 12px 0 48px;
 }
 
-.py-back:hover {
+/* 搜索 + 状态筛选：与站内其它页面的工具条一致 */
+.kg-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.kg-search {
+  width: 260px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  font: inherit;
+  font-size: 13.5px;
+  outline: none;
+}
+
+.kg-search:focus {
+  border-color: var(--hp-blue-ink);
+}
+
+.kg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kg-chip {
+  padding: 7px 15px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.kg-chip:hover {
+  border-color: var(--hp-line-strong);
+  color: var(--hp-ink);
+}
+
+.kg-chip--active {
+  border-color: var(--hp-ink);
+  color: #fff;
+  background: var(--hp-ink);
+}
+
+/* 左图谱 + 右详情 */
+.kg-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+.kg-map {
+  padding: 22px 24px 26px;
+}
+
+/* 阶段列平均分配可用宽度；列数多时也不会撑出横向滚动条 */
+.kg-columns {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.kg-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kg-column__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hp-line);
+}
+
+.kg-column__head strong {
   color: var(--hp-blue-ink);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.kg-column__head span {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.kg-column__items {
+  display: grid;
+  gap: 10px;
+}
+
+.kg-node {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.kg-node:hover {
+  transform: translateY(-2px);
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.kg-node__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--hp-muted);
+}
+
+.kg-node strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.kg-node small {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.kg-node em {
+  color: var(--hp-muted);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.kg-node--mastered {
+  background: var(--hp-green);
+}
+
+.kg-node--mastered .kg-node__dot {
+  background: var(--hp-green-ink);
+}
+
+.kg-node--weak {
+  background: var(--hp-pink);
+}
+
+.kg-node--weak .kg-node__dot {
+  background: var(--hp-pink-ink);
+}
+
+.kg-node--learning,
+.kg-node--available {
+  background: var(--hp-blue);
+}
+
+.kg-node--learning .kg-node__dot,
+.kg-node--available .kg-node__dot {
+  background: var(--hp-blue-ink);
+}
+
+.kg-node--locked {
+  opacity: 0.6;
+}
+
+.kg-node--selected {
+  border-color: var(--hp-ink);
+  box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.1);
+}
+
+/* 右侧详情 */
+.kg-detail h3 {
+  margin: 18px 0 8px;
+  color: var(--hp-ink);
+  font-size: 20px;
+  word-break: break-word;
+}
+
+.kg-description {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.kg-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.kg-status--mastered {
+  color: var(--hp-green-ink);
+  background: var(--hp-green);
+}
+
+.kg-status--weak {
+  color: var(--hp-pink-ink);
+  background: var(--hp-pink);
+}
+
+.kg-status--learning,
+.kg-status--available {
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+}
+
+.kg-status--locked {
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
+}
+
+.kg-evidence {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 18px 0;
+  border-top: 1px solid var(--hp-line);
+  border-bottom: 1px solid var(--hp-line);
+}
+
+.kg-evidence div {
+  padding: 14px 4px;
+  text-align: center;
+}
+
+.kg-evidence div + div {
+  border-left: 1px solid var(--hp-line);
+}
+
+.kg-evidence span,
+.kg-evidence strong {
+  display: block;
+}
+
+.kg-evidence span {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.kg-evidence strong {
+  margin-top: 6px;
+  color: var(--hp-ink);
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kg-block {
+  margin-top: 18px;
+}
+
+.kg-block h4 {
+  margin: 0 0 10px;
+  color: var(--hp-ink);
+  font-size: 13.5px;
+}
+
+.kg-block p {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.kg-prereq {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kg-prereq span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface-2);
+  font-size: 12px;
+}
+
+.kg-prereq em {
+  color: var(--hp-muted);
+  font-style: normal;
+  font-size: 11px;
+}
+
+.kg-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+@media (max-width: 1000px) {
+  .kg-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .kg-columns {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .kg-search {
+    width: 100%;
+  }
 }
 </style>

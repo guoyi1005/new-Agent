@@ -5,6 +5,24 @@ export const getCareerNebulaMap = async () => {
   return response?.data || { careers: [], skills: [], edges: [] }
 }
 
+/** 人岗匹配：匹配度、已掌握、待提升与逐技能差距（由岗位要求 + 我的技能等级算出） */
+export const getCareerJobFit = async (jobName) => {
+  const response = await request({
+    url: '/api/app/career/job-fit',
+    params: { jobName },
+  })
+  return response?.data || null
+}
+
+/** 岗位匹配排行：返回与当前学生匹配度较高的其它岗位 */
+export const getCareerFitJobs = async (jobName, limit = 3) => {
+  const response = await request({
+    url: '/api/app/career/fit-jobs',
+    params: { jobName, limit },
+  })
+  return Array.isArray(response?.data) ? response.data : []
+}
+
 export const getCareerLearningProgress = async () => {
   const response = await request({ url: '/api/app/career-nebula/progress' })
   return response?.data || { completedItemIds: [] }

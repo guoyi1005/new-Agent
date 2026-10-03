@@ -28,7 +28,14 @@ import CampusRecruitmentManage from './pages/employment/CampusRecruitmentManage'
 import AlumniEnterpriseManage from './pages/employment/AlumniEnterpriseManage'
 import CareerNebulaManage from './pages/careerNebula/CareerNebulaManage'
 import PythonProblemManage from './pages/learning/PythonProblemManage'
+import ExternalCourseManage from './pages/learning/ExternalCourseManage'
+import LearningTaxonomyManage from './pages/learning/LearningTaxonomyManage'
+import LearningStatsDashboard from './pages/learning/LearningStatsDashboard'
 import InterviewManage from './pages/interview/InterviewManage'
+import PostManage from './pages/forum/PostManage/PostManage'
+import TopicManage from './pages/forum/TopicManage/TopicManage'
+import CommentManage from './pages/forum/CommentManage/CommentManage'
+import ReportManage from './pages/forum/ReportManage/ReportManage'
 import './App.css'
 
 function App() {
@@ -74,7 +81,14 @@ function App() {
           <Route path="/employment/alumni" element={<AlumniEnterpriseManage />} />
           <Route path="/career/nebula" element={<CareerNebulaManage />} />
           <Route path="/learning/python-problems" element={<PythonProblemManage />} />
+          <Route path="/learning/external-courses" element={<ExternalCourseManage />} />
+          <Route path="/learning/taxonomy" element={<LearningTaxonomyManage />} />
+          <Route path="/learning/stats" element={<LearningStatsDashboard />} />
           <Route path="/interview/manage" element={<InterviewManage />} />
+          <Route path="/forum/posts" element={<PostManage />} />
+          <Route path="/forum/topics" element={<TopicManage />} />
+          <Route path="/forum/comments" element={<CommentManage />} />
+          <Route path="/forum/reports" element={<ReportManage />} />
           {workspaceRoutes}
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

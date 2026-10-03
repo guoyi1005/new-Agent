@@ -4,7 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../components/AppTabBar.vue'
 import {
+  REPORT_REASONS,
   createComment,
+  createReport,
   getCommentList,
   getHotTopics,
   getMyFavoritePosts,
@@ -17,7 +19,7 @@ import {
   togglePostFavorite,
   togglePostLike,
 } from '../api/forum'
-import { getToken } from '../utils/auth'
+import { getToken, getUserInfo } from '../utils/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,6 +73,14 @@ const publishOpen = ref(false)
 const publishSaving = ref(false)
 const publishError = ref('')
 const publishForm = reactive({ title: '', content: '', topicId: '' })
+
+// 举报：登录用户可举报他人的帖子，自己的帖子不显示举报入口
+const reportOpen = ref(false)
+const reportSaving = ref(false)
+const reportError = ref('')
+const reportDone = ref(false)
+const reportTarget = ref(null)
+const reportForm = reactive({ reasonType: 1, description: '' })
 
 const category = computed(() => {
   const value = String(route.query.category || 'recommended')
@@ -359,6 +369,54 @@ async function submitPost() {
   }
 }
 
+function canReport(post) {
+  if (!post?.id) return false
+  // 学生登录响应里只有 username，所以用用户名判断是否是自己的帖子
+  const me = getUserInfo()
+  if (!me?.username || !post.username) return true
+  return String(post.username) !== String(me.username)
+}
+
+function openReport(post) {
+  if (!post?.id) return
+  if (!ensureLogin()) return
+  reportTarget.value = post
+  reportForm.reasonType = 1
+  reportForm.description = ''
+  reportError.value = ''
+  reportDone.value = false
+  reportOpen.value = true
+}
+
+function closeReport() {
+  if (reportSaving.value) return
+  reportOpen.value = false
+  reportTarget.value = null
+}
+
+async function submitReport() {
+  if (!reportTarget.value?.id) return
+  if (!ensureLogin()) return
+  const reasonType = Number(reportForm.reasonType) || 1
+  const reason = REPORT_REASONS.find((item) => item.value === reasonType)
+  reportSaving.value = true
+  reportError.value = ''
+  try {
+    await createReport({
+      targetType: 1,
+      targetId: reportTarget.value.id,
+      reasonType,
+      reasonText: reason?.label || '其他',
+      description: reportForm.description.trim(),
+    })
+    reportDone.value = true
+  } catch (error) {
+    reportError.value = friendlyError(error.message || '举报提交失败')
+  } finally {
+    reportSaving.value = false
+  }
+}
+
 function authorInitial(name) {
   return String(name || '校').slice(0, 1).toUpperCase()
 }
@@ -484,6 +542,7 @@ onMounted(loadFeed)
                 <button type="button" :disabled="actionBusy === `like-${post.id}`" @click.stop="switchLike(post)">{{ post.isLiked ? '已赞' : '点赞' }} {{ post.likeCount || 0 }}</button>
                 <button type="button" @click.stop="openPostDetail(post)">评论 {{ post.commentCount || 0 }}</button>
                 <button type="button" :disabled="actionBusy === `favorite-${post.id}`" @click.stop="switchFavorite(post)">{{ post.isFavorited ? '已收藏' : '收藏' }}</button>
+                <button v-if="canReport(post)" type="button" class="report-link" @click.stop="openReport(post)">举报</button>
               </footer>
             </article>
           </div>
@@ -550,6 +609,7 @@ onMounted(loadFeed)
             <div class="detail-actions">
               <button type="button" @click="switchLike(selectedPost)">{{ selectedPost?.isLiked ? '已赞' : '点赞' }} {{ selectedPost?.likeCount || 0 }}</button>
               <button type="button" @click="switchFavorite(selectedPost)">{{ selectedPost?.isFavorited ? '已收藏' : '收藏' }}</button>
+              <button v-if="canReport(selectedPost)" type="button" class="report-action" @click="openReport(selectedPost)">举报</button>
               <span>{{ selectedPost?.viewCount || 0 }} 浏览</span>
             </div>
 
@@ -588,6 +648,28 @@ onMounted(loadFeed)
         </form>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div v-if="reportOpen" class="community-mask" @click.self="closeReport">
+        <form class="publish-dialog report-dialog" @submit.prevent="submitReport">
+          <header class="detail-head">
+            <div><h2>举报内容</h2><p>举报会提交给管理员处理，请如实描述。</p></div>
+            <button type="button" aria-label="关闭举报窗口" @click="closeReport">×</button>
+          </header>
+          <template v-if="reportDone">
+            <p class="report-done">举报已提交，管理员会尽快处理。</p>
+            <footer><button type="button" class="community-btn community-btn--primary" @click="closeReport">知道了</button></footer>
+          </template>
+          <template v-else>
+            <p class="report-target">举报对象：{{ reportTarget?.title || '该帖子' }}</p>
+            <label><span>举报原因 <em>*</em></span><select v-model="reportForm.reasonType"><option v-for="reason in REPORT_REASONS" :key="reason.value" :value="reason.value">{{ reason.label }}</option></select></label>
+            <label><span>补充说明</span><textarea v-model="reportForm.description" rows="4" maxlength="1000" placeholder="补充具体问题，方便管理员判断（选填）" /></label>
+            <p v-if="reportError" class="community-error">{{ reportError }}</p>
+            <footer><button type="button" class="community-btn" :disabled="reportSaving" @click="closeReport">取消</button><button type="submit" class="community-btn community-btn--primary" :disabled="reportSaving">{{ reportSaving ? '提交中…' : '提交举报' }}</button></footer>
+          </template>
+        </form>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -621,4 +703,10 @@ onMounted(loadFeed)
 .hot-topics button.is-active .rank{color:var(--hp-ink)}
 .feed-hint{color:var(--hp-muted);font-size:12px}
 .publish-dialog label span em{color:#b4544c;font-style:normal}
+/* ---------- 举报 ---------- */
+.post-card footer .report-link{color:var(--hp-muted)}
+.post-card footer .report-link:hover{color:#b4544c}
+.detail-actions .report-action:hover{color:#b4544c;border-color:#b4544c}
+.report-dialog .report-target{margin:0;color:var(--hp-muted);font-size:12.5px}
+.report-dialog .report-done{margin:0;padding:12px 14px;border-left:3px solid var(--hp-blue-ink);border-radius:0 8px 8px 0;color:var(--hp-ink-2);background:var(--hp-tint);font-size:13px;line-height:1.7}
 </style>
