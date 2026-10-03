@@ -119,6 +119,7 @@ onMounted(loadEvidence)
           </div>
         </section>
 
+        <div class="portrait-journal">
         <section class="portrait-learning" aria-label="课程学习与技能记录">
           <div class="portrait-section-heading"><span>02 / 学习积累</span><h3>从课程到技能</h3><RouterLink to="/growth/courses">查看课程管理 →</RouterLink></div>
           <div class="portrait-learning__body">
@@ -137,7 +138,11 @@ onMounted(loadEvidence)
             </div>
             <div class="portrait-skill-chart">
               <div class="portrait-inline-head"><h4>技能学习记录</h4><RouterLink to="/growth/skills">查看技能树 →</RouterLink></div>
-              <p v-if="!skills.length" class="portrait-muted">尚无可核实的技能学习记录。</p>
+              <div v-if="!skills.length" class="portrait-skill-empty">
+                <span aria-hidden="true"></span>
+                <p>技能足迹尚待记录</p>
+                <small>完成课程章节或练习后，这里会呈现可核实的学习证据。</small>
+              </div>
               <div v-for="skill in skills.slice(0, 6)" :key="skill.code || skill.name" class="portrait-skill-line">
                 <span>{{ skill.name }}</span><div class="portrait-bar" :class="{ 'is-uncertain': skill.level == null }"><i v-if="skill.level != null" :style="{ width: `${skill.level}%` }" /></div>
                 <strong>{{ skill.level == null ? `${skill.evidenceCount} 次记录` : `${skill.level}%` }}</strong>
@@ -153,7 +158,7 @@ onMounted(loadEvidence)
           <div v-if="!practicedNodes.length" class="portrait-empty-line">暂无知识点练习记录。</div>
           <div v-for="node in practicedNodes.slice(0, 8)" :key="node.id" class="portrait-score-row">
             <div><strong>{{ node.displayName }}</strong><small>练习 {{ node.attemptCount }} 次</small></div>
-            <div class="portrait-score-axis"><i v-if="node.score != null && Number.isFinite(Number(node.score))" :style="{ left: `${clamp(node.score)}%` }" /></div>
+            <div class="portrait-score-axis"><b v-if="node.score != null && Number.isFinite(Number(node.score))" :style="{ width: `${clamp(node.score)}%` }" /><i v-if="node.score != null && Number.isFinite(Number(node.score))" :style="{ left: `${clamp(node.score)}%` }" /></div>
             <span>{{ node.score == null ? '未评分' : `${Math.round(Number(node.score))} 分` }}</span>
           </div>
           <div v-if="practicedNodes.length" class="portrait-scale"><span>0</span><span>50</span><span>100</span></div>
@@ -167,6 +172,7 @@ onMounted(loadEvidence)
           </div>
           <p class="portrait-footnote">学习节奏按实际记录事件日期汇总；不生成虚构动态。</p>
         </section>
+        </div>
       </template>
     </main>
   </div>
@@ -179,4 +185,53 @@ onMounted(loadEvidence)
 .portrait-practice>.portrait-muted{margin:-10px 0 22px;font-size:13px}.portrait-score-row{display:grid;grid-template-columns:minmax(160px,1fr) minmax(160px,2fr) 80px;align-items:center;gap:22px;padding:11px 0}.portrait-score-row>div:first-child{display:flex;flex-direction:column;gap:2px}.portrait-score-row strong{overflow-wrap:anywhere;font-size:13px}.portrait-score-row small{color:var(--hp-muted);font-size:11px}.portrait-score-row>span{text-align:right;font-size:12px}.portrait-score-axis{position:relative;height:2px;background:#dce4dd}.portrait-score-axis:before,.portrait-score-axis:after{content:'';position:absolute;top:-3px;width:1px;height:8px;background:#c9d4cb}.portrait-score-axis:after{right:0}.portrait-score-axis i{position:absolute;top:-5px;width:12px;height:12px;border:2px solid #fff;border-radius:50%;background:#8ca89b;transform:translateX(-50%);box-shadow:0 0 0 1px #8ca89b}.portrait-scale{display:flex;justify-content:space-between;margin-left:calc((100% - 160px) / 3);padding-right:80px;color:var(--hp-muted);font-size:11px}.portrait-empty-line{padding:20px 0;color:var(--hp-muted)}
 .portrait-timeline__track{display:flex;gap:14px;align-items:end;overflow-x:auto;padding:24px 0 4px}.portrait-day{display:flex;flex:1 0 58px;flex-direction:column;align-items:center;gap:5px;min-width:58px}.portrait-day i{width:24px;border-radius:8px 8px 3px 3px;background:#a6bea2}.portrait-day strong{font-size:11px}.portrait-day span{color:var(--hp-muted);font-size:11px}.feature-page.is-embedded{min-height:0;padding-top:0;background:transparent}.is-embedded .feature-container{padding-top:12px}
 @media(max-width:900px){.portrait-overview,.portrait-learning__body{grid-template-columns:1fr;gap:30px}.portrait-evidence{max-width:560px}.portrait-course-chart{justify-content:flex-start}}@media(max-width:680px){.portrait-header{align-items:flex-start;flex-direction:column}.portrait-section-heading{align-items:flex-start;flex-wrap:wrap;gap:7px}.portrait-section-heading h3{width:100%}.portrait-section-heading a{margin-left:0}.portrait-course-chart{align-items:flex-start;flex-direction:column;gap:14px}.portrait-ring{align-self:center}.portrait-course-list{width:100%}.portrait-score-row{grid-template-columns:1fr 1fr;gap:8px}.portrait-score-axis{grid-column:1 / -1;grid-row:2}.portrait-score-row>span{grid-column:2;grid-row:1}.portrait-scale{margin:0;padding:0}.portrait-skill-line{grid-template-columns:84px 1fr 72px;gap:7px}}
+
+/* The evidence journal stays useful even when a student has only one real record. */
+.portrait-journal{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:22px;margin:0 0 34px}
+.portrait-journal>section{position:relative;min-width:0;overflow:hidden;border:1px solid #d8c4b2;box-shadow:0 12px 28px rgba(90,64,44,.08)}
+.portrait-journal .portrait-section-heading{position:relative;z-index:1;margin-bottom:26px}
+.portrait-journal .portrait-section-heading>span{color:#945f51}
+.portrait-journal .portrait-section-heading a{padding:7px 12px;border:1px solid #b9a18d;border-radius:999px;background:rgba(255,250,243,.75);color:#604536;font-size:12px;transition:background .25s ease,transform .25s ease}
+.portrait-journal .portrait-section-heading a:hover{background:#fffaf3;text-decoration:none;transform:translateY(-2px)}
+.portrait-learning{grid-column:1/-1;padding:30px 34px 34px;border-radius:27px 54px 27px 27px;background:#f3e7d7}
+.portrait-learning:after{content:'';position:absolute;top:-66px;right:-45px;width:220px;height:220px;border:1px solid rgba(142,105,77,.13);border-radius:50%;box-shadow:0 0 0 28px rgba(255,250,243,.11),0 0 0 56px rgba(255,250,243,.09);pointer-events:none}
+.portrait-learning__body{position:relative;z-index:1;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:32px}
+.portrait-course-chart{gap:20px;align-items:center}
+.portrait-ring{flex-basis:132px;width:132px;height:132px}
+.portrait-course-list p{color:#695345;font-weight:700}
+.portrait-course-list a{padding:13px 0;border-bottom-color:#d1bda8;color:#503b30}
+.portrait-course-list a:hover{color:#8e5d4d}
+.portrait-skill-chart{padding:2px 0 2px 32px;border-left:1px solid #cfb9a5}
+.portrait-inline-head h4{color:#503b30;font-size:20px}
+.portrait-skill-empty{display:grid;justify-items:start;align-content:center;min-height:132px;padding:20px 22px;border:1px dashed #bd9d88;border-radius:20px;background:rgba(255,250,243,.48)}
+.portrait-skill-empty span{position:relative;width:23px;height:23px;border:2px solid #a66e6c;border-radius:50%}
+.portrait-skill-empty span:after{content:'';position:absolute;inset:6px;border-radius:50%;background:#a66e6c}
+.portrait-skill-empty p{margin:8px 0 5px;color:#503b30;font-size:16px;font-weight:800}
+.portrait-skill-empty small{max-width:32ch;color:#695345;font-size:12px;line-height:1.6}
+.portrait-skill-line{padding:8px 0;border-bottom:1px solid #d9c7b7}
+.portrait-practice,.portrait-timeline{padding:30px 32px 28px;border-radius:27px 45px 27px 27px}
+.portrait-practice{background:#fff9ed}
+.portrait-timeline{background:#f1e0dc}
+.portrait-practice>.portrait-muted{margin:-8px 0 24px;color:#695345;line-height:1.6}
+.portrait-score-row{grid-template-columns:minmax(130px,1fr) minmax(100px,1.4fr) 62px;gap:14px;margin-bottom:8px;padding:13px 15px;border:1px solid #e7d8c6;border-radius:14px;background:#fffdf8}
+.portrait-score-row strong{color:#503b30;font-size:13px}
+.portrait-score-row small,.portrait-score-row>span{color:#715a4b;font-size:12px}
+.portrait-score-axis{height:8px;border-radius:99px;background:#eadbd0}
+.portrait-score-axis:before,.portrait-score-axis:after{display:none}
+.portrait-score-axis b{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:#c69691}
+.portrait-score-axis i{top:-4px;width:16px;height:16px;background:#9b6166}
+.portrait-scale{margin:3px 75px 0 calc(36% + 8px);padding:0;color:#715a4b}
+.portrait-empty-line{padding:24px;border:1px dashed #d9bfa7;border-radius:16px;background:#fffdf8;color:#655348}
+.portrait-timeline__track{gap:9px;align-items:flex-end;min-height:158px;margin-top:6px;padding:22px 14px 14px;border-bottom:2px solid #b98e88;border-radius:16px 16px 0 0;background:repeating-linear-gradient(to top,transparent 0 37px,rgba(138,95,83,.1) 38px 39px)}
+.portrait-day{flex:0 0 74px;min-width:74px;gap:7px}
+.portrait-day i{width:28px;border-radius:9px 9px 3px 3px;background:#a77470}
+.portrait-day strong{color:#503b30;font-size:12px}
+.portrait-day span{color:#715a4b}
+.portrait-timeline>.portrait-muted{display:inline-block;margin:14px 0 22px;padding:15px 18px;border:1px dashed #c9a7a0;border-radius:14px;color:#60493d}
+.portrait-timeline .portrait-footnote{color:#695345}
+@media(max-width:1100px){.portrait-journal{grid-template-columns:1fr}.portrait-learning{grid-column:auto}}
+@media(max-width:900px){.portrait-learning__body{grid-template-columns:1fr;gap:24px}.portrait-skill-chart{padding:24px 0 0;border-left:0;border-top:1px solid #cfb9a5}}
+@media(max-width:680px){.portrait-journal{gap:16px}.portrait-learning,.portrait-practice,.portrait-timeline{padding:24px 20px;border-radius:22px 38px 22px 22px}.portrait-course-chart{align-items:center;flex-direction:row;gap:14px}.portrait-ring{flex:0 0 102px;width:102px;height:102px}.portrait-ring strong{font-size:26px}.portrait-score-row{grid-template-columns:1fr auto;gap:8px}.portrait-score-axis{grid-column:1/-1;grid-row:2}.portrait-scale{margin:4px 4px 0}.portrait-day{flex-basis:64px;min-width:64px}}
+@media(max-width:440px){.portrait-course-chart{align-items:stretch;flex-direction:column}.portrait-ring{align-self:center}.portrait-course-list{width:100%}}
+@media(prefers-reduced-motion:reduce){.portrait-journal .portrait-section-heading a{transition:none}}
 </style>
