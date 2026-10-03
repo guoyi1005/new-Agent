@@ -217,6 +217,8 @@ local-job:
     pause-millis: ${LOCAL_JOB_CRAWL_PAUSE_MILLIS:1500}
     bootstrap-delay-ms: ${LOCAL_JOB_CRAWL_BOOTSTRAP_DELAY_MS:60000}
     bootstrap-interval-ms: ${LOCAL_JOB_CRAWL_BOOTSTRAP_INTERVAL_MS:3600000}
+    # 最近一次抓取超过这个小时数，服务启动/巡检时会自动补抓（避免错过当天定时任务）
+    stale-hours: ${LOCAL_JOB_CRAWL_STALE_HOURS:12}
     # 各站最新页以非技术岗为主，额外用这些方向关键词各抓一页，保证库里也有学生目标方向的岗位
     direction-keywords: ${LOCAL_JOB_CRAWL_DIRECTION_KEYWORDS:Python,Java,前端,数据}
     rc114:      # 成都人才网

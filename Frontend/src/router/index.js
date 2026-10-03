@@ -70,6 +70,8 @@ import CareerPlanetView from '../views/CareerPlanetView.vue'
 import JobExplorationView from '../views/JobExplorationView.vue'
 import JobDetailView from '../views/JobDetailView.vue'
 import EmploymentView from '../views/EmploymentView.vue'
+import AlumniEnterpriseView from '../views/AlumniEnterpriseView.vue'
+import CampusRecruitmentView from '../views/CampusRecruitmentView.vue'
 import SectionHubView from '../views/SectionHubView.vue'
 import InterviewShell from '../views/interview/InterviewShell.vue'
 import InterviewIndex from '../views/interview/pages/Index.vue'
@@ -96,6 +98,8 @@ const routes = [
   { path: '/career/job/:jobId', name: 'career-job-detail', component: JobDetailView },
   { path: '/learning', name: 'learning-practice', component: LearningPracticeView },
   { path: '/employment', name: 'employment', component: EmploymentView },
+  { path: '/employment/alumni', name: 'employment-alumni', component: AlumniEnterpriseView },
+  { path: '/employment/campus-recruitment', name: 'employment-campus-recruitment', component: CampusRecruitmentView },
   { path: '/community', name: 'community', component: CommunityView, meta: { public: true } },
   { path: '/ai-career', name: 'ai-career', component: SectionHubView, meta: { section: 'aiCareer' } },
   { path: '/growth/campus-map', redirect: '/map' },
@@ -132,7 +136,6 @@ const routes = [
   { path: '/learning/my-practice', redirect: { name: 'learning-practice', query: { tab: 'practice' } } },
   { path: '/employment/radar', redirect: '/employment' },
   { path: '/employment/aggregate', redirect: '/employment' },
-  { path: '/employment/campus-recruitment', redirect: '/employment' },
   { path: '/ai-career/resume', redirect: '/ai-tools/resume' },
   { path: '/ai-career/interview', redirect: '/interview' },
   { path: '/ai-career/report', redirect: '/mine/ai-history' },

@@ -9,3 +9,8 @@ export function getEmploymentAlumni() {
 export function getCampusRecruitmentSummary() {
   return request({ url: '/api/app/employment/campus-recruitment-summary' })
 }
+
+/** 校园招聘明细：宣讲会、双选会与校招企业岗位 */
+export function getCampusRecruitments() {
+  return request({ url: '/api/app/employment/campus-recruitments' })
+}

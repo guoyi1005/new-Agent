@@ -1,6 +1,7 @@
 package com.example.appbackend.scheduler;
 
 import com.example.appbackend.service.LocalJobIngestService;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,8 +18,13 @@ public class LocalJobCrawlScheduler {
 
     private final LocalJobIngestService localJobIngestService;
 
-    public LocalJobCrawlScheduler(LocalJobIngestService localJobIngestService) {
+    private final int staleHours;
+
+    public LocalJobCrawlScheduler(
+            LocalJobIngestService localJobIngestService,
+            @Value("${local-job.crawl.stale-hours:12}") int staleHours) {
         this.localJobIngestService = localJobIngestService;
+        this.staleHours = staleHours;
     }
 
     @Scheduled(cron = "${local-job.crawl.cron:0 30 5 * * ?}")
@@ -30,10 +36,10 @@ public class LocalJobCrawlScheduler {
             initialDelayString = "${local-job.crawl.bootstrap-delay-ms:60000}",
             fixedDelayString = "${local-job.crawl.bootstrap-interval-ms:3600000}")
     public void bootstrapWhenEmpty() {
-        if (localJobIngestService.hasData()) {
+        if (!localJobIngestService.needsRefresh(staleHours)) {
             return;
         }
-        run("首次补数据");
+        run("数据过期补抓");
     }
 
     private void run(String reason) {

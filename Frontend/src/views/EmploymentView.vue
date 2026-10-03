@@ -1,9 +1,9 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { resolveBossJobSearchLink } from '../api/jobRecommendations'
-import { getLocalJobSummary } from '../api/localJobs'
+import { getLocalJobSummary, listLocalJobs } from '../api/localJobs'
 import { getCampusRecruitmentSummary, getEmploymentAlumni } from '../api/employment'
 import AppTabBar from '../components/AppTabBar.vue'
 import {
@@ -22,9 +22,13 @@ import { getTargetProfile, readStoredTargetJob } from '../data_tmp/jobCatalog'
  * 页签和搜索框都作用于「为你推荐的岗位」这一份列表。 */
 
 const router = useRouter()
+const route = useRoute()
 
 const keyword = ref('')
-const activeTab = ref('all')
+/* 允许通过 /employment?tab=alumni 这类链接直接切到指定页签 */
+const activeTab = ref(
+  EMPLOYMENT_TABS.some((tab) => tab.id === route.query.tab) ? route.query.tab : 'all',
+)
 const showAllJobs = ref(false)
 const jobsSectionRef = ref(null)
 
@@ -47,6 +51,65 @@ function toSampleJobCard(job) {
 }
 
 const allJobs = computed(() => EMPLOYMENT_JOBS.map(toSampleJobCard))
+
+/* 「成都在招岗位」：每天抓取到的真实岗位，点击进入招聘网站上的原始页面 */
+const localJobs = ref([])
+const showAllLocalJobs = ref(false)
+
+/** 预览默认取 3 条，尽量来自不同单位，避免一屏全是同一家公司。 */
+const visibleLocalJobs = computed(() => {
+  if (showAllLocalJobs.value) {
+    return localJobs.value
+  }
+  const picked = []
+  const seen = new Set()
+  for (const job of localJobs.value) {
+    const key = job.company || job.jobTitle
+    if (seen.has(key)) continue
+    seen.add(key)
+    picked.push(job)
+    if (picked.length >= 3) break
+  }
+  return picked.length ? picked : localJobs.value.slice(0, 3)
+})
+
+const localJobPlatforms = computed(() =>
+  (localSummary.value?.platforms || []).map((key) => EMPLOYMENT_SOURCE_NAMES[key] || key),
+)
+
+function localJobPlace(job) {
+  return [job.city || '成都', job.district, job.education].filter(Boolean).join(' · ')
+}
+
+function localJobSources(job) {
+  const keys = String(job.sourceKeys || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+  const names = keys.map((key) => EMPLOYMENT_SOURCE_NAMES[key] || key)
+  return names.length ? names.join(' / ') : job.sourceName || ''
+}
+
+function localJobTime(job) {
+  const value = job.publishedAt || job.lastSeenAt
+  return value ? String(value).replace('T', ' ').slice(5, 16) : ''
+}
+
+function localJobQuery(job) {
+  return [job.jobTitle, job.city, job.district].filter(Boolean).join(' ').trim()
+}
+
+function openLocalJob(job) {
+  if (job.detailUrl) {
+    window.open(job.detailUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+  window.open(resolveBossJobSearchLink(localJobQuery(job)), '_blank', 'noopener,noreferrer')
+}
+
+function localJobHint(job) {
+  return job.detailUrl ? '打开招聘网站上的原始岗位页面' : `在招聘平台搜索：${localJobQuery(job)}`
+}
 
 /* 「成都本地就业」用后端每天抓取的本地岗位统计；接口没有数据时退回页面内的展示数据，
  * 保证板块不会是空的，同时在下面注明当前用的是哪一份数据。 */
@@ -104,6 +167,15 @@ async function loadLocalSummary() {
     localSummary.value = result?.data || null
   } catch {
     localSummary.value = null
+  }
+}
+
+async function loadLocalJobs() {
+  try {
+    const result = await listLocalJobs({ page: 1, size: 60 })
+    localJobs.value = Array.isArray(result?.data) ? result.data : []
+  } catch {
+    localJobs.value = []
   }
 }
 
@@ -171,6 +243,7 @@ async function loadEmploymentSections() {
 
 onMounted(() => {
   loadLocalSummary()
+  loadLocalJobs()
   loadEmploymentSections()
 })
 
@@ -448,6 +521,43 @@ function runSearch() {
         <p v-else class="feature-empty">没有匹配的岗位，换个关键词或切换上面的页签试试。</p>
       </section>
 
+      <section v-if="localJobs.length" class="employment-section">
+        <div class="feature-section__head">
+          <h2>成都在招岗位</h2>
+          <button
+            v-if="localJobs.length > 3 || showAllLocalJobs"
+            class="feature-link"
+            type="button"
+            @click="showAllLocalJobs = !showAllLocalJobs"
+          >
+            {{ showAllLocalJobs ? '收起' : `查看全部（${localJobs.length} 条）` }}
+          </button>
+        </div>
+        <p class="employment-jobs__hint">
+          每天自动抓取 · 数据来自 {{ localJobPlatforms.join(' / ') }} · 点「查看岗位」打开招聘网站上的原始页面
+        </p>
+
+        <div class="employment-locals">
+          <article v-for="job in visibleLocalJobs" :key="job.id" class="employment-localjob">
+            <div class="employment-localjob__head">
+              <h3>{{ job.jobTitle }}</h3>
+              <span v-if="job.salaryText">{{ job.salaryText }}</span>
+            </div>
+            <p class="employment-localjob__company">{{ job.company }}</p>
+            <p class="employment-localjob__place">{{ localJobPlace(job) }}</p>
+            <p class="employment-localjob__source">{{ localJobSources(job) }} · {{ localJobTime(job) }}</p>
+            <button
+              class="feature-link employment-localjob__cta"
+              type="button"
+              :title="localJobHint(job)"
+              @click="openLocalJob(job)"
+            >
+              查看岗位 →
+            </button>
+          </article>
+        </div>
+      </section>
+
       <section class="employment-section">
         <article class="feature-card employment-aggregate">
           <div class="employment-aggregate__info">
@@ -500,7 +610,7 @@ function runSearch() {
             </li>
           </ol>
           <div class="employment-card__foot">
-            <button class="feature-button" type="button" @click="goToJobs('campus')">查看校招岗位 →</button>
+            <button class="feature-button" type="button" @click="router.push('/employment/campus-recruitment')">查看校招岗位 →</button>
           </div>
         </article>
 
@@ -527,7 +637,7 @@ function runSearch() {
             <span v-for="field in alumniSection.fields" :key="field">{{ field }}</span>
           </p>
           <div class="employment-card__foot">
-            <button class="feature-button" type="button" @click="router.push('/community')">查看校友企业 →</button>
+            <button class="feature-button" type="button" @click="router.push('/employment/alumni')">查看校友企业 →</button>
           </div>
         </article>
       </section>
@@ -1131,6 +1241,63 @@ function runSearch() {
 
 .employment-job--compact .feature-chip {
   background: var(--hp-cream);
+}
+
+/* ---------- 成都在招岗位（每天抓取） ---------- */
+
+.employment-locals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 14px;
+}
+
+.employment-localjob {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-md);
+  background: var(--hp-surface-2);
+}
+
+.employment-localjob__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.employment-localjob__head h3 {
+  margin: 0;
+  color: var(--hp-ink);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.employment-localjob__head span {
+  flex: 0 0 auto;
+  color: var(--hp-ink);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.employment-localjob__company {
+  margin: 0;
+  color: var(--hp-ink-2);
+  font-size: 12.5px;
+}
+
+.employment-localjob__place,
+.employment-localjob__source {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 12px;
+}
+
+.employment-localjob__cta {
+  justify-self: start;
+  margin-top: 2px;
 }
 
 /* ---------- 多平台聚合 ---------- */

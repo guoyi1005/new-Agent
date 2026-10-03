@@ -47,6 +47,19 @@ public class LocalJobIngestService {
     }
 
     /**
+     * 是否需要补抓：库里没有数据，或者最近一次抓取已经超过 staleHours 小时。
+     * 这样即使某天 05:30 服务没在运行，下次启动后也会自动补上。
+     */
+    public boolean needsRefresh(int staleHours) {
+        if (repository.count() == 0) {
+            return true;
+        }
+        LocalDateTime lastCrawledAt = repository.findLastCrawledAt();
+        return lastCrawledAt == null
+                || lastCrawledAt.isBefore(LocalDateTime.now().minusHours(Math.max(1, staleHours)));
+    }
+
+    /**
      * 跑一遍所有启用的来源。
      *
      * @return 本次抓取结果统计，供日志与手动刷新接口返回
