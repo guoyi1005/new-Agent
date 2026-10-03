@@ -827,7 +827,7 @@ onMounted(loadLearningData)
 }
 
 .learning-shell {
-  width: min(1400px, calc(100% - 48px));
+  width: min(1280px, calc(100% - 40px));
   margin: 0 auto;
   padding: 96px 0 80px;
 }
@@ -1057,7 +1057,7 @@ onMounted(loadLearningData)
 
 .content {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 
 .section {
@@ -1091,10 +1091,37 @@ onMounted(loadLearningData)
 .content > *:nth-child(5) { animation-delay: 0.33s; }
 .content > *:nth-child(6) { animation-delay: 0.4s; }
 
+/* 卡片级瀑布入场：各分页网格与列表的子项依次浮现 */
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > * {
+  animation: lp-fade-up 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(1) { animation-delay: 0.1s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(2) { animation-delay: 0.16s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(3) { animation-delay: 0.22s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(4) { animation-delay: 0.28s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(5) { animation-delay: 0.34s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(6) { animation-delay: 0.4s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(7) { animation-delay: 0.46s; }
+.content :is(.card-grid, .quick-grid, .course-grid, .external-grid, .exam-goal-grid, .stats, .path-list, .project-list, .question-list, .skill-progress-list, .summary-list) > *:nth-child(n + 8) { animation-delay: 0.52s; }
+
 .focus-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr);
   gap: 20px;
+}
+
+/* 两卡纵向弹性布局：内容少的卡片由底部按钮吸收富余空间，左右 CTA 保持对齐 */
+.focus-panel,
+.goal-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-panel .btn--primary,
+.goal-panel .link {
+  margin-top: auto;
+  align-self: flex-start;
 }
 
 /* ---------- 区块头部 ---------- */
@@ -1281,8 +1308,8 @@ onMounted(loadLearningData)
 .empty {
   display: grid;
   justify-items: center;
-  gap: 4px;
-  padding: 34px 24px;
+  gap: 6px;
+  padding: 28px 22px;
   border: 1px dashed var(--hp-line-strong);
   border-radius: var(--hp-r-sm);
   color: var(--hp-muted);
@@ -1297,6 +1324,7 @@ onMounted(loadLearningData)
 
 .empty p {
   margin: 6px 0 0;
+  max-width: 480px;
   font-size: 13px;
   line-height: 1.7;
 }
@@ -1316,7 +1344,7 @@ onMounted(loadLearningData)
 .course-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .content-card,
@@ -1602,7 +1630,7 @@ onMounted(loadLearningData)
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .stats article {
@@ -1822,7 +1850,7 @@ onMounted(loadLearningData)
 .external-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .external-card {
@@ -1958,7 +1986,7 @@ onMounted(loadLearningData)
 .exam-goal-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .exam-goal {
