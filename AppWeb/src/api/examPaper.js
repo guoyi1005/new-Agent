@@ -3,6 +3,7 @@ import request from '../utils/request'
 import { PREVIEW_REQUEST_TIMEOUT } from './examPaperPreviewConfig'
 
 const base = '/api/exam/papers'
+const adminBase = '/api/admin/exam-papers'
 
 export const randomPreviewExamPaper = (data) => request.post(`${base}/random-preview`, data, {
   skipGlobalErrorMessage: true,
@@ -35,6 +36,27 @@ export const getExamPaperList = (params = {}) => request.get(base, {
     size: params.size ?? params.pageSize ?? 10,
     keyword: params.keyword?.trim() || undefined,
   },
+})
+
+export const getAdminExamPaperList = (params = {}) => request.get(adminBase, {
+  skipGlobalErrorMessage: true,
+  params: {
+    current: params.current ?? params.page ?? 1,
+    size: params.size ?? params.pageSize ?? 10,
+    keyword: params.keyword?.trim() || undefined,
+  },
+})
+
+export const getAdminExamPaperDetail = (id) => request.get(`${adminBase}/${id}`, {
+  skipGlobalErrorMessage: true,
+})
+
+export const publishAdminExamPaper = (id) => request.post(`${adminBase}/${id}/publish`, null, {
+  skipGlobalErrorMessage: true,
+})
+
+export const unpublishAdminExamPaper = (id) => request.post(`${adminBase}/${id}/unpublish`, null, {
+  skipGlobalErrorMessage: true,
 })
 
 export const getExamPaperDetail = (id) => request.get(`${base}/${id}`, {
@@ -108,10 +130,10 @@ export const getExamPaperPreviewPdf = async (token, config = {}) => {
   return response.data
 }
 
-export const downloadExamPaper = async (id, content) => {
+const downloadPaperFrom = async (basePath, id, content) => {
   const defaultAdapter = axios.getAdapter(request.defaults.adapter)
   const response = await request({
-    url: `${base}/${id}/download`,
+    url: `${basePath}/${id}/download`,
     method: 'get',
     params: { content },
     responseType: 'blob',
@@ -146,3 +168,7 @@ export const downloadExamPaper = async (id, content) => {
     URL.revokeObjectURL(objectUrl)
   }
 }
+
+export const downloadExamPaper = (id, content) => downloadPaperFrom(base, id, content)
+
+export const downloadAdminExamPaper = (id, content) => downloadPaperFrom(adminBase, id, content)

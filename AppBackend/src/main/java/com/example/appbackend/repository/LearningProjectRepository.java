@@ -9,4 +9,7 @@ import java.util.Optional;
 public interface LearningProjectRepository extends JpaRepository<LearningProject, Long> {
     Optional<LearningProject> findByCode(String code);
     List<LearningProject> findByStatusOrderBySortOrderAscIdAsc(String status);
+    List<LearningProject> findAllByOrderBySortOrderAscIdAsc();
+
+    boolean existsByCode(String code);
 }

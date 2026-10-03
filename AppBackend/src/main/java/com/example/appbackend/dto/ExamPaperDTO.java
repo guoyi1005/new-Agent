@@ -209,6 +209,8 @@ public final class ExamPaperDTO {
         private Boolean published;
         private LocalDateTime publishTime;
         private LocalDateTime createTime;
+        /** 管理端：该试卷作为「课程考试」挂在哪个课程下（无关联时为 null）。 */
+        private String sourceCourseName;
         private List<QuestionSnapshotVO> questions;
     }
 

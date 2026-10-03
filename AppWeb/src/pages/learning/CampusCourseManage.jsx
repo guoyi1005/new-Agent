@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -55,7 +56,7 @@ import {
   updateCampusCourse,
   updateCampusCourseChapter,
 } from '../../api/campusCourse'
-import { getExamPaperList } from '../../api/examPaper'
+import { getAdminExamPaperList } from '../../api/examPaper'
 import { uploadImage } from '../../api/upload'
 import {
   bindChapterAdditionalMaterials,
@@ -167,6 +168,7 @@ const resolveFileUrl = (url = '') => (/^https?:\/\//.test(url) ? url : `${API_BA
 
 function CampusCourseManage() {
   console.log('[DEBUG] CampusCourseManage 组件已挂载')
+  const navigate = useNavigate()
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -864,11 +866,11 @@ function CampusCourseManage() {
   }
 
   const openExamForm = async () => {
-    const response = await getExamPaperList({ current: 1, size: 100 })
+    const response = await getAdminExamPaperList({ current: 1, size: 100 })
     const records = response.data?.records || response.data?.content || []
     setPaperOptions(records.map((paper) => ({
       value: paper.id,
-      label: `${paper.title}${paper.published ? '（已发布）' : '（未发布）'}`,
+      label: `${paper.title}${paper.published ? '（已发布）' : '（未发布）'}${paper.sourceCourseName ? `（已挂：${paper.sourceCourseName}）` : ''}`,
     })))
     examForm.resetFields()
     examForm.setFieldsValue({ sortOrder: (detail?.exams?.length || 0) + 1 })
@@ -992,6 +994,12 @@ function CampusCourseManage() {
           dataSource={detail.exams}
           renderItem={(exam) => (
             <List.Item actions={[
+              <Button
+                key="view"
+                type="link"
+                disabled={!exam.paperId}
+                onClick={() => navigate(`/question-bank/papers/history?paperId=${exam.paperId}`)}
+              >查看试卷</Button>,
               <Popconfirm key="delete" title="确定移除该考试关联吗？" onConfirm={() => removeExam(exam.id)}>
                 <Button type="link" danger>移除</Button>
               </Popconfirm>,

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { CloudUploadOutlined, DownloadOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons'
 import { Button, Card, Descriptions, Empty, Input, Popconfirm, Space, Table, Tag, Typography, message } from 'antd'
-import { downloadExamPaper, getExamPaperDetail, getExamPaperList, publishExamPaper, unpublishExamPaper } from '../../../api/examPaper'
+import { downloadAdminExamPaper, getAdminExamPaperDetail, getAdminExamPaperList, publishAdminExamPaper, unpublishAdminExamPaper } from '../../../api/examPaper'
 import SidePanel from '../../../components/SidePanel/SidePanel'
 import { getExamPaperPublishAction, getExamPaperPublishState, getPublishRefreshArgs } from './examPaperPublishState'
 
@@ -17,6 +18,7 @@ const formatTime = (value) => {
 }
 
 function ExamPaperHistory({ refreshKey = 0 }) {
+  const [searchParams] = useSearchParams()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
@@ -35,7 +37,7 @@ function ExamPaperHistory({ refreshKey = 0 }) {
     const requestId = ++listRequestId.current
     setLoading(true)
     try {
-      const response = await getExamPaperList({ current, size: pageSize, keyword: titleKeyword })
+      const response = await getAdminExamPaperList({ current, size: pageSize, keyword: titleKeyword })
       const data = response.data || {}
       if (requestId !== listRequestId.current) return
       setRows(data.records || [])
@@ -67,7 +69,7 @@ function ExamPaperHistory({ refreshKey = 0 }) {
     setDetailOpen(true)
     setDetailLoading(true)
     try {
-      const response = await getExamPaperDetail(record.id)
+      const response = await getAdminExamPaperDetail(record.id)
       if (requestId === detailRequestId.current) setDetail(response.data || null)
     } catch (error) {
       if (requestId === detailRequestId.current) message.error(error.message || '试卷详情加载失败')
@@ -76,13 +78,22 @@ function ExamPaperHistory({ refreshKey = 0 }) {
     }
   }
 
+  // 支持从「校园课程管理 → 课程考试」带 paperId 直接打开对应试卷详情
+  const focusPaperId = searchParams.get('paperId')
+  useEffect(() => {
+    if (!focusPaperId) return
+    const id = Number(focusPaperId)
+    if (!Number.isFinite(id)) return
+    openDetail({ id })
+  }, [focusPaperId])
+
   const handleDownload = async (record, content) => {
     const key = `${record.id}:${content}`
     if (downloadKeysRef.current.has(key)) return
     downloadKeysRef.current.add(key)
     setDownloadKeys(new Set(downloadKeysRef.current))
     try {
-      await downloadExamPaper(record.id, content)
+      await downloadAdminExamPaper(record.id, content)
     } catch (error) {
       message.error(error.message || (content === 'answer' ? '答案下载失败' : '试卷下载失败'))
     } finally {
@@ -97,7 +108,7 @@ function ExamPaperHistory({ refreshKey = 0 }) {
     publishingIdsRef.current.add(record.id)
     setPublishingIds(new Set(publishingIdsRef.current))
     try {
-      const request = record.published ? unpublishExamPaper : publishExamPaper
+      const request = record.published ? unpublishAdminExamPaper : publishAdminExamPaper
       await request(record.id)
       message.success(action.successMessage)
       await fetchPapers(...getPublishRefreshArgs(pagination, keyword))
@@ -111,6 +122,12 @@ function ExamPaperHistory({ refreshKey = 0 }) {
 
   const columns = [
     { title: '标题', dataIndex: 'title', width: 220, ellipsis: true },
+    {
+      title: '来源课程', dataIndex: 'sourceCourseName', width: 170, ellipsis: true,
+      render: (value) => (value
+        ? <Tag color="cyan">{value}</Tag>
+        : <span style={{ color: '#8c8c8c' }}>独立组卷</span>),
+    },
     {
       title: '版式', width: 150,
       render: (_, record) => `${record.pageSize || '-'} · ${orientationLabels[record.orientation] || record.orientation || '-'} · ${record.columnsCount || '-'} 栏`,

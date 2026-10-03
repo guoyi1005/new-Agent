@@ -76,3 +76,17 @@ export const getMyForumPosts = (params = {}) => unwrap(request({
   url: '/api/forum/users/posts/me',
   params,
 }))
+
+export const REPORT_REASONS = [
+  { value: 1, label: '广告推销' },
+  { value: 2, label: '内容不实' },
+  { value: 3, label: '人身攻击' },
+  { value: 4, label: '违法违规' },
+  { value: 5, label: '其他' },
+]
+
+export const createReport = (payload) => unwrap(request({
+  url: '/api/forum/reports',
+  method: 'POST',
+  data: payload,
+}))
