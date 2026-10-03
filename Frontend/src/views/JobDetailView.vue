@@ -1,13 +1,13 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { getCareerJobFit } from '../api/careerNebula'
 import { resolveBossJobSearchLink } from '../api/jobRecommendations'
 import AppTabBar from '../components/AppTabBar.vue'
 import {
   JOB_PROFILES,
   TARGET_JOB_STORAGE_KEY,
-  buildPortraitRows,
   buildSkillGaps,
   getJobDetail,
   getJobMatchRate,
@@ -15,7 +15,8 @@ import {
 } from '../data_tmp/jobCatalog'
 
 /* 岗位详情页四段固定顺序：岗位画像 / 我的岗位能力对照 / 当前核心差距 / 我的提升路径。
- * 内容来自 data/jobCatalog.js；要求-我 的差值、重点补齐、达标数量都是算出来的。 */
+ * 匹配度、我的水平与技能差距优先用后端 /api/app/career/job-fit（与岗位探索页同一个接口、
+ * 同一套口径：岗位技能要求 × 我的学习记录等级）；接口不可用或学习记录不足时回落到页面内的展示数据。 */
 
 const route = useRoute()
 const router = useRouter()
@@ -24,17 +25,108 @@ const jobId = computed(() => String(route.params.jobId || ''))
 const detail = computed(() => getJobDetail(jobId.value))
 
 const targetJobTitle = ref(readStoredTargetJob())
-const matchRate = computed(() => (detail.value ? getJobMatchRate(jobId.value, targetJobTitle.value) : null))
 const isCurrentTarget = computed(() => Boolean(detail.value) && targetJobTitle.value === detail.value.title)
 /* 目标岗位的匹配度与推荐岗位数据只覆盖了其中一部分岗位，没覆盖到的给出提示，避免用户以为页面出错。 */
 const targetHasProfile = computed(() => JOB_PROFILES.some((profile) => profile.title === detail.value?.title))
 
-const portraitRows = computed(() => buildPortraitRows(detail.value))
-const compareRows = computed(() => buildSkillGaps(detail.value))
+/* ---------- 后端真实人岗匹配 ---------- */
+
+const remoteFit = ref(null)
+
+/** 接口有响应但学习记录不足：不显示任何匹配度数字。 */
+const fitInsufficient = computed(
+  () =>
+    Boolean(remoteFit.value) &&
+    remoteFit.value.jobName === detail.value?.title &&
+    (remoteFit.value.dataStatus === 'insufficient' || !remoteFit.value.totalSkills),
+)
+
+/** 真实匹配结论（可用时）。 */
+const fitData = computed(() => {
+  const data = remoteFit.value
+  if (!data || data.jobName !== detail.value?.title) return null
+  if (data.dataStatus === 'insufficient' || !data.totalSkills) return null
+  return data
+})
+
+const matchRate = computed(() => {
+  if (fitData.value) return fitData.value.matchRate
+  if (fitInsufficient.value) return null
+  // 接口不可用：回落到页面内的展示数据，和岗位探索页保持一致
+  return detail.value ? getJobMatchRate(jobId.value, targetJobTitle.value) : null
+})
+
+const matchHint = computed(() => {
+  if (fitData.value) {
+    return `${fitData.value.coveredSkills || 0}/${fitData.value.totalSkills} 项技能有学习记录，匹配度按岗位要求加权算出`
+  }
+  if (fitInsufficient.value) {
+    return remoteFit.value.dataStatusText || '学习记录还不够，先完成课程或练习后再看匹配度'
+  }
+  return ''
+})
+
+/** 技能要求：真实匹配结果优先，展示层数据兜底；说明文案沿用页面内的那条。 */
+const requirementRows = computed(() => {
+  const notes = new Map((detail.value?.requirements || []).map((item) => [item.name, item.note]))
+  if (fitData.value) {
+    return fitData.value.gaps.map((item) => ({
+      name: item.skillName,
+      level: item.required,
+      note: notes.get(item.skillName) || '',
+    }))
+  }
+  return (detail.value?.requirements || []).map((item) => ({ name: item.name, level: item.level, note: item.note }))
+})
+
+/** 岗位画像：做什么 / 用什么 / 发展方向，「用什么」跟着上面的技能要求走，保证两段一致。 */
+const portraitRows = computed(() =>
+  (detail.value?.portrait || []).map((row, index) => ({
+    task: row.task,
+    tool: requirementRows.value[index]?.name || '',
+    direction: row.direction,
+  })),
+)
+
+/** 我的能力：真实结果里已有学习记录的技能；证据不足时不编造。 */
+const compareRows = computed(() => {
+  if (fitData.value) {
+    return fitData.value.gaps.map((item) => ({
+      name: item.skillName,
+      current: item.current,
+      required: item.required,
+      reached: item.current >= item.required,
+      diff: Math.max(0, item.required - item.current),
+    }))
+  }
+  if (fitInsufficient.value) return []
+  return buildSkillGaps(detail.value)
+})
+
 const missing = computed(() => compareRows.value.filter((row) => !row.reached))
 const reachedCount = computed(() => compareRows.value.length - missing.value.length)
 
-const skillLine = computed(() => (detail.value?.requirements || []).map((item) => item.name).join(' / '))
+const skillLine = computed(() => requirementRows.value.map((item) => item.name).join(' / '))
+
+const adviceText = computed(() => {
+  if (fitData.value?.advice) return fitData.value.advice
+  if (fitInsufficient.value) return remoteFit.value.dataStatusText || '先积累学习记录，再来看与这个岗位的差距。'
+  return detail.value?.advice || ''
+})
+
+async function loadJobFit() {
+  const name = detail.value?.title
+  remoteFit.value = null
+  if (!name) return
+  try {
+    const data = await getCareerJobFit(name)
+    remoteFit.value = data || null
+  } catch {
+    remoteFit.value = null
+  }
+}
+
+watch(jobId, loadJobFit, { immediate: true })
 
 function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)))
@@ -72,9 +164,11 @@ function openExternalSearch() {
               <p class="jobdetail-hero__line">核心技能 · {{ skillLine }}</p>
             </div>
             <div class="jobdetail-hero__side">
-              <strong class="jobdetail-rate">{{ matchRate === null ? '—' : `${matchRate}%` }}</strong>
+              <strong class="jobdetail-rate">
+                {{ matchRate !== null ? `${matchRate}%` : fitInsufficient ? '待评估' : '—' }}
+              </strong>
               <span>{{ compareRows.length }} 项要求</span>
-              <span>{{ reachedCount }} 项达标</span>
+              <span>{{ fitInsufficient ? '待评估' : `${reachedCount} 项达标` }}</span>
             </div>
           </div>
 
@@ -92,6 +186,7 @@ function openExternalSearch() {
           <p v-if="isCurrentTarget && !targetHasProfile" class="jobdetail-hero__hint">
             已设为目标岗位。该岗位的匹配度和推荐岗位数据还在补全，岗位探索页会先显示「尚未完成岗位体检」。
           </p>
+          <p v-if="matchHint" class="jobdetail-hero__hint">{{ matchHint }}</p>
         </header>
 
         <div class="jobdetail-steps">
@@ -131,6 +226,9 @@ function openExternalSearch() {
                   {{ row.reached ? '已达标' : `差 ${row.diff}` }}
                 </span>
               </div>
+              <p v-if="!compareRows.length" class="jobdetail-step__empty">
+                {{ fitInsufficient ? matchHint : '暂时拿不到这个岗位的匹配结果' }}
+              </p>
             </div>
           </article>
 
@@ -143,22 +241,25 @@ function openExternalSearch() {
                 <template v-if="missing.length">
                   <i v-for="row in missing" :key="row.name" class="jobdetail-pill jobdetail-pill--gap">{{ row.name }}</i>
                 </template>
-                <span v-else class="jobdetail-gap__none">岗位要求的技能你都已经达到</span>
+                <span v-else class="jobdetail-gap__none">
+                  {{ compareRows.length ? '岗位要求的技能你都已经达到' : '还没有足够的学习记录' }}
+                </span>
               </p>
               <p class="jobdetail-gap__rate">
                 <span>当前匹配度</span>
-                <strong>{{ matchRate === null ? '—' : `${matchRate}%` }}</strong>
+                <strong>{{ matchRate !== null ? `${matchRate}%` : fitInsufficient ? '待评估' : '—' }}</strong>
                 <span v-if="matchRate !== null" class="jobdetail-meter" aria-hidden="true">
                   <i :style="{ width: `${clampPercent(matchRate)}%` }"></i>
                 </span>
               </p>
+              <p v-if="matchHint && !fitData" class="jobdetail-note">{{ matchHint }}</p>
             </div>
           </article>
 
           <!-- 04 我的提升路径 -->
           <article class="feature-card jobdetail-step jobdetail-step--last">
             <h2 class="jobdetail-step__title"><span class="jobdetail-step__code">04</span>我的提升路径</h2>
-            <p class="jobdetail-step__lead">{{ detail.advice }}</p>
+            <p class="jobdetail-step__lead">{{ adviceText }}</p>
             <ol class="jobdetail-path">
               <li v-for="(item, index) in detail.path" :key="item.title">
                 <span class="jobdetail-path__index">{{ index + 1 }}</span>
@@ -267,6 +368,22 @@ function openExternalSearch() {
   color: var(--hp-muted);
   font-size: 12.5px;
   line-height: 1.7;
+}
+
+.jobdetail-note {
+  margin: 0;
+  color: var(--hp-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.jobdetail-step__empty {
+  margin: 0;
+  padding: 18px 16px;
+  color: var(--hp-muted);
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: center;
 }
 
 /* ---------- 四段 ---------- */
