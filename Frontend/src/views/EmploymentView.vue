@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 import { resolveBossJobSearchLink } from '../api/jobRecommendations'
 import { getLocalJobSummary } from '../api/localJobs'
+import { getCampusRecruitmentSummary, getEmploymentAlumni } from '../api/employment'
 import AppTabBar from '../components/AppTabBar.vue'
 import {
   EMPLOYMENT_AGGREGATE,
@@ -106,8 +107,71 @@ async function loadLocalSummary() {
   }
 }
 
+/* 「校园招聘 / 校友企业」优先用管理端维护的数据；
+ * 接口没有数据时退回页面内的展示数据，保证板块不会是空的。 */
+const campusSummary = ref(null)
+const alumniList = ref([])
+
+function formatMonthDay(value) {
+  if (!value) return ''
+  const parts = String(value).slice(0, 10).split('-')
+  if (parts.length < 3) return String(value)
+  return `${Number(parts[1])}.${Number(parts[2])}`
+}
+
+const campusSection = computed(() => {
+  const data = campusSummary.value
+  if (!data || (!data.talks && !data.fairs && !data.roles)) {
+    return EMPLOYMENT_CAMPUS
+  }
+  return {
+    season: data.season || EMPLOYMENT_CAMPUS.season,
+    talks: data.talks ?? 0,
+    fairs: data.fairs ?? 0,
+    roles: data.roles ?? 0,
+    schedule: (data.schedule || []).map((item) => ({
+      date: formatMonthDay(item.date),
+      title: item.title,
+    })),
+  }
+})
+
+const alumniSection = computed(() => {
+  const list = alumniList.value
+  if (!Array.isArray(list) || !list.length) {
+    return EMPLOYMENT_ALUMNI
+  }
+  const fields = [...new Set(
+    list.flatMap((item) => String(item.fields || '').split(','))
+      .map((field) => field.trim())
+      .filter(Boolean),
+  )]
+  return {
+    companies: list.length,
+    hiring: list.filter((item) => item.hiring).length,
+    fields: fields.length ? fields.slice(0, 3) : EMPLOYMENT_ALUMNI.fields,
+    alumniAtWork: list.reduce((sum, item) => sum + (Number(item.alumniCount) || 0), 0),
+    openNow: list.reduce((sum, item) => sum + (Number(item.openPositions) || 0), 0),
+    partners: list.map((item) => ({
+      name: item.name,
+      short: item.shortName || companyMark(item.name),
+    })),
+  }
+})
+
+async function loadEmploymentSections() {
+  const [campusRes, alumniRes] = await Promise.allSettled([
+    getCampusRecruitmentSummary(),
+    getEmploymentAlumni(),
+  ])
+  campusSummary.value = campusRes.status === 'fulfilled' ? campusRes.value?.data || null : null
+  const alumniData = alumniRes.status === 'fulfilled' ? alumniRes.value?.data : null
+  alumniList.value = Array.isArray(alumniData) ? alumniData : []
+}
+
 onMounted(() => {
   loadLocalSummary()
+  loadEmploymentSections()
 })
 
 const visibleJobs = computed(() => {
@@ -422,14 +486,14 @@ function runSearch() {
       <section class="employment-bottom">
         <article class="feature-card employment-campus">
           <h2>校园招聘</h2>
-          <p class="employment-campus__season">{{ EMPLOYMENT_CAMPUS.season }}</p>
+          <p class="employment-campus__season">{{ campusSection.season }}</p>
           <ul class="employment-campus__list">
-            <li>本周 {{ EMPLOYMENT_CAMPUS.talks }} 场宣讲</li>
-            <li>{{ EMPLOYMENT_CAMPUS.fairs }} 场双选会</li>
-            <li>{{ EMPLOYMENT_CAMPUS.roles }} 个校招岗位</li>
+            <li>本周 {{ campusSection.talks }} 场宣讲</li>
+            <li>{{ campusSection.fairs }} 场双选会</li>
+            <li>{{ campusSection.roles }} 个校招岗位</li>
           </ul>
           <ol class="employment-campus__timeline">
-            <li v-for="item in EMPLOYMENT_CAMPUS.schedule" :key="item.title">
+            <li v-for="item in campusSection.schedule" :key="item.title">
               <span class="employment-campus__dot" aria-hidden="true"></span>
               <strong>{{ item.date }}</strong>
               <span>{{ item.title }}</span>
@@ -442,12 +506,12 @@ function runSearch() {
 
         <article class="feature-card employment-alumni">
           <h2>校友企业</h2>
-          <p class="employment-alumni__count">{{ EMPLOYMENT_ALUMNI.companies }} 家校友企业</p>
-          <p class="employment-alumni__hiring">{{ EMPLOYMENT_ALUMNI.hiring }} 家正在招聘</p>
+          <p class="employment-alumni__count">{{ alumniSection.companies }} 家校友企业</p>
+          <p class="employment-alumni__hiring">{{ alumniSection.hiring }} 家正在招聘</p>
           <p class="employment-alumni__note">本校校友在职</p>
           <div class="employment-alumni__partners">
             <span
-              v-for="partner in EMPLOYMENT_ALUMNI.partners"
+              v-for="partner in alumniSection.partners"
               :key="partner.name"
               class="employment-alumni__logo"
               :title="partner.name"
@@ -456,11 +520,11 @@ function runSearch() {
             </span>
           </div>
           <p class="employment-alumni__stats">
-            <span>本校校友 {{ EMPLOYMENT_ALUMNI.alumniAtWork }} 人在职</span>
-            <span>当前开放 {{ EMPLOYMENT_ALUMNI.openNow }} 个岗位</span>
+            <span>本校校友 {{ alumniSection.alumniAtWork }} 人在职</span>
+            <span>当前开放 {{ alumniSection.openNow }} 个岗位</span>
           </p>
           <p class="employment-alumni__fields">
-            <span v-for="field in EMPLOYMENT_ALUMNI.fields" :key="field">{{ field }}</span>
+            <span v-for="field in alumniSection.fields" :key="field">{{ field }}</span>
           </p>
           <div class="employment-card__foot">
             <button class="feature-button" type="button" @click="router.push('/community')">查看校友企业 →</button>

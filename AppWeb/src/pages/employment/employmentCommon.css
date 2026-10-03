@@ -1,0 +1,124 @@
+/* ===== 就业服务管理（校友企业 / 校园招聘）共用布局 ===== */
+
+.employment-manage-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(100%, calc(100% - 56px));
+  margin-inline: auto;
+  padding: 8px 0 32px;
+}
+
+.employment-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.employment-header-left h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  color: var(--hp-ink);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.employment-header-left h2::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--hp-ink);
+  flex-shrink: 0;
+}
+
+.employment-header-left p {
+  margin: 0 0 0 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.employment-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid var(--hp-line-soft);
+  border-radius: var(--radius-pill);
+  background: var(--hp-cream);
+}
+
+.employment-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.employment-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  padding: 14px 18px;
+  border: 1px solid var(--hp-line-soft);
+  border-radius: var(--radius-md);
+  background: var(--hp-cream);
+}
+
+.employment-stat span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.employment-stat strong {
+  color: var(--hp-ink);
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.employment-table-card {
+  padding: 8px 4px 4px;
+  border: 1px solid var(--hp-line-soft);
+  border-radius: var(--radius-md);
+  background: var(--hp-cream);
+}
+
+.employment-company {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employment-company__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--hp-line);
+  border-radius: 10px;
+  background: var(--hp-blue, #bed2e4);
+  color: var(--hp-ink);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.employment-company__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.employment-company__text small {
+  color: var(--text-muted);
+  font-size: 12px;
+}

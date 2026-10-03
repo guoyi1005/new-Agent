@@ -9,43 +9,10 @@ export const portalGroups = [
     ],
   },
   {
-    label: '校园活动',
+    label: '就业服务',
     items: [
-      { path: '/activity/manage', label: '活动管理', icon: 'calendar', pageKey: 'activity-center' },
-      { path: '/category/manage', label: '分类管理', icon: 'tags', pageKey: 'activity-category' },
-    ],
-  },
-  {
-    label: '校园论坛',
-    items: [
-      { path: '/forum/post', label: '帖子管理', icon: 'message', pageKey: 'forum-post' },
-      { path: '/forum/comment', label: '评论管理', icon: 'comment', pageKey: 'forum-comment' },
-      { path: '/forum/topic', label: '话题管理', icon: 'tag', pageKey: 'forum-topic' },
-      { path: '/forum/report', label: '举报管理', icon: 'warning', pageKey: 'forum-report' },
-    ],
-  },
-  {
-    label: '校园设施',
-    items: [
-      { path: '/facility/manage', label: '设施管理', icon: 'appstore' },
-      { path: '/facility/marker', label: '地图点位', icon: 'pushpin', pageKey: 'facility-marker' },
-      { path: '/facility/canteen', label: '食堂管理', icon: 'shop', pageKey: 'facility-canteen', hidden: true },
-      { path: '/facility/restaurant', label: '档口管理', icon: 'shop', pageKey: 'facility-restaurant', hidden: true },
-      { path: '/facility/stall-dish', label: '档口菜品管理', icon: 'shop', pageKey: 'facility-stall-dish', hidden: true },
-      { path: '/facility/sports', label: '运动场设置', icon: 'thunder', pageKey: 'facility-sports', hidden: true },
-      { path: '/facility/teaching', label: '教学楼设置', icon: 'bank', pageKey: 'facility-teaching', hidden: true },
-      { path: '/facility/dormitory', label: '宿舍设置', icon: 'home', pageKey: 'facility-dormitory', hidden: true },
-      { path: '/facility/public', label: '公共设施设置', icon: 'appstore', hidden: true },
-      { path: '/facility/analytics', label: '设施统计', icon: 'bar-chart', pageKey: 'facility-analytics', hidden: true },
-      { path: '/facility/nav-analytics', label: '导航统计', icon: 'line-chart', pageKey: 'map-analytics', hidden: true },
-    ],
-  },
-  {
-    label: '校园特惠',
-    items: [
-      { path: '/discount/merchant', label: '商家管理', icon: 'shop', pageKey: 'discount-merchant' },
-      { path: '/discount/activity', label: '活动管理', icon: 'gift', pageKey: 'discount-activity' },
-      { path: '/discount/category', label: '分类管理', icon: 'tags', pageKey: 'discount-category' },
+      { path: '/employment/campus-recruitment', label: '校园招聘', icon: 'calendar' },
+      { path: '/employment/alumni', label: '校友企业', icon: 'bank' },
     ],
   },
   {
@@ -103,10 +70,6 @@ export const portalGroups = [
 export const navigationSections = portalGroups
 
 export const moduleCards = [
-  { title: '校园活动', description: '活动发布、分类与基础报名管理', route: '/activity/manage' },
-  { title: '校园论坛', description: '帖子、评论、话题与内容治理', route: '/forum/post' },
-  { title: '校园设施', description: '维护移动端校园地图使用的设施与空间层级', route: '/facility/manage' },
-  { title: '校园特惠', description: '商家、优惠活动与分类运营', route: '/discount/merchant' },
   { title: '会议模块', description: '查看会议历史、转写记录和会议智能体结果', route: '/meeting/history' },
   { title: 'AI 模块', description: '维护 AI 模型配置、智能体开关和默认模型', route: '/ai/model' },
   { title: '智能体设置', description: '集中维护智能体开关、默认模型和运行边界', route: '/ai/agent-settings' },

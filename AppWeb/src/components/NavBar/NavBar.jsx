@@ -95,8 +95,7 @@ function NavBar({ mobileOpen, onClose }) {
       navigationSections.reduce((acc, section) => {
         const hasActiveChild = section.items.some((item) => (
           location.pathname === item.path ||
-          (!item.exact && location.pathname.startsWith(`${item.path}/`)) ||
-          (item.path === '/activity/manage' && location.pathname.startsWith('/activity/'))
+          (!item.exact && location.pathname.startsWith(`${item.path}/`))
         ))
         acc[section.label] = hasActiveChild || section.label === '总览'
         return acc
@@ -195,8 +194,7 @@ function NavBar({ mobileOpen, onClose }) {
             {!section.path && <div className={`navbar-links ${openSections[section.label] ? 'expanded' : 'collapsed'}`}>
               {section.items.filter((item) => !item.hidden).map((item) => {
                 const active = location.pathname === item.path ||
-                  (!item.exact && location.pathname.startsWith(`${item.path}/`)) ||
-                  (item.path === '/activity/manage' && location.pathname.startsWith('/activity/'))
+                  (!item.exact && location.pathname.startsWith(`${item.path}/`))
                 return (
                   <button
                     key={item.path}
