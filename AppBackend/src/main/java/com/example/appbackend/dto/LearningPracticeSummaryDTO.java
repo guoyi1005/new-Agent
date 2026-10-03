@@ -61,6 +61,7 @@ public class LearningPracticeSummaryDTO {
         private String name;
         private String category;
         private Integer level;
+        private Integer evidenceCount;
     }
 
     @Data

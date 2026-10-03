@@ -7,21 +7,6 @@ import AppTabBar from '../components/AppTabBar.vue'
 const route = useRoute()
 
 const sections = {
-  growth: {
-    eyebrow: 'GROWTH CENTER',
-    title: '成长中心',
-    description: '集中查看能力、学习记录与成长路径，了解自己正在向目标前进到哪一步。',
-    items: [
-      { code: '01', title: '成长树', description: '按岗位方向查看成长分支，以及已点亮和未点亮的技能点。', to: '/growth/tree', tone: 'green' },
-      { code: '02', title: '技能树', description: '查看已有技能掌握情况、技能关联与能力进度。', to: '/growth/skills', tone: 'blue' },
-      { code: '03', title: '课程成绩', description: '查看已有试卷、测验成绩与答题记录。', to: '/growth/grades', tone: 'yellow' },
-      { code: '04', title: '证书', description: '证书管理功能尚未接入真实数据。', tone: 'purple', pending: true },
-      { code: '05', title: '项目', description: '项目成果与完成记录模块尚待建设。', tone: 'pink', pending: true },
-      { code: '06', title: '校园活动', description: '浏览活动列表、详情、地点、报名状态及已参加活动。', to: '/growth/campus-activity', tone: 'pink' },
-      { code: '07', title: '校园地图', description: '使用现有地图浏览、建筑搜索、定位与区域查看功能。', to: '/growth/campus-map', tone: 'blue' },
-      { code: '08', title: '能力档案', description: '查看基于真实学习与使用记录生成的个人能力画像。', to: '/growth/profile', tone: 'green' },
-    ],
-  },
   career: {
     eyebrow: 'CAREER EXPLORATION',
     title: '岗位探索',
@@ -84,7 +69,7 @@ const sections = {
   },
 }
 
-const section = computed(() => sections[route.meta.section] || sections.growth)
+const section = computed(() => sections[route.meta.section] || sections.aiCareer)
 </script>
 
 <template>

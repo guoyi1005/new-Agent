@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import '../assets/referenceDashboard.css'
 import AppTabBar from '../components/AppTabBar.vue'
+defineProps({ embedded: { type: Boolean, default: false } })
 import ActivityCard from '../components/campus/ActivityCard.vue'
 import { getActivityList, getCategoryList, getMyFavorites, getMyRegistrations, addFavorite, removeFavorite } from '../api/activity'
 import {
@@ -384,8 +385,8 @@ function getActivitiesForDay(day) {
 </script>
 
 <template>
-  <div class="campus-activities-view reference-theme activities-reference">
-    <AppTabBar />
+  <div class="campus-activities-view reference-theme activities-reference" :class="{ 'is-embedded': embedded }">
+    <AppTabBar v-if="!embedded" />
 
     <main ref="pageRef" class="ca-page">
       <div class="ca-container">
@@ -663,6 +664,7 @@ function getActivitiesForDay(day) {
 .ca-page {
   padding: 88px 20px 56px;
 }
+#app .activities-reference.is-embedded .ca-page { padding-top: 24px !important; }
 
 .ca-container {
   max-width: 1200px;

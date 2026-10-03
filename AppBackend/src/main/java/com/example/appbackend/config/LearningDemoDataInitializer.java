@@ -9,7 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
- * 启动时为所有学生账号补齐「我的练习」演示学习数据。
+ * 仅在显式启用演示开关时补齐「我的练习」演示学习数据。
  *
  * 排在 LearningTaxonomyInitializer（技能字典、课程、课程技能关联）之后执行，
  * 保证生成数据时依赖的课程与技能已经存在。

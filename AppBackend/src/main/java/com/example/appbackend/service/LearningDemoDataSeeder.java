@@ -35,15 +35,13 @@ import java.util.List;
 /**
  * 「我的练习」演示学习数据。
  *
- * 目标：让任何账号（尤其是队友新注册、或换电脑重新克隆仓库后的账号）打开
- * 「我的练习」就能看到技能进度、技能增长趋势与课程进度，而不是三块空白。
- * 数据由代码生成，随仓库一起提交，队友拉取代码并重启后端后同样可见。
+ * 仅用于明确开启的演示环境。默认关闭，正式账号不能被自动补入虚构学习轨迹。
  *
  * 约束：
  * 1. 只在用户「没有任何学习记录」时生成；已有学习记录说明账号在用，一律跳过；
  * 2. 记录的事件 ID 由「用户 + 内容 + 序号」确定，重复执行不会重复写入；
  * 3. 时间基于当天向前推算，保证趋势图始终落在最近三周；
- * 4. 设置 app.demo-learning-data.enabled=false 可整体关闭。
+ * 4. 仅设置 app.demo-learning-data.enabled=true 时启用。
  */
 @Service
 public class LearningDemoDataSeeder {
@@ -69,7 +67,7 @@ public class LearningDemoDataSeeder {
     /** 生成多少道已通过的算法题。 */
     private static final int DEMO_SOLVED_PROBLEMS = 9;
 
-    @Value("${app.demo-learning-data.enabled:true}")
+    @Value("${app.demo-learning-data.enabled:false}")
     private boolean enabled;
 
     private final LearningRecordRepository recordRepository;

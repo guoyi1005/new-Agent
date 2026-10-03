@@ -55,7 +55,6 @@ public class LearningPracticeSummaryService {
     private final LearningRecordRepository recordRepository;
     private final PythonProblemRepository problemRepository;
     private final LearningPathService learningPathService;
-    private final LearningDemoDataSeeder demoDataSeeder;
 
     public LearningPracticeSummaryService(
             CampusCourseEnrollmentRepository enrollmentRepository,
@@ -66,8 +65,7 @@ public class LearningPracticeSummaryService {
             LearningSkillRepository skillRepository,
             LearningRecordRepository recordRepository,
             PythonProblemRepository problemRepository,
-            LearningPathService learningPathService,
-            LearningDemoDataSeeder demoDataSeeder
+            LearningPathService learningPathService
     ) {
         this.enrollmentRepository = enrollmentRepository;
         this.courseRepository = courseRepository;
@@ -78,32 +76,67 @@ public class LearningPracticeSummaryService {
         this.recordRepository = recordRepository;
         this.problemRepository = problemRepository;
         this.learningPathService = learningPathService;
-        this.demoDataSeeder = demoDataSeeder;
     }
 
     @Transactional
     public LearningPracticeSummaryDTO summary(Long userId) {
+        return summary(userId, false);
+    }
+
+    @Transactional
+    public LearningPracticeSummaryDTO summary(Long userId, boolean verifiedOnly) {
         LearningPracticeSummaryDTO view = new LearningPracticeSummaryDTO();
         if (userId == null) return view;
-        // 账号完全没有学习痕迹时补一份演示轨迹，保证队友拉取代码后页面不为空；
-        // 只要已有真实记录或已加入课程就会直接跳过。
-        demoDataSeeder.seedIfEmpty(userId);
         Map<String, LearningSkill> skillByCode = allSkillsByCode();
         Map<Long, LearningSkill> skillById = allSkillsById();
-        List<LearningRecord> records = recordRepository.findByUserIdOrderByOccurredAtDesc(userId);
+        List<LearningRecord> allRecords = recordRepository.findByUserIdOrderByOccurredAtDesc(userId);
+        List<LearningRecord> records = verifiedOnly ? allRecords.stream()
+                .filter(record -> record.getEventId() == null || !record.getEventId().startsWith("demo-"))
+                .toList() : allRecords;
+        Set<Long> demoCourseIds = new LinkedHashSet<>();
+        Set<Long> demoSkillIds = new LinkedHashSet<>();
+        Set<Long> verifiedCourseIds = new LinkedHashSet<>();
+        boolean hasDemoHistory = false;
+        if (verifiedOnly) {
+            for (LearningRecord record : records) {
+                if (LearningRecordService.ACTION_COURSE_CHAPTER_COMPLETED.equals(record.getActionType())
+                        && SOURCE_COURSE.equals(record.getSourceType()) && record.getSourceId() != null) {
+                    verifiedCourseIds.add(record.getSourceId());
+                }
+            }
+            for (LearningRecord record : allRecords) {
+                if (record.getEventId() != null && record.getEventId().startsWith("demo-")
+                        && record.getSkillId() != null) {
+                    demoSkillIds.add(record.getSkillId());
+                }
+                if (record.getEventId() != null && record.getEventId().startsWith("demo-")) {
+                    hasDemoHistory = true;
+                }
+                if (record.getEventId() != null && record.getEventId().startsWith("demo-course-")
+                        && SOURCE_COURSE.equals(record.getSourceType()) && record.getSourceId() != null) {
+                    demoCourseIds.add(record.getSourceId());
+                }
+            }
+        }
 
-        view.setCourses(courses(userId, skillById));
+        view.setCourses(courses(userId, skillById, demoCourseIds, verifiedCourseIds, hasDemoHistory));
         view.setProblems(problems(records));
         view.setProjects(projects(userId, skillByCode));
-        view.setSkills(skills(records, skillById));
+        view.setSkills(skills(records, skillById, demoSkillIds));
         view.setTrend(trend(records, skillById));
         return view;
     }
 
     private List<LearningPracticeSummaryDTO.CourseProgress> courses(Long userId,
-                                                                    Map<Long, LearningSkill> skillById) {
+                                                                    Map<Long, LearningSkill> skillById,
+                                                                    Set<Long> demoCourseIds,
+                                                                    Set<Long> verifiedCourseIds,
+                                                                    boolean hasDemoHistory) {
         List<LearningPracticeSummaryDTO.CourseProgress> result = new ArrayList<>();
         for (var enrollment : enrollmentRepository.findByUserIdOrderByEnrolledTimeDesc(userId)) {
+            // 演示脚本写入的章节完成行没有来源标记，画像中不能把它当成真实进度。
+            if (demoCourseIds.contains(enrollment.getCourseId())
+                    || (hasDemoHistory && !verifiedCourseIds.contains(enrollment.getCourseId()))) continue;
             CampusCourse course = courseRepository.findById(enrollment.getCourseId()).orElse(null);
             if (course == null) continue;
             List<CampusCourseChapter> chapters =
@@ -197,8 +230,13 @@ public class LearningPracticeSummaryService {
     }
 
     private List<LearningPracticeSummaryDTO.SkillLevel> skills(List<LearningRecord> records,
-                                                               Map<Long, LearningSkill> skillById) {
+                                                               Map<Long, LearningSkill> skillById,
+                                                               Set<Long> demoSkillIds) {
         Map<Long, Integer> levels = levelsBySkill(records);
+        Map<Long, Integer> evidenceCounts = new HashMap<>();
+        for (LearningRecord record : records) {
+            if (record.getSkillId() != null) evidenceCounts.merge(record.getSkillId(), 1, Integer::sum);
+        }
         List<LearningPracticeSummaryDTO.SkillLevel> result = new ArrayList<>();
         for (Map.Entry<Long, Integer> entry : levels.entrySet()) {
             LearningSkill skill = skillById.get(entry.getKey());
@@ -207,10 +245,14 @@ public class LearningPracticeSummaryService {
             row.setCode(skill.getCode());
             row.setName(skill.getName());
             row.setCategory(skill.getCategory());
-            row.setLevel(entry.getValue());
+            // 后续真实事件的累计进度可能以演示等级为基线，不能将其当作可信分数。
+            row.setLevel(demoSkillIds.contains(entry.getKey()) ? null : entry.getValue());
+            row.setEvidenceCount(evidenceCounts.getOrDefault(entry.getKey(), 0));
             result.add(row);
         }
-        result.sort((left, right) -> Integer.compare(right.getLevel(), left.getLevel()));
+        result.sort((left, right) -> Integer.compare(
+                right.getLevel() == null ? -1 : right.getLevel(),
+                left.getLevel() == null ? -1 : left.getLevel()));
         return result;
     }
 

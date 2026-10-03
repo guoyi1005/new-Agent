@@ -7,6 +7,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import '../assets/referenceDashboard.css'
 import AppTabBar from '../components/AppTabBar.vue'
+defineProps({ embedded: { type: Boolean, default: false } })
 import {
   getFloorPlan,
   getFloorPlanPositions,
@@ -944,8 +945,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="map-page reference-theme map-reference">
-    <AppTabBar />
+  <div class="map-page reference-theme map-reference" :class="{ 'is-embedded': embedded }">
+    <AppTabBar v-if="!embedded" />
 
     <!-- ═══ 主区域 ═══ -->
     <div class="map-main">
@@ -1180,6 +1181,9 @@ onUnmounted(() => {
   font-family: Inter, 'Segoe UI', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 .map-main { position: absolute; inset: 60px 0 0 0; }
+.map-page.is-embedded { width: min(1360px, calc(100% - 48px)); height: min(74vh, 760px); min-height: 520px; margin: 30px auto 0; border: 1px solid var(--hp-line); border-radius: 22px; }
+.map-page.is-embedded .map-main { inset: 0; }
+@media (max-width: 760px) { .map-page.is-embedded { width: calc(100% - 30px); min-height: 560px; } }
 
 /* ═══ 高德地图容器 ═══ */
 .map-canvas {

@@ -4,7 +4,7 @@ import AiAssistantView from '../views/AiAssistantView.vue'
 import AiToolsView from '../views/AiToolsView.vue'
 import CampusActivitiesView from '../views/CampusActivitiesView.vue'
 import HomeView from '../views/HomeView.vue'
-import GrowthTreeView from '../views/GrowthTreeView.vue'
+import GrowthCenterView from '../views/GrowthCenterView.vue'
 import LoginView from '../views/LoginView.vue'
 import MapView from '../views/MapView.vue'
 import MessageCenterView from '../views/MessageCenterView.vue'
@@ -94,7 +94,7 @@ const routes = [
   { path: '/', redirect: '/home' },
   { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
   { path: '/home', name: 'home', component: HomeView },
-  { path: '/growth', name: 'growth-center', component: SectionHubView, meta: { section: 'growth' } },
+  { path: '/growth', name: 'growth-center', component: GrowthCenterView },
   { path: '/career', name: 'career-exploration', component: JobExplorationView },
   { path: '/career/job/:jobId', name: 'career-job-detail', component: JobDetailView },
   { path: '/learning', name: 'learning-practice', component: LearningPracticeView },
@@ -103,8 +103,8 @@ const routes = [
   { path: '/employment/campus-recruitment', name: 'employment-campus-recruitment', component: CampusRecruitmentView },
   { path: '/community', name: 'community', component: CommunityView, meta: { public: true } },
   { path: '/ai-career', name: 'ai-career', component: SectionHubView, meta: { section: 'aiCareer' } },
-  { path: '/growth/campus-map', redirect: '/map' },
-  { path: '/growth/campus-activity', redirect: '/activities' },
+  { path: '/growth/campus-map', component: GrowthCenterView },
+  { path: '/growth/campus-activity', component: GrowthCenterView },
   { path: '/community/experience', redirect: { name: 'community', query: { category: 'experience' } } },
   { path: '/community/cases', redirect: { name: 'community', query: { category: 'cases' } } },
   { path: '/community/referrals', redirect: { name: 'community', query: { category: 'referrals' } } },
@@ -113,10 +113,11 @@ const routes = [
   { path: '/community/map', redirect: '/growth/campus-map' },
   { path: '/community/activities', redirect: '/growth/campus-activity' },
   { path: '/growth/star-map', redirect: '/career/nebula' },
-  { path: '/growth/tree', name: 'growth-tree', component: GrowthTreeView },
-  { path: '/growth/skills', redirect: '/profile-radar' },
-  { path: '/growth/grades', redirect: '/mine/papers' },
-  { path: '/growth/profile', redirect: '/profile-radar' },
+  { path: '/growth/tree', name: 'growth-tree', component: GrowthCenterView },
+  { path: '/growth/skills', name: 'growth-skills', component: GrowthCenterView },
+  { path: '/growth/courses', name: 'growth-courses', component: GrowthCenterView },
+  { path: '/growth/grades', redirect: '/growth/courses' },
+  { path: '/growth/profile', component: GrowthCenterView },
   { path: '/career/star-map', redirect: '/career/nebula' },
   { path: '/career/search', redirect: '/career' },
   { path: '/career/profile', redirect: '/career?view=profile' },
@@ -267,6 +268,7 @@ const router = createRouter({
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition
+    if (to.path === '/growth' || to.path.startsWith('/growth/')) return { top: 0 }
     return undefined
   },
 })

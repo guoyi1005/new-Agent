@@ -35,8 +35,9 @@ export const getExternalCourses = () => unwrap(request({
   url: '/api/app/learning/external-courses',
 }))
 
-export const getPracticeSummary = () => unwrap(request({
+export const getPracticeSummary = (verifiedOnly = false) => unwrap(request({
   url: '/api/app/learning/practice-summary',
+  params: verifiedOnly ? { verifiedOnly: true } : undefined,
 }))
 
 export const getContentTags = (sourceType, sourceId) => unwrap(request({

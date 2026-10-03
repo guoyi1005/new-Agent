@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -42,8 +43,9 @@ public class AppLearningProgressController {
 
     /** 「我的练习」聚合：课程进度 + 刷题 + 项目 + 技能增长趋势。 */
     @GetMapping("/practice-summary")
-    public Result<LearningPracticeSummaryDTO> practiceSummary(HttpServletRequest request) {
-        return Result.success(summaryService.summary(requireUserId(request)));
+    public Result<LearningPracticeSummaryDTO> practiceSummary(
+            @RequestParam(defaultValue = "false") boolean verifiedOnly, HttpServletRequest request) {
+        return Result.success(summaryService.summary(requireUserId(request), verifiedOnly));
     }
 
     /** 上报题目通过：幂等，同一题重复提交不会重复累计技能进度。 */
