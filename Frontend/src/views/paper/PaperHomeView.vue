@@ -3,455 +3,735 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../../components/AppTabBar.vue'
-import { deletePaper, listPapers } from '../../api/paper'
-import PaperPageShell from './PaperPageShell.vue'
+import { getPythonProblemList } from '../../api/pythonProblem'
+import { deletePythonPaper, getPythonPaper, listPythonPapers, savePythonPaper } from '../../api/pythonPaper'
 
 const router = useRouter()
 const route = useRoute()
-const papers = ref([])
-const loading = ref(false)
-const loadError = ref('')
-const deletingPaperId = ref(null)
-const backTo = computed(() => (route.query.from === 'learning' ? '/learning?tab=python' : '/ai-tools'))
 
-const sources = [
-  { key: 'public', icon: '🌐', name: '共有题库', desc: '共同维护' },
-  { key: 'private', icon: '📚', name: '私有题库', desc: '我的题库' },
-  { key: 'favorite', icon: '★', name: '收藏夹', desc: '快速选题' },
-]
+const loading = ref(true)
+const error = ref('')
+const problems = ref([])
+
+/* 生成配置 */
+const paperTitle = ref('Python 算法练习卷')
+const paperCount = ref(10)
+const difficulty = ref('all')
+const selectedTags = ref([])
+
+/* 生成结果 */
+const paper = ref([])
+const generatedAt = ref('')
+
+/* 正在查看的历史试卷：非空表示处于「查看模式」，此时不改动生成配置 */
+const viewingPaper = ref(null)
+
+/* 已保存的试卷 */
+const savedPapers = ref([])
+const savingPaper = ref(false)
+const paperMessage = ref('')
+
+const COUNT_OPTIONS = [5, 10, 15, 20]
+const SCORE_PER_QUESTION = 10
+const DIFFICULTY_LABELS = { easy: '简单', medium: '中等', hard: '困难' }
+
+/* 这个页面属于「学习实践」，返回统一回到技能练习；
+   不再回退到 AI 工具箱，避免把用户带到无关页面 */
+const backTo = '/learning?tab=python'
 
 async function load() {
   loading.value = true
-  loadError.value = ''
+  error.value = ''
   try {
-    papers.value = await listPapers({ status: 'draft' }) || []
+    const response = await getPythonProblemList()
+    const list = Array.isArray(response?.data) ? response.data
+      : (Array.isArray(response) ? response : [])
+    problems.value = list
   } catch (cause) {
-    loadError.value = cause.message || '试卷数据加载失败，请检查后端服务'
+    error.value = cause?.message || '题库加载失败，请稍后重试'
   } finally {
     loading.value = false
   }
 }
 
-function createPaper() {
-  router.push('/paper/info')
+/* 标签按出现次数排序，方便挑高频知识点 */
+const allTags = computed(() => {
+  const counter = new Map()
+  for (const item of problems.value) {
+    for (const tag of item.tags || []) counter.set(tag, (counter.get(tag) || 0) + 1)
+  }
+  return [...counter.entries()]
+    .map(([name, total]) => ({ name, total }))
+    .sort((left, right) => right.total - left.total)
+})
+
+const difficultyOptions = computed(() => {
+  const countOf = (key) => problems.value.filter((item) => item.difficulty === key).length
+  return [
+    { key: 'all', label: '全部', total: problems.value.length },
+    { key: 'easy', label: '简单', total: countOf('easy') },
+    { key: 'medium', label: '中等', total: countOf('medium') },
+    { key: 'hard', label: '困难', total: countOf('hard') },
+  ]
+})
+
+/* 符合当前条件的题目池 */
+const matched = computed(() => problems.value.filter((item) => {
+  if (difficulty.value !== 'all' && item.difficulty !== difficulty.value) return false
+  if (selectedTags.value.length) {
+    const tags = item.tags || []
+    if (!selectedTags.value.every((tag) => tags.includes(tag))) return false
+  }
+  return true
+}))
+
+const totalScore = computed(() => (paper.value.length || 0) * SCORE_PER_QUESTION)
+
+function toggleTag(name) {
+  const index = selectedTags.value.indexOf(name)
+  if (index >= 0) selectedTags.value.splice(index, 1)
+  else selectedTags.value.push(name)
 }
 
-function goMine() {
-  router.push('/paper/mine')
+function clearFilters() {
+  difficulty.value = 'all'
+  selectedTags.value = []
 }
 
-function chooseSource(source) {
-  const paper = papers.value[0]
-  router.push({
-    path: '/paper/select',
-    query: {
-      ...(paper ? { paperId: paper.id } : {}),
-      source,
-    },
-  })
+function difficultyLabel(value) {
+  return DIFFICULTY_LABELS[value] || value || '未知'
 }
 
-function openPaper(paper) {
-  router.push({ path: '/paper/select', query: { paperId: paper.id, source: 'public' } })
+/* 从符合条件的题目里随机抽题组成试卷 */
+function generatePaper() {
+  viewingPaper.value = null
+  const pool = [...matched.value]
+  if (!pool.length) {
+    paper.value = []
+    generatedAt.value = ''
+    return
+  }
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(Math.random() * (index + 1))
+    ;[pool[index], pool[swap]] = [pool[swap], pool[index]]
+  }
+  paper.value = pool.slice(0, Math.min(paperCount.value, pool.length))
+  generatedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
 }
 
-async function confirmDelete(paper) {
-  if (deletingPaperId.value !== null) return
-  if (!window.confirm('删除后该草稿无法恢复，确认删除？')) return
-  deletingPaperId.value = paper.id
+function reshuffle() {
+  generatePaper()
+}
+
+function startPractice() {
+  if (!paper.value.length) return
+  router.push(`/career/nebula/python/practice/${paper.value[0].id}`)
+}
+
+function openProblem(id) {
+  router.push(`/career/nebula/python/practice/${id}`)
+}
+
+function printPaper() {
+  window.print()
+}
+
+async function loadSavedPapers() {
   try {
-    await deletePaper(paper.id)
-    papers.value = papers.value.filter((item) => item.id !== paper.id)
-  } catch (cause) {
-    window.alert(cause.message || '删除失败')
-  } finally {
-    deletingPaperId.value = null
+    const list = await listPythonPapers()
+    savedPapers.value = Array.isArray(list) ? list : []
+  } catch {
+    savedPapers.value = []
   }
 }
 
-onMounted(load)
+/* 保存当前试卷：只存题目 ID 快照，题目正文仍从题库读取 */
+async function savePaper() {
+  if (!paper.value.length || savingPaper.value) return
+  savingPaper.value = true
+  paperMessage.value = ''
+  try {
+    await savePythonPaper({
+      title: paperTitle.value,
+      difficulty: difficulty.value,
+      tags: [...selectedTags.value],
+      questionIds: paper.value.map((item) => item.id),
+    })
+    await loadSavedPapers()
+    viewingPaper.value = null
+    paperMessage.value = '试卷已保存，可在「我的练习卷」中随时打开'
+  } catch (cause) {
+    paperMessage.value = cause?.message || '保存失败，请稍后重试'
+  } finally {
+    savingPaper.value = false
+  }
+}
+
+/* 打开已保存的试卷：只还原题目，不动生成配置，避免和历史条件混淆 */
+function openSavedPaper(saved) {
+  const byId = new Map(problems.value.map((item) => [item.id, item]))
+  paper.value = (saved.questionIds || []).map((id) => byId.get(id)).filter(Boolean)
+  viewingPaper.value = saved
+  generatedAt.value = ''
+  paperMessage.value = `正在查看已保存的试卷「${saved.title}」`
+}
+
+/* 退出查看模式，回到自己的生成条件 */
+function exitViewing() {
+  viewingPaper.value = null
+  paper.value = []
+  generatedAt.value = ''
+  paperMessage.value = ''
+}
+
+async function removeSavedPaper(saved) {
+  if (!window.confirm(`删除试卷「${saved.title}」？删除后无法恢复。`)) return
+  try {
+    await deletePythonPaper(saved.id)
+    await loadSavedPapers()
+    paperMessage.value = '试卷已删除'
+  } catch (cause) {
+    paperMessage.value = cause?.message || '删除失败，请稍后重试'
+  }
+}
+
+onMounted(async () => {
+  await load()
+  await loadSavedPapers()
+  // 从「我的练习卷」打开某一份试卷
+  const paperId = route.query.paperId
+  if (paperId) {
+    try {
+      const saved = await getPythonPaper(paperId)
+      if (saved) openSavedPaper(saved)
+    } catch (cause) {
+      paperMessage.value = cause?.message || '试卷打开失败，请到「我的练习卷」重试'
+    }
+  }
+})
 </script>
 
 <template>
-  <div class="paper-home-page">
+  <div class="feature-page paper-page">
     <AppTabBar />
-  <PaperPageShell title="试卷生成" subtitle="创建、选题并导出试卷" :back-to="backTo">
-    <section class="paper-grid-2">
-      <button class="feature-card feature-card--primary" type="button" @click="createPaper">
-        <span class="feature-icon">＋</span>
-        <strong>创建新试卷</strong>
-        <span>填写基本信息后选择题目</span>
-      </button>
-      <button class="feature-card" type="button" @click="goMine">
-        <span class="feature-icon">📄</span>
-        <strong>我的试卷</strong>
-        <span>查看自己创建的试卷</span>
-      </button>
-    </section>
+    <main class="feature-container">
+      <header class="feature-heading">
+        <div>
+          <h1>Python 试卷生成</h1>
+          <p>从 Python 题库按难度和知识点抽题，生成一份可直接打印的练习卷</p>
+        </div>
+        <div class="feature-actions">
+          <button type="button" class="feature-button" @click="router.push('/paper/mine')">
+            我的练习卷<span v-if="savedPapers.length">（{{ savedPapers.length }}）</span>
+          </button>
+          <button type="button" class="feature-button feature-button--primary" @click="router.push(backTo)">返回学习实践</button>
+        </div>
+      </header>
 
-    <h2 class="section-title">选题来源</h2>
-    <section class="paper-grid-3">
-      <button v-for="item in sources" :key="item.key" class="source-card" type="button" @click="chooseSource(item.key)">
-        <span class="source-icon">
-          <svg v-if="item.key === 'public'" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M3 12h18M12 3c2.4 2.4 3.6 5.4 3.6 9s-1.2 6.6-3.6 9c-2.4-2.4-3.6-5.4-3.6-9S9.6 5.4 12 3Z" />
-          </svg>
-          <svg v-else-if="item.key === 'private'" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z" />
-            <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z" />
-          </svg>
-          <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" />
-          </svg>
-        </span>
-        <strong>{{ item.name }}</strong>
-        <span>{{ item.desc }}</span>
-      </button>
-    </section>
-
-    <div class="section-head">
-      <h2 class="section-title">最近编辑</h2>
-      <button class="paper-link" type="button" @click="goMine">我的试卷 ›</button>
-    </div>
-
-    <div v-if="loading" class="paper-state">正在加载…</div>
-    <div v-else-if="loadError" class="paper-empty paper-empty--error" @click="load">{{ loadError }}，点击重新加载</div>
-    <div v-else-if="!papers.length" class="paper-empty">
-      <strong>还没有试卷</strong>
-      <span>点击上方创建你的第一份试卷</span>
-    </div>
-    <article v-for="paper in papers" :key="paper.id" class="paper-card draft-card">
-      <div class="draft-card__main" @click="openPaper(paper)">
-        <strong>{{ paper.name }}</strong>
-        <span>{{ paper.subject }} · {{ paper.questionCount || 0 }}题 · {{ paper.totalScore || 0 }}分</span>
+      <div v-if="paperMessage" class="paper-message">
+        <span>{{ paperMessage }}</span>
+        <button v-if="viewingPaper" type="button" class="paper-message__action" @click="exitViewing">退出查看，生成新试卷</button>
       </div>
-      <div class="draft-card__actions">
-        <span class="status">草稿</span>
-        <button type="button" :disabled="deletingPaperId === paper.id" @click.stop="confirmDelete(paper)">
-          {{ deletingPaperId === paper.id ? '删除中' : '删除' }}
-        </button>
-      </div>
-    </article>
-  </PaperPageShell>
+      <div v-if="error" class="feature-error">{{ error }}</div>
+      <div v-if="loading" class="feature-empty">正在加载题库…</div>
+
+      <template v-else>
+        <section class="feature-card feature-section paper-config">
+          <div class="feature-section__head">
+            <div>
+              <h2>生成配置</h2>
+              <p>题库共 {{ problems.length }} 道题，当前条件匹配 {{ matched.length }} 道</p>
+            </div>
+            <button type="button" class="paper-link" @click="clearFilters">清空条件</button>
+          </div>
+
+          <label class="paper-field">
+            <span>试卷标题</span>
+            <input v-model="paperTitle" class="paper-input" type="text" placeholder="给这份卷子起个名字" />
+          </label>
+
+          <div class="paper-field">
+            <span>题量</span>
+            <div class="paper-chips">
+              <button v-for="value in COUNT_OPTIONS" :key="value" type="button" class="paper-chip"
+                :class="{ 'paper-chip--active': paperCount === value }" @click="paperCount = value">{{ value }} 题</button>
+            </div>
+          </div>
+
+          <div class="paper-field">
+            <span>难度</span>
+            <div class="paper-chips">
+              <button v-for="item in difficultyOptions" :key="item.key" type="button" class="paper-chip"
+                :class="{ 'paper-chip--active': difficulty === item.key }" @click="difficulty = item.key">
+                {{ item.label }}<em>{{ item.total }}</em>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="allTags.length" class="paper-field">
+            <span>知识点（可多选，选中的知识点需同时满足）</span>
+            <div class="paper-chips paper-chips--tags">
+              <button v-for="tag in allTags" :key="tag.name" type="button" class="paper-chip"
+                :class="{ 'paper-chip--active': selectedTags.includes(tag.name) }" @click="toggleTag(tag.name)">
+                {{ tag.name }}<em>{{ tag.total }}</em>
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="feature-button feature-button--primary paper-generate"
+            :disabled="!matched.length" @click="generatePaper">
+            生成试卷
+          </button>
+          <p v-if="!matched.length" class="paper-hint">当前条件下没有题目，请放宽难度或取消部分知识点。</p>
+        </section>
+
+        <section v-if="paper.length" class="paper-sheet">
+          <header class="paper-sheet__head">
+            <h2>{{ viewingPaper ? viewingPaper.title : (paperTitle || 'Python 练习卷') }}</h2>
+            <p v-if="viewingPaper">共 {{ paper.length }} 题 · 满分 {{ viewingPaper.totalScore }} 分 · 每题 {{ SCORE_PER_QUESTION }} 分 · 保存于 {{ viewingPaper.createdAt }}</p>
+            <p v-else>共 {{ paper.length }} 题 · 满分 {{ totalScore }} 分 · 每题 {{ SCORE_PER_QUESTION }} 分<span v-if="generatedAt"> · 生成于 {{ generatedAt }}</span></p>
+          </header>
+
+          <ol class="paper-questions">
+            <li v-for="(item, index) in paper" :key="item.id">
+              <div class="paper-question__main">
+                <div class="paper-question__title">
+                  <span class="paper-question__no">{{ index + 1 }}</span>
+                  <strong>{{ item.title }}</strong>
+                  <span class="paper-question__score">{{ SCORE_PER_QUESTION }} 分</span>
+                </div>
+                <div class="paper-question__meta">
+                  <span :class="`paper-diff paper-diff--${item.difficulty}`">{{ difficultyLabel(item.difficulty) }}</span>
+                  <span v-for="tag in item.tags || []" :key="tag" class="paper-tag">{{ tag }}</span>
+                  <span class="paper-rate">通过率 {{ item.passRate }}%</span>
+                </div>
+              </div>
+              <button type="button" class="paper-open" @click="openProblem(item.id)">去做这题</button>
+            </li>
+          </ol>
+
+          <div class="paper-sheet__actions">
+            <button v-if="!viewingPaper" type="button" class="feature-button" @click="reshuffle">换一批</button>
+            <button type="button" class="feature-button" @click="printPaper">打印试卷</button>
+            <button v-if="!viewingPaper" type="button" class="feature-button" :disabled="savingPaper" @click="savePaper">{{ savingPaper ? '保存中…' : '保存试卷' }}</button>
+            <button v-else type="button" class="feature-button" @click="exitViewing">退出查看</button>
+            <button type="button" class="feature-button feature-button--primary" @click="startPractice">从第 1 题开始</button>
+          </div>
+        </section>
+
+        <div v-else class="feature-empty paper-empty">
+          <strong>还没有生成试卷</strong>
+          <p>在上方选择题量、难度和知识点，然后点「生成试卷」。</p>
+        </div>
+
+        <section v-if="savedPapers.length" class="feature-card feature-section paper-saved">
+          <div class="feature-section__head">
+            <div>
+              <h2>我保存的试卷</h2>
+              <p>共 {{ savedPapers.length }} 份，点击即可重新打开</p>
+            </div>
+          </div>
+          <ul class="paper-saved__list">
+            <li v-for="saved in savedPapers" :key="saved.id">
+              <button type="button" class="paper-saved__open" @click="openSavedPaper(saved)">
+                <strong>{{ saved.title }}</strong>
+                <small>{{ saved.questionCount }} 题 · 满分 {{ saved.totalScore }} 分 · {{ saved.createdAt }}</small>
+              </button>
+              <button type="button" class="paper-saved__delete" @click="removeSavedPaper(saved)">删除</button>
+            </li>
+          </ul>
+        </section>
+      </template>
+    </main>
   </div>
 </template>
 
 <style scoped>
-@import './paper.css';
-
-.paper-home-page {
-  min-height: 100vh;
-  background: var(--hp-bg);
+/* 外层已有主导航，收紧顶部留白 */
+.feature-container {
+  padding: 12px 0 56px;
 }
 
-.paper-home-page :deep(.paper-shell) {
-  min-height: 100vh;
-  padding-top: 60px;
-  color: var(--hp-ink);
-  background: var(--hp-bg);
-  font-family: Inter, 'Segoe UI', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-}
-
-.paper-home-page :deep(.paper-header) {
-  position: relative;
-  top: auto;
-  width: min(1400px, calc(100% - 48px));
-  margin: 0 auto;
-  padding: 32px 0 0;
-  border-bottom: 0;
-  background: transparent;
-}
-
-.paper-home-page :deep(.paper-header__back) {
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(23, 23, 23, 0.28);
-  color: var(--hp-ink);
-  background: transparent;
-  transition: color 0.18s ease, background 0.18s ease;
-}
-
-.paper-home-page :deep(.paper-header__back:hover) {
-  color: var(--hp-cream);
-  background: var(--hp-ink);
-}
-
-.paper-home-page :deep(.paper-header__title h1) {
-  color: var(--hp-ink);
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.paper-home-page :deep(.paper-header__title p) {
+.feature-section__head p {
+  margin: 5px 0 0;
   color: var(--hp-muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-.paper-home-page :deep(.paper-main) {
-  width: min(1400px, calc(100% - 48px));
-  padding: 0 0 56px;
+.paper-link {
+  padding: 0;
+  border: 0;
+  color: var(--hp-blue-ink);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.paper-grid-2,
-.paper-grid-3 {
-  gap: 18px;
-}
-
-.feature-card {
-  position: relative;
+.paper-field {
   display: grid;
   gap: 8px;
-  padding: 24px;
-  border: 1px solid var(--hp-line);
-  border-radius: var(--hp-r-lg);
-  color: var(--hp-ink);
-  background: var(--hp-cream);
-  text-align: left;
-  transition: transform 0.2s ease, background 0.2s ease;
+  margin-top: 18px;
 }
 
-.feature-card:hover {
-  transform: translateY(-2px);
-}
-
-.feature-card--primary {
-  color: var(--hp-ink);
-  background: var(--hp-blue);
-  border-color: var(--hp-line);
-}
-
-.feature-card strong {
-  color: var(--hp-ink);
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.feature-card span:last-child {
-  color: #55504a;
-  font-size: 13px;
-}
-
-.feature-icon {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--hp-line);
-  border-radius: 10px;
-  color: var(--hp-ink);
-  background: var(--hp-yellow);
-  font-size: 0;
-}
-
-.feature-icon::before,
-.feature-icon::after {
-  position: absolute;
-  content: "";
-}
-
-.feature-card:not(.feature-card--primary) .feature-icon::before {
-  inset: 9px 10px;
-  border: 1.5px solid currentColor;
-  border-radius: 2px;
-}
-
-.feature-card:not(.feature-card--primary) .feature-icon::after {
-  top: 14px;
-  left: 13px;
-  width: 7px;
-  height: 1.5px;
-  border-radius: 2px;
-  background: currentColor;
-  box-shadow: 0 5px 0 currentColor;
-}
-
-.feature-card--primary .feature-icon {
-  background: var(--hp-cream);
-}
-
-.feature-card--primary .feature-icon::before {
-  top: 16px;
-  left: 9px;
-  width: 14px;
-  height: 2px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-.feature-card--primary .feature-icon::after {
-  top: 10px;
-  left: 15px;
-  width: 2px;
-  height: 14px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-.section-title {
-  margin: 32px 0 14px;
-  color: var(--hp-ink);
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.source-card {
-  display: grid;
-  justify-items: center;
-  gap: 9px;
-  padding: 20px 16px;
-  border: 1px solid var(--hp-line);
-  border-radius: 18px;
-  color: var(--hp-ink);
-  background: var(--hp-cream);
-  text-align: center;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.source-card:nth-child(1) {
-  background: var(--hp-blue);
-}
-
-.source-card:nth-child(2) {
-  background: var(--hp-green);
-}
-
-.source-card:nth-child(3) {
-  background: var(--hp-pink-soft);
-}
-
-.source-card:hover {
-  transform: translateY(-2px);
-}
-
-.source-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid var(--hp-line);
-  border-radius: 12px;
-  background: var(--hp-cream);
-}
-
-.source-icon svg {
-  width: 23px;
-  height: 23px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.source-card strong {
-  color: var(--hp-ink);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.source-card span:last-child {
-  color: #55504a;
-  font-size: 12px;
-}
-
-.draft-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
-  margin-bottom: 0;
-  border: 1px solid var(--hp-line);
-  border-radius: var(--hp-r-lg);
-  background: var(--hp-cream);
-  box-shadow: none;
-}
-
-.draft-card__main {
-  display: grid;
-  gap: 6px;
-}
-
-.draft-card__main span {
-  color: var(--hp-muted);
-  font-size: 13px;
-}
-
-.draft-card__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.status {
-  padding: 4px 10px;
-  border-radius: 999px;
-  color: var(--hp-ink);
-  background: var(--hp-yellow);
+.paper-field > span {
+  color: var(--hp-ink-2);
   font-size: 13px;
   font-weight: 600;
 }
 
-.draft-card__actions button {
-  min-height: 34px;
-  padding: 0 12px;
+.paper-input {
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  font: inherit;
+  font-size: 13.5px;
+  outline: none;
+}
+
+.paper-input:focus {
+  border-color: var(--hp-blue-ink);
+}
+
+.paper-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.paper-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.paper-chip em {
+  color: var(--hp-muted);
+  font-style: normal;
+  font-size: 11.5px;
+}
+
+.paper-chip:hover {
+  border-color: var(--hp-line-strong);
+  color: var(--hp-ink);
+}
+
+.paper-chip--active {
+  border-color: var(--hp-ink);
+  color: #fff;
+  background: var(--hp-ink);
+}
+
+.paper-chip--active em {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.paper-generate {
+  width: max-content;
+  margin-top: 22px;
+}
+
+.paper-hint {
+  margin: 10px 0 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+/* 生成结果：一张可打印的卷子 */
+.paper-sheet {
+  margin-top: 20px;
+  padding: 28px 30px 30px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-lg);
+  background: var(--hp-surface);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.paper-sheet__head {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--hp-line);
+  text-align: center;
+}
+
+.paper-sheet__head h2 {
+  margin: 0;
+  color: var(--hp-ink);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+
+.paper-sheet__head p {
+  margin: 8px 0 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.paper-questions {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paper-questions li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  background: var(--hp-surface);
+}
+
+.paper-question__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.paper-question__no {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.paper-question__title strong {
+  color: var(--hp-ink);
+  font-size: 15px;
+}
+
+.paper-question__score {
+  color: var(--hp-muted);
+  font-size: 12px;
+}
+
+.paper-question__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0 36px;
+}
+
+.paper-diff {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.paper-diff--easy {
+  color: var(--hp-green-ink);
+  background: var(--hp-green);
+}
+
+.paper-diff--medium {
+  color: var(--hp-yellow-ink);
+  background: var(--hp-yellow);
+}
+
+.paper-diff--hard {
+  color: var(--hp-pink-ink);
+  background: var(--hp-pink);
+}
+
+.paper-tag {
+  padding: 2px 9px;
+  border: 1px solid var(--hp-line);
+  border-radius: 999px;
+  color: var(--hp-ink-2);
+  background: var(--hp-surface-2);
+  font-size: 11.5px;
+}
+
+.paper-rate {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.paper-open {
+  padding: 7px 14px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  color: var(--hp-ink);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.paper-open:hover {
+  border-color: var(--hp-blue-ink);
+  color: var(--hp-blue-ink);
+  background: var(--hp-tint);
+}
+
+.paper-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.paper-empty p {
+  margin: 6px 0 0;
+}
+
+@media (max-width: 720px) {
+  .paper-sheet {
+    padding: 20px 16px 22px;
+  }
+
+  .paper-questions li {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paper-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-blue-ink);
+  background: var(--hp-tint);
+  font-size: 13px;
+}
+
+.paper-message__action {
+  padding: 6px 14px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.paper-message__action:hover {
+  border-color: var(--hp-blue-ink);
+  color: var(--hp-blue-ink);
+}
+
+.paper-saved {
+  margin-top: 20px;
+}
+
+.paper-saved__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paper-saved__list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+}
+
+.paper-saved__open {
+  display: grid;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  color: var(--hp-ink);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.paper-saved__open strong {
+  font-size: 14.5px;
+}
+
+.paper-saved__open small {
+  color: var(--hp-muted);
+  font-size: 12px;
+}
+
+.paper-saved__delete {
+  padding: 7px 14px;
   border: 1px solid #d9b0ab;
   border-radius: 999px;
   color: #a54239;
   background: transparent;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.draft-card__actions button:hover:not(:disabled) {
+.paper-saved__delete:hover {
   color: #fffdf8;
   background: #a54239;
 }
 
-.paper-empty {
-  display: grid;
-  gap: 8px;
-  padding: 48px 20px;
-  border: 1px dashed rgba(23, 23, 23, 0.28);
-  border-radius: var(--hp-r-md);
-  color: var(--hp-muted);
-  background: var(--hp-cream);
-  text-align: center;
-}
-
-.paper-empty strong {
-  color: var(--hp-ink);
-  font-size: 16px;
-}
-
-.paper-empty--error {
-  border-style: solid;
-  border-color: #d9b0ab;
-  color: #a54239;
-  background: #faf0ee;
-}
-
-.paper-link {
-  color: var(--hp-ink);
-}
-
-@media (max-width: 760px) {
-  .paper-home-page :deep(.paper-header),
-  .paper-home-page :deep(.paper-main) {
-    width: calc(100% - 32px);
+/* 打印时只保留卷面 */
+@media print {
+  .paper-page :deep(.app-site-header),
+  .paper-config,
+  .paper-empty,
+  .paper-open,
+  .paper-saved,
+  .paper-message,
+  .paper-sheet__actions {
+    display: none !important;
   }
 
-  .paper-home-page :deep(.paper-header) {
-    padding-top: 24px;
+  .paper-page :deep(.feature-container) {
+    width: 100%;
+    padding: 0;
+  }
+
+  .paper-sheet {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .paper-questions li {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 </style>

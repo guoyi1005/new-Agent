@@ -4,8 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../components/AppTabBar.vue'
 import { getCampusCourses } from '../api/campusCourse'
+import { listExamPapers } from '../api/exam'
 import { completePathItem, completeProjectTask, getContentTags, getExternalCourses, getLearningRecommendations, getPracticeSummary, getPythonHome, startPathItem } from '../api/learning'
 import { getPythonProblemList } from '../api/pythonProblem'
+import { listPythonPapers } from '../api/pythonPaper'
 import {
   decomposeStudyText,
   getStudyGoalDetail,
@@ -33,6 +35,23 @@ const pythonHome = ref({})
 const unifiedRecommendations = ref([])
 const courseTags = ref({})
 const practiceSummary = ref(null)
+/* 已保存的练习卷：用于「我的练习」里的回看入口 */
+const myPapers = ref([])
+/* 课程考试记录：用于「课程与专项」里的历史试卷入口 */
+const examPapers = ref([])
+
+/** 参加过的试卷（按作答次数排序），用于列表展示 */
+const takenExamPapers = computed(() => examPapers.value
+  .filter((item) => Number(item.attemptCount || 0) > 0)
+  .sort((left, right) => Number(right.attemptCount || 0) - Number(left.attemptCount || 0)))
+
+/** 考试概览：试卷总数 / 参加过几套 / 累计作答次数 / 未完成场次 */
+const examSummary = computed(() => ({
+  total: examPapers.value.length,
+  taken: takenExamPapers.value.length,
+  attempts: examPapers.value.reduce((sum, item) => sum + Number(item.attemptCount || 0), 0),
+  unfinished: examPapers.value.filter((item) => item.inProgressAttemptId).length,
+}))
 const externalCourses = ref([])
 const problems = ref([])
 const courses = ref([])
@@ -299,6 +318,33 @@ function friendlyError(message) {
   const text = String(message || '')
   if (/failed to fetch|networkerror|load failed|connection/i.test(text)) return '网络连接失败，请确认服务已启动后重试'
   return text || '加载失败'
+}
+
+async function loadExamPapers() {
+  try {
+    const page = await listExamPapers({ page: 0, size: 100 })
+    examPapers.value = Array.isArray(page?.content) ? page.content : []
+  } catch {
+    examPapers.value = []
+  }
+}
+
+/** 有未完成的考试就直接继续，否则看这门试卷的历史记录 */
+function openExamPaper(item) {
+  if (item?.inProgressAttemptId) {
+    router.push(`/mine/papers/attempts/${item.inProgressAttemptId}`)
+    return
+  }
+  router.push(`/mine/papers/${item.id}/history`)
+}
+
+async function loadMyPapers() {
+  try {
+    const list = await listPythonPapers()
+    myPapers.value = Array.isArray(list) ? list : []
+  } catch {
+    myPapers.value = []
+  }
 }
 
 async function loadLearningData() {
@@ -665,7 +711,11 @@ function openProblem(id) {
   router.push(`/career/nebula/python/practice/${id}`)
 }
 
-onMounted(loadLearningData)
+onMounted(async () => {
+  await loadLearningData()
+  await loadMyPapers()
+  await loadExamPapers()
+})
 </script>
 
 <template>
@@ -811,6 +861,30 @@ onMounted(loadLearningData)
           <div v-if="!displayedCourses.length && courseFilter !== 'enrolled' && courses.length" class="empty empty--small"><strong>目标岗位暂无匹配的校内课程</strong><p>「{{ targetJobTitle }}」目前没有直接相关的课程，可以切回全部课程浏览完整目录。</p><button type="button" class="btn" @click="setCourseFilter('all')">查看全部课程</button></div>
           <div v-if="!displayedCourses.length && !courses.length" class="empty"><strong>暂无可展示的校园课程</strong><p>管理员发布课程后，会在这里显示真实课程和章节进度。可以先去刷题，或浏览下面的公开课程。</p><button type="button" class="btn" @click="selectTab('python')">去 Python 与算法</button></div>
           
+          <section class="panel section">
+            <div class="head">
+              <div><small>课程考试</small><h2>我的考试记录</h2></div>
+              <button type="button" class="link" @click="router.push('/mine/papers')">查看全部试卷</button>
+            </div>
+            <p class="exam-summary">
+              共 {{ examSummary.total }} 套试卷 · 已参加 {{ examSummary.taken }} 套 · 累计作答 {{ examSummary.attempts }} 次<span v-if="examSummary.unfinished"> · {{ examSummary.unfinished }} 场未完成</span>
+            </p>
+            <div v-if="takenExamPapers.length" class="exam-record-list">
+              <button v-for="paper in takenExamPapers.slice(0, 5)" :key="paper.id" type="button" class="exam-record" @click="openExamPaper(paper)">
+                <div>
+                  <strong>{{ paper.title }}</strong>
+                  <small>{{ paper.questionCount }} 题 · 满分 {{ paper.totalScore }} 分 · 已作答 {{ paper.attemptCount }} 次</small>
+                </div>
+                <em>{{ paper.inProgressAttemptId ? '继续考试' : '查看历史记录' }} →</em>
+              </button>
+            </div>
+            <div v-else class="empty empty--small">
+              <strong>还没有考试记录</strong>
+              <p>进入任意课程的「课程考试」完成一次作答，记录就会汇总到这里。</p>
+              <button type="button" class="btn" @click="router.push('/mine/papers')">浏览全部试卷</button>
+            </div>
+          </section>
+
           <section v-if="courseFilter !== 'enrolled'" class="panel section"><div class="head"><div><small>外部精选</small><h2>公开课程与官方文档</h2></div><span class="note">{{ targetJobTitle ? `匹配目标岗位 ${matchedExternalCount} 门 · 跳转原站学习` : '跳转原站学习' }}</span></div><p v-if="dataErrors.external" class="error"><span>{{ dataErrors.external }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><div v-if="displayedExternalCourses.length" class="external-grid"><a v-for="course in displayedExternalCourses" :key="course.id" class="external-card" :href="course.url" target="_blank" rel="noreferrer noopener"><div class="external-card__top"><small>{{ course.provider }}</small><span class="external-card__badges"><span v-if="matchesTargetJob(course.jobs)" class="match-badge">匹配目标岗位</span><span v-if="course.free" class="external-badge">免费</span></span></div><strong>{{ course.title }}</strong><p>{{ course.description || '前往原站查看课程详情。' }}</p><div v-if="course.skills && course.skills.length" class="course-tags"><span v-for="skill in course.skills.slice(0, 3)" :key="skill" class="course-tag">{{ skill }}</span></div><em>去原站学习 ↗</em></a></div><div v-if="displayedExternalCourses.length && visibleExternalCourses.length > PREVIEW_COUNT" class="expand-row"><span class="note">共 {{ visibleExternalCourses.length }} 门</span><button type="button" class="expand-toggle" @click="externalExpanded = !externalExpanded">{{ externalExpanded ? '收起' : '展开全部 ' + visibleExternalCourses.length + ' 门' }}</button></div><div v-if="!displayedExternalCourses.length && courseFilter !== 'enrolled' && externalCourses.length" class="empty empty--small"><strong>目标岗位暂无匹配的外部课程</strong><p>可以切回全部课程查看公开课程与官方文档。</p><button type="button" class="btn" @click="setCourseFilter('all')">查看全部课程</button></div><div v-if="!displayedExternalCourses.length && !externalCourses.length" class="empty empty--small"><strong>暂无外部课程</strong><p>登记外部精选课程后会显示在这里。</p></div></section>
           <section class="panel section"><div class="head"><div><small>备考与证书</small><h2>考试与证书专项</h2></div><button type="button" class="link" @click="openGoalDialog">新建备考目标</button></div><div v-if="examGoals.length" class="exam-goal-grid"><article v-for="goal in examGoals" :key="goal.id" class="exam-goal"><div class="exam-goal__head"><strong>{{ goal.title }}</strong><span class="tag">{{ goalStatusLabel(goal.status) }}</span></div><p>{{ goal.description || '按任务推进备考计划' }}</p><div class="progress"><i :style="{ width: `${goal.progress || 0}%` }" /></div><div class="exam-goal__foot"><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务 · {{ goal.progress || 0 }}%</small><button type="button" class="link" @click="openGoalForCheckin(goal.id)">去打卡</button></div></article></div><div v-else class="empty empty--small"><strong>还没有备考目标</strong><p>四六级、证书考试都可以建目标，系统会拆解成任务并记录打卡进度。</p><button type="button" class="btn" @click="openGoalDialog">新建备考目标</button></div></section>
         </template>
@@ -907,6 +981,17 @@ onMounted(loadLearningData)
               </article>
             </div>
             <div v-else class="empty empty--small"><strong>暂无学习任务</strong><p>生成学习路径后，路径里的任务节点会汇总到这里。</p></div>
+          </section>
+
+          <section class="panel section">
+            <div class="head"><div><small>试卷生成</small><h2>我的练习卷</h2></div><button type="button" class="link" @click="router.push('/paper')">生成新试卷</button></div>
+            <div v-if="myPapers.length" class="summary-list">
+              <article v-for="paper in myPapers.slice(0, 5)" :key="paper.id">
+                <div><strong>{{ paper.title }}</strong><small>{{ paper.questionCount }} 题 · 满分 {{ paper.totalScore }} 分 · {{ paper.createdAt }}</small></div>
+                <button type="button" class="link" @click="router.push({ path: '/paper', query: { paperId: paper.id, from: 'learning' } })">打开</button>
+              </article>
+            </div>
+            <div v-else class="empty empty--small"><strong>还没有保存过试卷</strong><p>到「Python 试卷生成」按知识点组一份卷子，保存后就能在这里回看和打印。</p><button type="button" class="btn" @click="router.push('/paper')">去生成试卷</button></div>
           </section>
         </template>
       </div>
@@ -2108,6 +2193,65 @@ onMounted(loadLearningData)
   margin: 0;
   color: var(--hp-muted);
   font-size: 11.5px;
+}
+
+/* ---------- 我的考试记录（课程与专项页） ---------- */
+
+.exam-summary {
+  margin: 12px 0 0;
+  color: var(--hp-muted);
+  font-size: 13px;
+}
+
+.exam-record-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.exam-record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.exam-record:hover {
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.exam-record > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.exam-record strong {
+  font-size: 14.5px;
+}
+
+.exam-record small {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.exam-record em {
+  flex: none;
+  color: var(--hp-blue-ink);
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ---------- 考试与证书专项（展示真实备考目标） ---------- */

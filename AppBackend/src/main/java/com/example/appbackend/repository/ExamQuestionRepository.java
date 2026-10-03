@@ -13,6 +13,9 @@ import java.util.Optional;
 public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long> {
     List<ExamQuestion> findBySourceAgentAndStatusOrderByIdAsc(String sourceAgent, Integer status);
 
+    /** 课程测验种子：按来源与稳定编号幂等查重 */
+    java.util.Optional<ExamQuestion> findBySourceAgentAndSourceQuestionId(String sourceAgent, String sourceQuestionId);
+
     @Query("""
             SELECT q FROM ExamQuestion q
             WHERE q.status = 1

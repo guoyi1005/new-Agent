@@ -1,9 +1,10 @@
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppTabBar from '../components/AppTabBar.vue'
 import { listExamPapers, startExam } from '../api/exam'
 
+const route = useRoute()
 const router = useRouter()
 const papers = ref([])
 const loading = ref(true)
@@ -28,7 +29,7 @@ async function enterExam(paper) {
   error.value = ''
   try {
     const attempt = await startExam(paper.id)
-    router.push(`/mine/papers/attempts/${attempt.id}`)
+    router.push({ path: `/mine/papers/attempts/${attempt.id}`, query: route.query })
   } catch (cause) {
     error.value = cause.message
   } finally {
@@ -37,8 +38,16 @@ async function enterExam(paper) {
 }
 
 function goBack() {
-  if (window.history.length > 1) router.back()
-  else router.push('/mine')
+  // 从课程详情的「课程考试」进来时，直接回到那门课程
+  if (route.query.from === 'course' && route.query.courseId) {
+    router.push(`/courses/${route.query.courseId}`)
+    return
+  }
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
+  router.push('/mine')
 }
 
 onMounted(loadPapers)

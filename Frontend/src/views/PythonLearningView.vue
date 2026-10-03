@@ -23,10 +23,29 @@ const counts = computed(() => mastery.value.reduce((result, item) => {
   return result
 }, {}))
 
+/* 路径状态中文化：后端返回的是 ready / locked / in_progress 这类英文枚举 */
+const STATUS_LABELS = {
+  completed: '已完成',
+  in_progress: '学习中',
+  ready: '可开始',
+  locked: '待解锁',
+  needs_review: '需复习',
+  pending: '待开始',
+}
+function statusLabel(value) {
+  return STATUS_LABELS[value] || '待开始'
+}
+
 async function load() {
   loading.value = true
   error.value = ''
-  try { home.value = await getPythonHome() || {} } catch (cause) { error.value = cause.message } finally { loading.value = false }
+  try {
+    home.value = await getPythonHome() || {}
+  } catch (cause) {
+    error.value = cause.message
+  } finally {
+    loading.value = false
+  }
 }
 
 async function updateItem(item, action) {
@@ -36,12 +55,23 @@ async function updateItem(item, action) {
     if (action === 'start') await startPathItem(item.id)
     else await completePathItem(item.id)
     await load()
-  } catch (cause) { error.value = cause.message } finally { busy.value = '' }
+  } catch (cause) {
+    error.value = cause.message
+  } finally {
+    busy.value = ''
+  }
 }
 
 async function replan() {
   busy.value = 'replan'
-  try { await replanPythonPath(); await load() } catch (cause) { error.value = cause.message } finally { busy.value = '' }
+  try {
+    await replanPythonPath()
+    await load()
+  } catch (cause) {
+    error.value = cause.message
+  } finally {
+    busy.value = ''
+  }
 }
 
 onMounted(load)
@@ -52,102 +82,297 @@ onMounted(load)
     <main class="feature-container">
       <header class="feature-heading">
         <div>
-<h1>Python 个性化学习</h1><p>根据真实答题和学习记录规划下一步</p>
+          <h1>Python 个性化学习</h1>
+          <p>根据真实答题与学习记录，按顺序推进下面的环节</p>
         </div>
         <div class="feature-actions">
           <button class="feature-button" :disabled="busy === 'replan'" @click="replan">重新规划路径</button>
           <button class="feature-button feature-button--primary" @click="router.push('/career/nebula/python/resources')">生成专项资源</button>
         </div>
       </header>
+
       <div v-if="error" class="feature-error">{{ error }}</div>
       <div v-if="loading" class="feature-empty">正在加载学习数据…</div>
-      <div v-else class="learning-dashboard">
-        <section class="feature-card graph-entry" @click="router.push('/career/nebula/python/knowledge-graph')">
-          <div class="graph-entry__copy"><span class="graph-entry__eyebrow">KNOWLEDGE GRAPH</span><h2>个人知识图谱</h2><p>查看知识关系、掌握状态和前置依赖</p><button class="feature-button feature-button--primary">进入知识图谱</button></div>
-          <div class="graph-entry__preview" aria-hidden="true">
-            <i class="node n1"></i><i class="node n2"></i><i class="node n3"></i><i class="node weak"></i>
-            <b class="line l1"></b><b class="line l2"></b><b class="line l3"></b>
-          </div>
+
+      <template v-else>
+        <section class="py-stats">
+          <article><span>已掌握</span><strong>{{ counts.mastered || 0 }}</strong><small>个知识点</small></article>
+          <article><span>需巩固</span><strong>{{ counts.weak || 0 }}</strong><small>个知识点</small></article>
+          <article><span>学习中</span><strong>{{ counts.learning || 0 }}</strong><small>个知识点</small></article>
+          <article><span>画像完整度</span><strong>{{ home.profileCompleteness ?? 0 }}%</strong><small>答题后持续更新</small></article>
         </section>
-        <aside class="feature-card feature-section overview">
-          <div class="feature-section__head"><h2>学习概览</h2></div>
-          <div class="overview__row"><span>已掌握</span><strong>{{ counts.mastered || 0 }}</strong></div>
-          <div class="overview__row"><span>需巩固</span><strong>{{ counts.weak || 0 }}</strong></div>
-          <div class="overview__row"><span>学习中</span><strong>{{ counts.learning || 0 }}</strong></div>
-          <div class="overview__row"><span>画像完整度</span><strong>{{ home.profileCompleteness ?? '—' }}{{ home.profileCompleteness == null ? '' : '%' }}</strong></div>
-        </aside>
-        <section class="feature-card feature-section path-panel">
-          <div class="feature-section__head"><div><h2>当前学习路径</h2><p>{{ home.activePath?.goal || '尚未生成学习目标' }}</p></div></div>
-          <div v-if="!pathItems.length" class="feature-empty">暂无学习路径，可点击“重新规划路径”生成</div>
-          <div v-else class="feature-list">
-            <div v-for="item in pathItems" :key="item.id" class="feature-row">
-              <div class="path-sequence">{{ item.sequenceNo }}</div>
-              <div class="feature-row__copy"><strong>{{ item.knowledgePoint }}</strong><span>{{ item.objective }}</span></div>
-              <span :class="`feature-status feature-status--${item.status || 'pending'}`">{{ item.status || 'pending' }}</span>
-              <button v-if="item.status !== 'completed'" class="feature-button" :disabled="busy.endsWith(`-${item.id}`)" @click="updateItem(item, item.status === 'in_progress' ? 'complete' : 'start')">
-                {{ item.status === 'in_progress' ? '标记完成' : '开始学习' }}
+
+        <div class="py-plan-grid">
+          <section class="feature-card feature-section py-path-panel">
+            <div class="feature-section__head">
+              <div>
+                <h2>当前学习路径</h2>
+                <p>{{ home.activePath?.goal || '尚未生成学习目标' }}</p>
+              </div>
+              <span class="py-count">{{ pathItems.length }} 个环节</span>
+            </div>
+            <div v-if="!pathItems.length" class="feature-empty">暂无学习路径，可点击右上角「重新规划路径」生成</div>
+            <ol v-else class="py-path">
+              <li v-for="item in pathItems" :key="item.id">
+                <span class="py-path__no">{{ String(item.sequenceNo || 0).padStart(2, '0') }}</span>
+                <div class="py-path__body">
+                  <div class="py-path__head">
+                    <strong>{{ item.knowledgePoint }}</strong>
+                    <em :class="`py-status py-status--${item.status || 'pending'}`">{{ statusLabel(item.status) }}</em>
+                  </div>
+                  <p>{{ item.objective || '按当前掌握度推进这个知识点' }}</p>
+                </div>
+                <button v-if="item.status !== 'completed'" class="feature-button"
+                  :disabled="busy.endsWith(`-${item.id}`)"
+                  @click="updateItem(item, item.status === 'in_progress' ? 'complete' : 'start')">
+                  {{ item.status === 'in_progress' ? '标记完成' : '开始学习' }}
+                </button>
+                <span v-else class="py-path__done">已完成</span>
+              </li>
+            </ol>
+          </section>
+
+          <aside class="feature-card feature-section py-rec-panel">
+            <div class="feature-section__head">
+              <h2>精准推荐</h2>
+              <a href="#" @click.prevent="router.push('/career/nebula/python/resources')">生成资源</a>
+            </div>
+            <div v-if="!recommendations.length" class="feature-empty">完成练习后会展示基于真实证据的推荐</div>
+            <div v-else class="py-recs">
+              <button v-for="item in recommendations.slice(0, 6)" :key="item.id" class="py-rec"
+                @click="router.push({ path: '/career/nebula/python/resources', query: { topic: item.title || item.knowledgePoint } })">
+                <strong>{{ item.title || item.knowledgePoint || '学习建议' }}</strong>
+                <small>{{ item.reason || item.rationale || '按当前掌握度推荐' }}</small>
               </button>
             </div>
-          </div>
-        </section>
-        <section class="feature-card feature-section recommendation-panel">
-          <div class="feature-section__head"><h2>精准推荐</h2><a href="#" @click.prevent="router.push('/career/nebula/python/resources')">生成资源</a></div>
-          <div v-if="!recommendations.length" class="feature-empty">完成练习后会展示基于真实证据的推荐</div>
-          <div v-else class="feature-list">
-            <button v-for="item in recommendations.slice(0, 6)" :key="item.id" class="recommendation" @click="router.push({ path:'/career/nebula/python/resources', query:{ topic:item.title || item.knowledgePoint } })">
-              <span>{{ item.title || item.knowledgePoint || '学习建议' }}</span><small>{{ item.reason || item.rationale }}</small>
-            </button>
-          </div>
-        </section>
-      </div>
+          </aside>
+        </div>
+      </template>
     </main>
   </div>
 </template>
 
 <style scoped>
-.learning-dashboard{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:20px}.graph-entry{display:flex;min-height:310px;padding:30px;cursor:pointer}.graph-entry__copy{position:relative;z-index:2;width:42%}.graph-entry__eyebrow{color:#6c8196;font-size:11px;font-weight:800;letter-spacing:1.4px}.graph-entry h2{margin:14px 0 8px;color:#20344b;font-size:25px}.graph-entry p{margin:0 0 28px;color:#718096}.graph-entry__preview{position:relative;flex:1;min-height:240px}.node{position:absolute;width:70px;height:32px;border:2px solid #6d8ca8;border-radius:17px;background:#f4f8fb}.node:after{content:'';position:absolute;inset:9px 27px;border-radius:50%;background:#527696}.n1{left:5%;top:45%}.n2{left:42%;top:14%;border-color:#5d9b7d}.n2:after{background:#4c9471}.n3{left:48%;top:67%;border-color:#5d9b7d}.n3:after{background:#4c9471}.weak{right:3%;top:42%;border-color:#bb6c65}.weak:after{background:#b85f57}.line{position:absolute;height:1px;background:#9eb0c1;transform-origin:left}.l1{left:22%;top:48%;width:115px;transform:rotate(-28deg)}.l2{left:22%;top:52%;width:126px;transform:rotate(23deg)}.l3{left:61%;top:34%;width:105px;transform:rotate(20deg)}.overview__row{display:flex;justify-content:space-between;padding:16px 0;border-top:1px solid #edf1f5}.overview__row span{color:#65758a}.overview__row strong{color:#26384d}.path-panel{grid-column:1}.recommendation-panel{grid-column:2}.path-sequence{display:grid;flex:0 0 30px;place-items:center;width:30px;height:30px;border-radius:50%;color:#315f8c;background:#eaf1f7;font-weight:800}.feature-row__copy{flex:1}.feature-section__head p{margin:5px 0 0;color:#718096;font-size:13px}.recommendation{display:block;width:100%;padding:14px;border:1px solid #e1e7ed;border-radius:8px;color:#26384d;background:#fff;text-align:left}.recommendation span,.recommendation small{display:block}.recommendation span{font-weight:750}.recommendation small{margin-top:7px;color:#718096;line-height:1.5}@media(max-width:900px){.learning-dashboard{grid-template-columns:1fr}.graph-entry,.overview,.path-panel,.recommendation-panel{grid-column:1}.graph-entry__copy{width:55%}}
-
-/* 返回学习实践：与站内其他页面的返回按钮保持一致的胶囊样式 */
-.py-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 14px;
-  padding: 7px 14px;
-  border: 1px solid var(--hp-line-strong);
-  border-radius: 999px;
-  color: var(--hp-ink-2);
-  background: var(--hp-surface);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: border-color .2s ease, color .2s ease, background .2s ease;
+/* 外层已有二级导航，收紧顶部留白，与题库/图谱页保持一致 */
+.feature-container {
+  padding: 12px 0 48px;
 }
 
-.py-back:hover {
-  border-color: var(--hp-blue-ink);
+/* 顶部概览：与站内其它页面的统计条保持一致 */
+.py-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.py-stats article {
+  display: grid;
+  gap: 4px;
+  padding: 18px 20px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-md);
+  background: var(--hp-surface);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.py-stats span {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.py-stats strong {
+  color: var(--hp-ink);
+  font-size: 26px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.py-stats small {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+/* 主体两栏：左侧学习路径为主，右侧推荐为辅 */
+.py-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.py-count {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.py-path {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.py-path li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  background: var(--hp-surface);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.py-path li:hover {
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.py-path__no {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.py-path__body {
+  min-width: 0;
+}
+
+.py-path__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.py-path__head strong {
+  color: var(--hp-ink);
+  font-size: 14.5px;
+}
+
+.py-path__body p {
+  margin: 5px 0 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.py-path__done {
+  color: var(--hp-green-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.py-status {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.py-status--completed {
+  color: var(--hp-green-ink);
+  background: var(--hp-green);
+}
+
+.py-status--in_progress {
+  color: var(--hp-blue-ink);
+  background: var(--hp-blue);
+}
+
+.py-status--ready {
   color: var(--hp-blue-ink);
   background: var(--hp-tint);
 }
 
-.py-back__arrow {
+.py-status--needs_review {
+  color: var(--hp-pink-ink);
+  background: var(--hp-pink);
+}
+
+.py-status--locked,
+.py-status--pending {
+  color: var(--hp-muted);
+  background: var(--hp-surface-2);
+}
+
+.py-recs {
+  display: grid;
+  gap: 10px;
+}
+
+.py-rec {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.py-rec:hover {
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-sm);
+}
+
+.py-rec strong {
+  font-size: 14px;
+}
+
+.py-rec small {
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.feature-section__head p {
+  margin: 5px 0 0;
+  color: var(--hp-muted);
   font-size: 13px;
-  line-height: 1;
-  transition: transform .2s ease;
 }
 
-.py-back:hover .py-back__arrow {
-  transform: translateX(-2px);
-}
-/* 顶部留白收紧：外层已经有二级导航 */
-.feature-container {
-  padding-top: 12px;
+@media (max-width: 1000px) {
+  .py-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .py-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .py-back--nebula,
-  .py-back__arrow {
-    transition: none;
+@media (max-width: 640px) {
+  .py-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .py-path li {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .py-path li > .feature-button,
+  .py-path__done {
+    grid-column: 2;
+    justify-self: start;
   }
 }
 </style>

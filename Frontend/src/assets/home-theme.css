@@ -434,48 +434,6 @@ body .map-page {
   background: var(--hp-surface-2) !important;
 }
 
-/* ---------- Python 学习：取消旧深色主题，沿用首页浅色体系 ---------- */
-
-body .py-dark {
-  --py-ink: var(--hp-ink) !important;
-  --py-muted: var(--hp-muted) !important;
-  --py-line: var(--hp-line) !important;
-  --py-line-soft: var(--hp-line) !important;
-  --py-surface: var(--hp-surface) !important;
-  --py-surface-strong: var(--hp-surface-2) !important;
-  --py-violet: var(--hp-blue-ink) !important;
-  --py-sky: var(--hp-blue-ink) !important;
-  --py-mint: var(--hp-green-ink) !important;
-  --py-pink: var(--hp-pink-ink) !important;
-  --py-sand: var(--hp-yellow-ink) !important;
-  color: var(--hp-ink) !important;
-  background: var(--hp-bg) !important;
-}
-
-.py-dark :is(.feature-card, .feature-section, .problem-card, .graph-panel, .resource-card, .practice-panel) {
-  border: 1px solid var(--hp-line) !important;
-  border-radius: var(--hp-r-lg) !important;
-  color: var(--hp-ink) !important;
-  background: var(--hp-surface) !important;
-  box-shadow: var(--hp-shadow-sm) !important;
-  backdrop-filter: none !important;
-}
-
-.py-dark :is(h1, h2, h3, h4, strong) {
-  color: var(--hp-ink) !important;
-}
-
-.py-dark :is(p, span, small) {
-  color: var(--hp-muted);
-}
-
-.py-dark :is(.feature-button--primary, .active, .primary-action) {
-  border-color: var(--hp-ink) !important;
-  color: #fff !important;
-  background: var(--hp-ink) !important;
-  box-shadow: none !important;
-}
-
 /* ---------- 岗位星图与 AI 面试 ---------- */
 
 body .nebula-page,

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../components/AppTabBar.vue'
 import { enrollCampusCourse, getCampusCourse, updateCampusCourseProgress } from '../api/campusCourse'
+import { startExam } from '../api/exam'
 import { getContentTags } from '../api/learning'
 
 const route = useRoute()
@@ -18,9 +19,47 @@ const chapterTags = ref({})
 const actionError = ref('')
 const actionNotice = ref('')
 const enrolling = ref(false)
+/* 课程考试：点「进入考试」直接开始那场考试，不再经过试卷列表 */
+const examStarting = ref(null)
+const examError = ref('')
 const activeVideoPage = ref(1)
 
 const completedCount = computed(() => (course.value?.chapters || []).filter((item) => item.completed).length)
+
+/**
+ * 「返回校园课程」应该回到课程列表，而不是简单回退一页。
+ * 上一页确实是学习实践时（可能带着"我加入的"等筛选）才回退，保留用户原来的筛选；
+ * 其它情况（例如刚从考试结果页过来）一律回到课程与专项列表。
+ */
+function backToCourses() {
+  const previous = window.history.state?.back
+  if (typeof previous === 'string' && previous.startsWith('/learning')) {
+    router.back()
+    return
+  }
+  router.push('/learning?tab=courses')
+}
+
+/**
+ * 直接进入这门课的考试：先开一次答题会话，再跳到答题界面。
+ * 带上 from=course&courseId，答题页/成绩页的返回就能回到本课程。
+ */
+async function enterExam(exam) {
+  if (!exam?.paperId || examStarting.value) return
+  examStarting.value = exam.paperId
+  examError.value = ''
+  try {
+    const attempt = await startExam(exam.paperId)
+    router.push({
+      path: `/mine/papers/attempts/${attempt.id}`,
+      query: { from: 'course', courseId: course.value?.id },
+    })
+  } catch (cause) {
+    examError.value = cause?.message || '进入考试失败，请稍后重试'
+  } finally {
+    examStarting.value = null
+  }
+}
 
 // B 站官方外链播放器：只引用 BV 号，视频内容始终在 B 站
 const bilibiliPlayerUrl = computed(() => {
@@ -127,7 +166,7 @@ onMounted(loadCourse)
   <div class="course-page">
     <AppTabBar />
     <main class="course-shell">
-      <button class="back-link" type="button" @click="router.back()">← 返回校园课程</button>
+      <button class="back-link" type="button" @click="backToCourses()">← 返回校园课程</button>
 
       <p v-if="loading" class="state">正在打开课程书…</p>
       <p v-else-if="error" class="state">{{ error }}</p>
@@ -202,11 +241,13 @@ onMounted(loadCourse)
 
             <section class="course-card exam-panel">
               <div class="sidebar-head"><h2>课程考试</h2><span>{{ course.exams.length }} 场</span></div>
-              <button v-for="exam in course.exams" :key="exam.id" class="exam-card" type="button" @click="router.push('/mine/papers')">
+              <button v-for="exam in course.exams" :key="exam.id" class="exam-card" type="button"
+                :disabled="examStarting === exam.paperId" @click="enterExam(exam)">
                 <span>考</span>
                 <div><strong>{{ exam.title }}</strong><small>{{ exam.chapterScope || '全部章节' }} · {{ exam.questionCount }} 题 · {{ exam.durationMinutes }} 分钟</small></div>
-                <em>进入考试</em>
+                <em>{{ examStarting === exam.paperId ? '正在进入…' : '进入考试' }}</em>
               </button>
+              <p v-if="examError" class="exam-error">{{ examError }}</p>
               <p v-if="!course.exams.length" class="state-card">当前课程暂无已发布考试</p>
             </section>
           </aside>
@@ -685,6 +726,17 @@ onMounted(loadCourse)
   color: var(--hp-blue-ink);
   background: var(--hp-blue);
   font-weight: 800;
+}
+
+.exam-card:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.exam-error {
+  margin: 0;
+  color: #a54239;
+  font-size: 12.5px;
 }
 
 .exam-card > div {

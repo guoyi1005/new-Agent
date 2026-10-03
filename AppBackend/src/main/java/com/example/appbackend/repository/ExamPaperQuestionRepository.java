@@ -13,4 +13,6 @@ public interface ExamPaperQuestionRepository extends JpaRepository<ExamPaperQues
     List<ExamPaperQuestion> findByPaperIdOrderBySortOrderAscIdAsc(Long paperId);
 
     Optional<ExamPaperQuestion> findByIdAndPaperId(Long id, Long paperId);
+
+    Optional<ExamPaperQuestion> findFirstByPaperIdAndQuestionId(Long paperId, Long questionId);
 }
