@@ -8,6 +8,8 @@ public interface UserService {
 
     UserResponse register(@Valid RegisterRequest request);
 
+    UserResponse adminRegister(@Valid RegisterRequest request);
+
 
 
     UserResponse applogin(@Valid LoginRequest request);

@@ -103,7 +103,6 @@ async function handleRegister() {
     await register({
       username: registerForm.username.trim(),
       password: registerForm.password,
-      role: 'STUDENT',
     })
 
     form.username = registerForm.username.trim()

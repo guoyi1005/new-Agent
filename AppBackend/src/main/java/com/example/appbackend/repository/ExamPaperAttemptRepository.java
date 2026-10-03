@@ -19,6 +19,7 @@ public interface ExamPaperAttemptRepository extends JpaRepository<ExamPaperAttem
     Optional<ExamPaperAttempt> findByIdAndUserIdForUpdate(@Param("id") Long id, @Param("userId") Long userId);
 
     boolean existsByPaperIdAndUserId(Long paperId, Long userId);
+    boolean existsByUserId(Long userId);
     Optional<ExamPaperAttempt> findByPaperIdAndUserIdAndActiveMarker(
             Long paperId, Long userId, Integer activeMarker);
 

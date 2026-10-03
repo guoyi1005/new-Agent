@@ -3,9 +3,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getExamAttempt, saveExamAnswer, submitExam } from '../api/exam'
 import AppTabBar from '../components/AppTabBar.vue'
+import { useExamReturn } from '../composables/useExamReturn'
 
 const route = useRoute()
 const router = useRouter()
+const { goExamBack } = useExamReturn()
 const attempt = ref(null)
 const currentIndex = ref(0)
 const answer = ref({})
@@ -156,7 +158,7 @@ onBeforeUnmount(() => window.clearInterval(timer))
   <div class="exam-shell">
     <AppTabBar />
     <header class="exam-header">
-      <button type="button" aria-label="返回试卷列表" @click="router.push('/mine/papers')">‹</button>
+      <button type="button" aria-label="返回来源" @click="goExamBack()">‹</button>
       <div><strong>Python基础能力随机考试</strong><small>第 {{ attempt?.attemptNo || '-' }} 次考试</small></div>
       <p><small>剩余时间</small><b>{{ timeText }}</b></p>
     </header>

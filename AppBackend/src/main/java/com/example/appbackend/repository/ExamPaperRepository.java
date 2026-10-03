@@ -50,6 +50,11 @@ public interface ExamPaperRepository extends JpaRepository<ExamPaper, Long> {
 
     Page<ExamPaper> findByCreatedByAndStatusOrderByCreateTimeDesc(Long createdBy, Integer status, Pageable pageable);
 
+    Page<ExamPaper> findByStatusOrderByCreateTimeDesc(Integer status, Pageable pageable);
+
+    Page<ExamPaper> findByStatusAndTitleContainingOrderByCreateTimeDesc(
+            Integer status, String title, Pageable pageable);
+
     Page<ExamPaper> findByCreatedByAndStatusAndTitleContainingOrderByCreateTimeDesc(
             Long createdBy, Integer status, String title, Pageable pageable);
 }

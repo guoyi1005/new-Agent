@@ -214,7 +214,7 @@ function CommentManage() {
               <div className="cm-info-row"><span className="cm-info-label">评论时间</span><span>{formatTime(currentComment.createTime)}</span></div>
             </div>
             <div className="cm-drawer-content">
-              <h4 className="cm-drawer-subtitle">💬 评论内容</h4>
+              <h4 className="cm-drawer-subtitle">评论内容</h4>
               <div className="cm-content-box">{currentComment.content}</div>
             </div>
           </div>

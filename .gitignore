@@ -17,6 +17,7 @@ __pycache__/
 
 # Maven
 AppBackend/target/
+/.m2/
 AppBackend/.mvn/
 
 # Node (if needed)

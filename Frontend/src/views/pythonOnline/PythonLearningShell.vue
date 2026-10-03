@@ -41,7 +41,7 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: min(1480px, calc(100% - 48px));
+  width: min(1400px, calc(100% - 48px));
   margin: 0 auto;
   padding: 72px 0 8px;
 }

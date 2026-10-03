@@ -17,6 +17,15 @@ export function getLatestJobRecommendations() {
   return request({ url: '/api/app/job-recommendations/latest' })
 }
 
+export function getInternshipRecommendations(limit = 4) {
+  // 首页摘要与“实习就业”完整列表读取同一批已导入岗位。
+  return request({ url: '/api/jobs/recommendations/internships', params: { limit } })
+}
+
+export function getHotMarketJobs(limit = 6) {
+  return request({ url: '/api/jobs/hot', params: { limit } })
+}
+
 export function refreshJobRecommendations() {
   return request({ url: '/api/app/job-recommendations/refresh', method: 'POST' })
 }

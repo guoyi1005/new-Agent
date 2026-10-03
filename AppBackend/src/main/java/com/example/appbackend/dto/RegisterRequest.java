@@ -27,7 +27,7 @@ public class RegisterRequest {
     @Schema(description = "手机号", example = "13800138000")
     private String phone;
 
-    @Schema(description = "角色(STUDENT/TEACHER)", example = "STUDENT")
+    @Schema(description = "管理端创建用户时使用的角色")
     private String role;
 
     @Schema(description = "真实姓名", example = "张三")

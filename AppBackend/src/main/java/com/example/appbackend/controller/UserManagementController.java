@@ -150,7 +150,7 @@ public class UserManagementController {
             throw new BusinessException(Result.BAD_REQUEST_CODE, "管理端注册仅支持 ADMIN 或 MERCHANT 角色");
         }
         requestBody.setRole(role);
-        UserResponse response = userService.register(requestBody);
+        UserResponse response = userService.adminRegister(requestBody);
         return Result.success(response);
     }
 }

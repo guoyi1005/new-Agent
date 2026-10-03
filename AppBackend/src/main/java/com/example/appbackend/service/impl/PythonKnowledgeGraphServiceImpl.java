@@ -4,6 +4,7 @@ import com.example.appbackend.dto.KnowledgeGraphDTO;
 import com.example.appbackend.dto.LearningPathDTO;
 import com.example.appbackend.service.LearningPathService;
 import com.example.appbackend.service.PythonKnowledgeGraphService;
+import com.example.appbackend.util.KnowledgePointNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -93,8 +94,12 @@ public class PythonKnowledgeGraphServiceImpl implements PythonKnowledgeGraphServ
                 .collect(Collectors.toMap(CatalogNode::id, Function.identity(),
                         (left, right) -> left, LinkedHashMap::new));
         Set<String> allIds = new LinkedHashSet<>(catalogById.keySet());
-        allIds.addAll(masteryByKey.keySet());
-        allIds.addAll(pathByKey.keySet());
+        // 掌握度只补充形如 python.xxx 的知识点 key；
+        // 学习路径里的自由文本主题（如“列表与切片”）只用于标记是否在路径上，
+        // 不再单独生成节点——否则图谱末尾会多出一列与目录重复的“阶段 6”。
+        masteryByKey.keySet().stream()
+                .filter(id -> id != null && id.contains("."))
+                .forEach(allIds::add);
 
         List<KnowledgeGraphDTO.NodeView> nodes = new ArrayList<>();
         for (String id : allIds) {
@@ -183,7 +188,7 @@ public class PythonKnowledgeGraphServiceImpl implements PythonKnowledgeGraphServ
 
     private String title(String id, CatalogNode catalog, LearningPathDTO.MasteryView mastery) {
         if (mastery != null && StringUtils.hasText(mastery.getKnowledgePointName())) {
-            return mastery.getKnowledgePointName().trim();
+            return KnowledgePointNames.display(mastery.getKnowledgePointName());
         }
         if (catalog != null) {
             return catalog.title();
