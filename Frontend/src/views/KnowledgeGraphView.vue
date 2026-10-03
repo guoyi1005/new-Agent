@@ -65,10 +65,6 @@ async function load() {
   }
 }
 
-function generate() {
-  router.push({ path: '/career/nebula/python/resources', query: { topic: selected.value?.title || '' } })
-}
-
 onMounted(load)
 </script>
 
@@ -138,10 +134,9 @@ onMounted(load)
             </section>
             <section class="kg-block">
               <h4>学习建议</h4>
-              <p>{{ selected.pathObjective || (selected.status === 'weak' ? '建议生成专项资源后完成针对性练习。' : '按当前学习路径继续学习。') }}</p>
+              <p>{{ selected.pathObjective || (selected.status === 'weak' ? '这个知识点偏薄弱，建议回到题库做几道对应练习。' : '按当前学习路径继续学习。') }}</p>
             </section>
             <div class="kg-actions">
-              <button class="feature-button" @click="generate">生成专项资源</button>
               <button class="feature-button feature-button--primary" @click="router.push('/career/nebula/python')">去题库练习</button>
             </div>
           </template>
@@ -464,7 +459,7 @@ onMounted(load)
 
 .kg-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 22px;
 }

@@ -86,8 +86,7 @@ onMounted(load)
           <p>根据真实答题与学习记录，按顺序推进下面的环节</p>
         </div>
         <div class="feature-actions">
-          <button class="feature-button" :disabled="busy === 'replan'" @click="replan">重新规划路径</button>
-          <button class="feature-button feature-button--primary" @click="router.push('/career/nebula/python/resources')">生成专项资源</button>
+          <button class="feature-button feature-button--primary" :disabled="busy === 'replan'" @click="replan">重新规划路径</button>
         </div>
       </header>
 
@@ -134,16 +133,17 @@ onMounted(load)
 
           <aside class="feature-card feature-section py-rec-panel">
             <div class="feature-section__head">
-              <h2>精准推荐</h2>
-              <a href="#" @click.prevent="router.push('/career/nebula/python/resources')">生成资源</a>
+              <div>
+                <h2>学习建议</h2>
+                <p>根据近期练习与掌握情况整理</p>
+              </div>
             </div>
-            <div v-if="!recommendations.length" class="feature-empty">完成练习后会展示基于真实证据的推荐</div>
+            <div v-if="!recommendations.length" class="feature-empty">完成练习后会展示基于真实证据的建议</div>
             <div v-else class="py-recs">
-              <button v-for="item in recommendations.slice(0, 6)" :key="item.id" class="py-rec"
-                @click="router.push({ path: '/career/nebula/python/resources', query: { topic: item.title || item.knowledgePoint } })">
+              <div v-for="item in recommendations.slice(0, 6)" :key="item.id" class="py-rec">
                 <strong>{{ item.title || item.knowledgePoint || '学习建议' }}</strong>
                 <small>{{ item.reason || item.rationale || '按当前掌握度推荐' }}</small>
-              </button>
+              </div>
             </div>
           </aside>
         </div>
@@ -318,20 +318,11 @@ onMounted(load)
 .py-rec {
   display: grid;
   gap: 6px;
-  width: 100%;
   padding: 14px 16px;
   border: 1px solid var(--hp-line);
   border-radius: var(--hp-r-sm);
   color: var(--hp-ink);
-  background: var(--hp-surface);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.py-rec:hover {
-  border-color: var(--hp-line-strong);
-  box-shadow: var(--hp-shadow-sm);
+  background: var(--hp-surface-2);
 }
 
 .py-rec strong {
