@@ -91,9 +91,13 @@ const jobPathSteps = computed(() => {
 
 // 路径步骤的类型标签：学（课程）/ 练（题目）/ 做（项目）
 // 岗位实战任务：按目标岗位算出的推荐里，类型为 PROJECT 的内容。
-// 目前内容库还没有 PROJECT 类型，所以这里是诚实的空状态，等录入了会自动出现。
+// 默认只展开前几项，避免一次铺满整页，其余通过「展开全部」查看。
+const JOB_PROJECT_PREVIEW = 2
+const jobProjectsExpanded = ref(false)
 const jobProjects = computed(() =>
   unifiedRecommendations.value.filter((item) => item?.sourceType === 'PROJECT'))
+const visibleJobProjects = computed(() =>
+  jobProjectsExpanded.value ? jobProjects.value : jobProjects.value.slice(0, JOB_PROJECT_PREVIEW))
 
 function pathStepKind(item) {
   const map = { COURSE: '学', EXTERNAL_COURSE: '学', PROBLEM: '练', PROJECT: '做', SPECIAL_TRAINING: '专', PYTHON: '学' }
@@ -402,7 +406,7 @@ async function loadUnifiedRecommendations() {
     return
   }
   try {
-    const items = await getLearningRecommendations(jobName, 8)
+    const items = await getLearningRecommendations(jobName, 24)
     unifiedRecommendations.value = Array.isArray(items) ? items : []
     dataErrors.recommendations = ''
   } catch (error) {
@@ -836,9 +840,10 @@ onMounted(loadLearningData)
           <section class="panel toolbar"><div><h2>项目实训</h2><p>把学到的技能用起来：岗位实战任务，以及商业沙盘模拟经营。</p></div><button type="button" class="btn btn--primary" @click="router.push('/learning/projects/sandbox')">进入商业沙盘</button></section>
 
           <section class="panel section">
-            <div class="head"><div><small>按目标岗位</small><h2>岗位实战任务</h2></div><span class="note">{{ targetJobTitle || '未选择目标岗位' }}</span></div>
-            <div v-if="jobProjects.length" class="project-list"><article v-for="item in jobProjects" :key="`${item.sourceType}-${item.sourceId}`"><div><span>岗位实战</span><h3>{{ item.title }}</h3><p>{{ item.reason }}</p></div><em>{{ item.skillName }}</em><button type="button" class="btn" @click="openRecommendation(item)">开始任务</button></article></div>
-            <div v-else class="empty empty--small"><strong>{{ targetJobTitle ? '该岗位的实战任务正在整理中' : '先选择目标岗位' }}</strong><p>{{ targetJobTitle ? '当前可以先按下方学习路径里的实践节点推进，也可以直接进入商业沙盘练经营决策。' : '到岗位探索选定目标岗位后，这里会按岗位组织实战任务。' }}</p><button v-if="!targetJobTitle" type="button" class="btn" @click="router.push('/jobs/explore')">选择目标岗位</button></div>
+            <div class="head"><div><small>按目标岗位</small><h2>岗位实战任务</h2></div><div class="head-actions"><span class="note">{{ targetJobTitle || '未选择目标岗位' }}<template v-if="jobProjects.length"> · 共 {{ jobProjects.length }} 项</template></span><button v-if="jobProjects.length > JOB_PROJECT_PREVIEW" type="button" class="link" @click="jobProjectsExpanded = !jobProjectsExpanded">{{ jobProjectsExpanded ? '收起' : `展开全部 ${jobProjects.length} 项` }}</button></div></div>
+            <div v-if="jobProjects.length" class="project-list"><article v-for="item in visibleJobProjects" :key="`${item.sourceType}-${item.sourceId}`"><div><span>岗位实战<span v-if="difficultyLabel(item.difficulty)"> · {{ difficultyLabel(item.difficulty) }}</span></span><h3>{{ item.title }}</h3><p>{{ item.objective || item.reason }}</p><p v-if="item.deliverable" class="project-deliverable">交付物：{{ item.deliverable }}</p><p v-if="item.estimatedHours" class="project-hours">预计 {{ item.estimatedHours }} 小时 · 对应技能 {{ item.skillName }}</p></div><em>{{ item.skillName }}</em><button type="button" class="btn" @click="goToCourses('matched')">去学相关课程</button></article></div>
+            <button v-if="jobProjects.length > JOB_PROJECT_PREVIEW && !jobProjectsExpanded" type="button" class="task-more" @click="jobProjectsExpanded = true">还有 {{ jobProjects.length - visibleJobProjects.length }} 项实战任务，展开查看</button>
+            <div v-if="!jobProjects.length" class="empty empty--small"><strong>{{ targetJobTitle ? '该岗位的实战任务正在整理中' : '先选择目标岗位' }}</strong><p>{{ targetJobTitle ? '当前可以先按下方学习路径里的实践节点推进，也可以直接进入商业沙盘练经营决策。' : '到岗位探索选定目标岗位后，这里会按岗位组织实战任务。' }}</p><button v-if="!targetJobTitle" type="button" class="btn" @click="router.push('/jobs/explore')">选择目标岗位</button></div>
           </section>
 
           <section v-if="activeProjectItems.length || doneProjectItems.length" class="panel section">
@@ -2318,6 +2323,24 @@ onMounted(loadLearningData)
   font-size: 12.5px;
   font-style: normal;
   font-weight: 600;
+}
+
+.project-list .project-deliverable {
+  margin-top: 4px;
+  color: var(--hp-ink-2);
+}
+
+.project-list .project-hours {
+  margin-top: 4px;
+  color: var(--hp-muted);
+  font-size: 12px;
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }
 
 /* ---------- 推荐学习底部速览 ---------- */
