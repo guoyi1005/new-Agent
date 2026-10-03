@@ -1,16 +1,29 @@
 <script setup>
+import { useRouter } from 'vue-router'
+
 import AppTabBar from '../../components/AppTabBar.vue'
 import PythonLearningNav from '../../components/pythonOnline/PythonLearningNav.vue'
+
+const router = useRouter()
+
+function goBack() {
+  const previous = window.history.state && window.history.state.back
+  if (typeof previous === 'string' && previous.startsWith('/learning')) {
+    router.back()
+    return
+  }
+  router.push('/learning?tab=python')
+}
 </script>
 
 <template>
   <div class="python-learning-shell">
     <AppTabBar />
     <div class="python-learning-shell__nav-row">
-      <RouterLink class="py-shell-back" to="/learning">
+      <button class="py-shell-back" type="button" @click="goBack">
         <span class="py-shell-back__arrow" aria-hidden="true">←</span>
         <span>返回学习实践</span>
-      </RouterLink>
+      </button>
       <PythonLearningNav />
     </div>
     <RouterView />
@@ -45,6 +58,8 @@ import PythonLearningNav from '../../components/pythonOnline/PythonLearningNav.v
   background: var(--hp-surface);
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
   text-decoration: none;
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }

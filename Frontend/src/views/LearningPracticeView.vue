@@ -91,9 +91,13 @@ const jobPathSteps = computed(() => {
 
 // 路径步骤的类型标签：学（课程）/ 练（题目）/ 做（项目）
 // 岗位实战任务：按目标岗位算出的推荐里，类型为 PROJECT 的内容。
-// 目前内容库还没有 PROJECT 类型，所以这里是诚实的空状态，等录入了会自动出现。
+// 默认只展开前几项，避免一次铺满整页，其余通过「展开全部」查看。
+const JOB_PROJECT_PREVIEW = 2
+const jobProjectsExpanded = ref(false)
 const jobProjects = computed(() =>
   unifiedRecommendations.value.filter((item) => item?.sourceType === 'PROJECT'))
+const visibleJobProjects = computed(() =>
+  jobProjectsExpanded.value ? jobProjects.value : jobProjects.value.slice(0, JOB_PROJECT_PREVIEW))
 
 function pathStepKind(item) {
   const map = { COURSE: '学', EXTERNAL_COURSE: '学', PROBLEM: '练', PROJECT: '做', SPECIAL_TRAINING: '专', PYTHON: '学' }
@@ -166,6 +170,38 @@ const solvedProblemCount = computed(() => problems.value.filter((item) => solved
 const pathDoneCount = computed(() => pathItems.value.filter((item) => item.status === 'completed').length)
 const hasLearningPath = computed(() => pathItems.value.length > 0)
 const nextGoalTask = computed(() => activeGoalTasks.value.find((task) => !task.isCompleted) || null)
+const goalTasksExpanded = ref(false)
+const completedTasksExpanded = ref(false)
+const pendingGoalTasks = computed(() => activeGoalTasks.value.filter((task) => !task.isCompleted))
+const completedGoalTasks = computed(() => activeGoalTasks.value.filter((task) => task.isCompleted))
+const GOAL_TASK_PREVIEW = 4
+const visiblePendingTasks = computed(() => goalTasksExpanded.value ? pendingGoalTasks.value : pendingGoalTasks.value.slice(0, GOAL_TASK_PREVIEW))
+const hiddenPendingTaskCount = computed(() => Math.max(0, pendingGoalTasks.value.length - visiblePendingTasks.value.length))
+const visiblePendingTaskGroups = computed(() => groupGoalTasksByDay(visiblePendingTasks.value))
+const pendingGoalDayCount = computed(() => groupGoalTasksByDay(pendingGoalTasks.value).length)
+
+function formatGoalTaskDay(value) {
+  const matched = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!matched) return ''
+  return `${Number(matched[2])}月${Number(matched[3])}日`
+}
+
+function groupGoalTasksByDay(list) {
+  const groups = []
+  const index = new Map()
+  for (const task of list) {
+    const start = formatGoalTaskDay(task.plannedStartDate)
+    const end = formatGoalTaskDay(task.plannedEndDate || task.plannedStartDate)
+    const label = start ? (end && end !== start ? `${start} - ${end}` : start) : (task.stage || '未排期')
+    if (!index.has(label)) {
+      const group = { key: label, label, tasks: [] }
+      index.set(label, group)
+      groups.push(group)
+    }
+    index.get(label).tasks.push(task)
+  }
+  return groups
+}
 const judgeableProblems = computed(() => problems.value.filter((item) => item.judgeable))
 const solveRate = computed(() => judgeableProblems.value.length ? Math.round(solvedProblemCount.value / judgeableProblems.value.length * 100) : 0)
 const nextProblems = computed(() => problems.value
@@ -370,7 +406,7 @@ async function loadUnifiedRecommendations() {
     return
   }
   try {
-    const items = await getLearningRecommendations(jobName, 8)
+    const items = await getLearningRecommendations(jobName, 24)
     unifiedRecommendations.value = Array.isArray(items) ? items : []
     dataErrors.recommendations = ''
   } catch (error) {
@@ -561,6 +597,8 @@ async function loadGoalDetail(goalId) {
   }
   try {
     selectedGoalId.value = goalId
+    goalTasksExpanded.value = false
+    completedTasksExpanded.value = false
     selectedGoalDetail.value = await getStudyGoalDetail(goalId)
     dataErrors.goals = ''
   } catch (error) {
@@ -759,10 +797,10 @@ onMounted(loadLearningData)
         </template>
 
         <template v-else-if="activeTab === 'python'">
-          <section class="panel toolbar"><div><h2>技能练习</h2><p>按技能方向练习：算法与数据结构，以及 Python 专项内容。</p></div><div class="hero-actions"><button type="button" class="btn" @click="router.push('/paper')">AI 出题</button><button type="button" class="btn btn--primary" @click="router.push('/learning/python')">进入题库</button></div></section>
+          <section class="panel toolbar"><div><h2>技能练习</h2><p>按技能方向练习：算法与数据结构，以及 Python 专项内容。</p></div></section>
 
           <section class="panel section">
-            <div class="head"><div><small>方向一</small><h2>算法与数据结构</h2></div><button type="button" class="link" @click="router.push('/learning/python')">进入题库</button></div>
+            <div class="head"><div><small>方向一</small><h2>算法与数据结构</h2></div><button type="button" class="link" @click="router.push('/learning/python')">查看完整题库</button></div>
             <div class="stats"><article><span>题库总量</span><strong>{{ problems.length }}</strong><small>道公开题目</small></article><article><span>已解决</span><strong>{{ solvedProblemCount }}</strong><small>{{ solveRate }}% 完成度</small></article><article><span>在线判题</span><strong>{{ judgeableProblems.length }}</strong><small>支持运行与提交</small></article></div>
             <p v-if="dataErrors.problems" class="error"><span>{{ dataErrors.problems }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p>
             <div class="sub-head"><h3>建议练习</h3><span>按难度从低到高排列</span></div>
@@ -771,8 +809,8 @@ onMounted(loadLearningData)
           </section>
 
           <section class="panel section">
-            <div class="head"><div><small>方向二</small><h2>Python 专项</h2></div><span class="note">按知识点组织，与岗位技能路径互补</span></div>
-            <div class="quick-grid"><button type="button" @click="router.push('/learning/python/plan')"><strong>个性化学习路径</strong><span>按知识点和掌握状态安排下一步</span><em>打开路径 →</em></button><button type="button" @click="router.push('/learning/python/knowledge-graph')"><strong>知识图谱</strong><span>查看知识点关系和薄弱环节</span><em>打开图谱 →</em></button><button type="button" @click="router.push('/career/nebula/python/resources')"><strong>AI 生成学习资源</strong><span>按知识点生成讲解、思维导图与练习</span><em>生成资源 →</em></button></div>
+            <div class="head"><div><small>方向二</small><h2>Python 专项</h2><span class="head-note">按知识点组织，与岗位技能路径互补</span></div></div>
+            <div class="quick-grid"><button type="button" @click="router.push('/learning/python/plan')"><strong>个性化学习路径</strong><span>按知识点和掌握状态安排下一步</span><em>打开路径 →</em></button><button type="button" @click="router.push('/learning/python/knowledge-graph')"><strong>知识图谱</strong><span>查看知识点关系和薄弱环节</span><em>打开图谱 →</em></button><div class="quick-card"><strong>Python 题库</strong><span>按知识点刷题，也可以用 AI 出题生成新的练习</span><div class="quick-card__actions"><button type="button" class="quick-action quick-action--primary" @click="router.push('/learning/python')">进入题库 →</button><button type="button" class="quick-action" @click="router.push('/paper?from=learning')">AI 出题 →</button></div></div></div>
           </section>
         </template>
 
@@ -802,9 +840,10 @@ onMounted(loadLearningData)
           <section class="panel toolbar"><div><h2>项目实训</h2><p>把学到的技能用起来：岗位实战任务，以及商业沙盘模拟经营。</p></div><button type="button" class="btn btn--primary" @click="router.push('/learning/projects/sandbox')">进入商业沙盘</button></section>
 
           <section class="panel section">
-            <div class="head"><div><small>按目标岗位</small><h2>岗位实战任务</h2></div><span class="note">{{ targetJobTitle || '未选择目标岗位' }}</span></div>
-            <div v-if="jobProjects.length" class="project-list"><article v-for="item in jobProjects" :key="`${item.sourceType}-${item.sourceId}`"><div><span>岗位实战</span><h3>{{ item.title }}</h3><p>{{ item.reason }}</p></div><em>{{ item.skillName }}</em><button type="button" class="btn" @click="openRecommendation(item)">开始任务</button></article></div>
-            <div v-else class="empty empty--small"><strong>{{ targetJobTitle ? '该岗位的实战任务正在整理中' : '先选择目标岗位' }}</strong><p>{{ targetJobTitle ? '当前可以先按下方学习路径里的实践节点推进，也可以直接进入商业沙盘练经营决策。' : '到岗位探索选定目标岗位后，这里会按岗位组织实战任务。' }}</p><button v-if="!targetJobTitle" type="button" class="btn" @click="router.push('/jobs/explore')">选择目标岗位</button></div>
+            <div class="head"><div><small>按目标岗位</small><h2>岗位实战任务</h2></div><div class="head-actions"><span class="note">{{ targetJobTitle || '未选择目标岗位' }}<template v-if="jobProjects.length"> · 共 {{ jobProjects.length }} 项</template></span><button v-if="jobProjects.length > JOB_PROJECT_PREVIEW" type="button" class="link" @click="jobProjectsExpanded = !jobProjectsExpanded">{{ jobProjectsExpanded ? '收起' : `展开全部 ${jobProjects.length} 项` }}</button></div></div>
+            <div v-if="jobProjects.length" class="project-list"><article v-for="item in visibleJobProjects" :key="`${item.sourceType}-${item.sourceId}`"><div><span>岗位实战<span v-if="difficultyLabel(item.difficulty)"> · {{ difficultyLabel(item.difficulty) }}</span></span><h3>{{ item.title }}</h3><p>{{ item.objective || item.reason }}</p><p v-if="item.deliverable" class="project-deliverable">交付物：{{ item.deliverable }}</p><p v-if="item.estimatedHours" class="project-hours">预计 {{ item.estimatedHours }} 小时 · 对应技能 {{ item.skillName }}</p></div><em>{{ item.skillName }}</em><button type="button" class="btn" @click="goToCourses('matched')">去学相关课程</button></article></div>
+            <button v-if="jobProjects.length > JOB_PROJECT_PREVIEW && !jobProjectsExpanded" type="button" class="task-more" @click="jobProjectsExpanded = true">还有 {{ jobProjects.length - visibleJobProjects.length }} 项实战任务，展开查看</button>
+            <div v-if="!jobProjects.length" class="empty empty--small"><strong>{{ targetJobTitle ? '该岗位的实战任务正在整理中' : '先选择目标岗位' }}</strong><p>{{ targetJobTitle ? '当前可以先按下方学习路径里的实践节点推进，也可以直接进入商业沙盘练经营决策。' : '到岗位探索选定目标岗位后，这里会按岗位组织实战任务。' }}</p><button v-if="!targetJobTitle" type="button" class="btn" @click="router.push('/jobs/explore')">选择目标岗位</button></div>
           </section>
 
           <section v-if="activeProjectItems.length || doneProjectItems.length" class="panel section">
@@ -823,8 +862,23 @@ onMounted(loadLearningData)
         <template v-else>
           <section class="panel toolbar"><div><h2>我的练习</h2><p>课程、刷题、项目和技能进度汇总在同一个视图里。</p></div><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></section>
           <section class="practice-layout panel">
-            <aside class="goal-list"><div class="head"><h2>学习目标</h2><span>{{ studyGoals.length }} 个</span></div><p v-if="dataErrors.goals" class="error"><span>{{ dataErrors.goals }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><button v-for="goal in studyGoals" :key="goal.id" type="button" :class="{ active: selectedGoalId === goal.id }" @click="loadGoalDetail(goal.id)"><span><strong>{{ goal.title }}</strong><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务</small></span><em>{{ goal.progress || 0 }}%</em></button><div v-if="!studyGoals.length" class="empty empty--small"><strong>还没有学习目标</strong><p>创建四六级、证书或技能目标后，任务会显示在这里。</p></div></aside>
-            <section class="goal-detail"><template v-if="selectedGoalDetail?.goal"><div class="head"><div><h2>{{ selectedGoalDetail.goal.title }}</h2></div><span class="tag">{{ goalStatusLabel(selectedGoalDetail.goal.status) }}</span></div><p>{{ selectedGoalDetail.goal.description || '暂无目标说明' }}</p><div class="meta"><span>开始 {{ formatDate(selectedGoalDetail.goal.startDate) }}</span><span>目标 {{ formatDate(selectedGoalDetail.goal.targetDate) }}</span><span>每日 {{ selectedGoalDetail.goal.dailyStudyMinutes || 60 }} 分钟</span></div><div class="progress"><i :style="{ width: `${selectedGoalDetail.goal.progress || 0}%` }" /></div><div v-if="nextGoalTask" class="next-task"><div><small>下一步</small><strong>{{ nextGoalTask.taskName }}</strong><p>{{ nextGoalTask.description || nextGoalTask.stage || '完成这项任务，推进当前学习目标' }}</p></div><button type="button" class="btn" :disabled="busyAction === `task-${nextGoalTask.id}`" @click="toggleTask(nextGoalTask)">标记完成</button></div><div v-if="activeGoalTasks.length" class="task-list"><article v-for="task in activeGoalTasks" :key="task.id"><button type="button" class="check" :class="{ done: task.isCompleted }" :disabled="busyAction === `task-${task.id}`" :title="task.isCompleted ? '点击取消完成' : '点击标记完成'" :aria-label="(task.isCompleted ? '取消完成：' : '标记完成：') + task.taskName" @click="toggleTask(task)">{{ task.isCompleted ? '✓' : '' }}</button><div><strong :class="{ done: task.isCompleted }">{{ task.taskName }}</strong><p>{{ task.description || task.stage || '暂无任务说明' }}</p><small>{{ task.progressPercent || 0 }}% · 预计 {{ task.estimatedDays || 1 }} 天</small><div v-if="task.subtasks?.length" class="subtasks"><button v-for="subtask in task.subtasks" :key="subtask.id" type="button" :class="{ done: subtask.isCompleted }" :disabled="busyAction === `subtask-${subtask.id}`" :title="subtask.isCompleted ? '点击取消完成' : '点击标记完成'" :aria-label="(subtask.isCompleted ? '取消完成：' : '标记完成：') + subtask.taskName" @click="toggleSubtask(subtask)">{{ subtask.isCompleted ? '✓' : '·' }} {{ subtask.taskName }}</button></div></div></article></div><div v-else class="empty empty--small"><strong>这个目标还没有任务</strong><p>新建目标时填写学习计划文本，可以让 AI 拆解为可勾选任务。</p></div></template><div v-else class="empty"><strong>请选择一个学习目标</strong><p>目标详情和可勾选任务会显示在这里。</p></div></section>
+            <aside class="goal-list"><div class="head"><h2>学习目标</h2><span>{{ studyGoals.length }} 个</span></div><p v-if="dataErrors.goals" class="error"><span>{{ dataErrors.goals }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><button v-for="goal in studyGoals" :key="goal.id" type="button" :class="{ active: selectedGoalId === goal.id }" @click="loadGoalDetail(goal.id)"><span><strong>{{ goal.title }}</strong><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务</small><small v-if="goal.nextTaskName" class="goal-list__next">下一步 · {{ goal.nextTaskName }}</small></span><em>{{ goal.progress || 0 }}%</em></button><div v-if="!studyGoals.length" class="empty empty--small"><strong>还没有学习目标</strong><p>创建四六级、证书或技能目标后，任务会显示在这里。</p></div></aside>
+            <section class="goal-detail"><template v-if="selectedGoalDetail?.goal"><div class="head"><div><h2>{{ selectedGoalDetail.goal.title }}</h2></div><span class="tag">{{ goalStatusLabel(selectedGoalDetail.goal.status) }}</span></div><p>{{ selectedGoalDetail.goal.description || '暂无目标说明' }}</p><div class="meta"><span>开始 {{ formatDate(selectedGoalDetail.goal.startDate) }}</span><span>目标 {{ formatDate(selectedGoalDetail.goal.targetDate) }}</span><span>每日 {{ selectedGoalDetail.goal.dailyStudyMinutes || 60 }} 分钟</span></div><div class="progress"><i :style="{ width: `${selectedGoalDetail.goal.progress || 0}%` }" /></div><div v-if="nextGoalTask" class="next-task"><div><small>下一步</small><strong>{{ nextGoalTask.taskName }}</strong><p>{{ nextGoalTask.description || nextGoalTask.stage || '完成这项任务，推进当前学习目标' }}</p></div><button type="button" class="btn" :disabled="busyAction === `task-${nextGoalTask.id}`" @click="toggleTask(nextGoalTask)">标记完成</button></div><div v-if="activeGoalTasks.length" class="task-list">
+            <div class="task-list__head">
+              <div><strong>任务清单</strong><small>共 {{ activeGoalTasks.length }} 项 · 待完成 {{ pendingGoalTasks.length }} 项<span v-if="pendingGoalDayCount"> · {{ pendingGoalDayCount }} 个时间节点</span></small></div>
+              <button v-if="pendingGoalTasks.length > GOAL_TASK_PREVIEW" type="button" class="link" @click="goalTasksExpanded = !goalTasksExpanded">{{ goalTasksExpanded ? '收起' : `展开全部 ${pendingGoalTasks.length} 项` }}</button>
+            </div>
+            <section v-for="group in visiblePendingTaskGroups" :key="group.key" class="task-group">
+              <header class="task-group__head"><span>{{ group.label }}</span><em>{{ group.tasks.length }} 项</em></header>
+              <article v-for="task in group.tasks" :key="task.id"><button type="button" class="check" :class="{ done: task.isCompleted }" :disabled="busyAction === `task-${task.id}`" :title="task.isCompleted ? '点击取消完成' : '点击标记完成'" :aria-label="(task.isCompleted ? '取消完成：' : '标记完成：') + task.taskName" @click="toggleTask(task)">{{ task.isCompleted ? '✓' : '' }}</button><div><strong :class="{ done: task.isCompleted }">{{ task.taskName }}</strong><p>{{ task.description || task.stage || '暂无任务说明' }}</p><small>{{ task.progressPercent || 0 }}% · 预计 {{ task.estimatedDays || 1 }} 天</small><div v-if="task.subtasks?.length" class="subtasks"><button v-for="subtask in task.subtasks" :key="subtask.id" type="button" :class="{ done: subtask.isCompleted }" :disabled="busyAction === `subtask-${subtask.id}`" :title="subtask.isCompleted ? '点击取消完成' : '点击标记完成'" :aria-label="(subtask.isCompleted ? '取消完成：' : '标记完成：') + subtask.taskName" @click="toggleSubtask(subtask)">{{ subtask.isCompleted ? '✓' : '·' }} {{ subtask.taskName }}</button></div></div></article>
+            </section>
+            <p v-if="!pendingGoalTasks.length" class="task-group__empty">这个目标的待完成任务已全部完成。</p>
+            <button v-if="hiddenPendingTaskCount" type="button" class="task-more" @click="goalTasksExpanded = true">还有 {{ hiddenPendingTaskCount }} 项待完成任务，展开查看</button>
+            <div v-if="completedGoalTasks.length" class="task-group task-group--done">
+              <button type="button" class="task-done-toggle" @click="completedTasksExpanded = !completedTasksExpanded"><span>已完成任务</span><em>{{ completedGoalTasks.length }} 项</em><i>{{ completedTasksExpanded ? '收起' : '展开' }}</i></button>
+              <template v-if="completedTasksExpanded"><article v-for="task in completedGoalTasks" :key="task.id"><button type="button" class="check" :class="{ done: task.isCompleted }" :disabled="busyAction === `task-${task.id}`" :title="task.isCompleted ? '点击取消完成' : '点击标记完成'" :aria-label="(task.isCompleted ? '取消完成：' : '标记完成：') + task.taskName" @click="toggleTask(task)">{{ task.isCompleted ? '✓' : '' }}</button><div><strong :class="{ done: task.isCompleted }">{{ task.taskName }}</strong><p>{{ task.description || task.stage || '暂无任务说明' }}</p><small>{{ task.progressPercent || 0 }}% · 预计 {{ task.estimatedDays || 1 }} 天</small><div v-if="task.subtasks?.length" class="subtasks"><button v-for="subtask in task.subtasks" :key="subtask.id" type="button" :class="{ done: subtask.isCompleted }" :disabled="busyAction === `subtask-${subtask.id}`" :title="subtask.isCompleted ? '点击取消完成' : '点击标记完成'" :aria-label="(subtask.isCompleted ? '取消完成：' : '标记完成：') + subtask.taskName" @click="toggleSubtask(subtask)">{{ subtask.isCompleted ? '✓' : '·' }} {{ subtask.taskName }}</button></div></div></article></template>
+            </div>
+          </div><div v-else class="empty empty--small"><strong>这个目标还没有任务</strong><p>新建目标时填写学习计划文本，可以让 AI 拆解为可勾选任务。</p></div></template><div v-else class="empty"><strong>请选择一个学习目标</strong><p>目标详情和可勾选任务会显示在这里。</p></div></section>
           </section>
           <p v-if="dataErrors.summary" class="error"><span>{{ dataErrors.summary }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p>
 
@@ -1295,6 +1349,14 @@ onMounted(loadLearningData)
   line-height: 1.7;
 }
 
+.head-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
 /* ---------- 进度条与任务预览 ---------- */
 
 .progress {
@@ -1497,6 +1559,70 @@ onMounted(loadLearningData)
   font-size: 12.5px;
   font-style: normal;
   font-weight: 600;
+}
+
+.quick-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid var(--hp-line);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-ink);
+  background: var(--hp-surface);
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.quick-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--hp-line-strong);
+  box-shadow: var(--hp-shadow-md);
+}
+
+.quick-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.quick-card .quick-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--hp-line-strong);
+  border-radius: 999px;
+  color: var(--hp-ink);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transform: none;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+.quick-card .quick-action:hover {
+  border-color: var(--hp-blue-ink);
+  color: var(--hp-blue-ink);
+  background: var(--hp-tint);
+  box-shadow: none;
+  transform: none;
+}
+
+.quick-card .quick-action--primary {
+  border-color: var(--hp-ink);
+  color: #fff;
+  background: var(--hp-ink);
+}
+
+.quick-card .quick-action--primary:hover {
+  border-color: #2f2f2f;
+  color: #fff;
+  background: #2f2f2f;
 }
 
 .skill-line {
@@ -2199,6 +2325,24 @@ onMounted(loadLearningData)
   font-weight: 600;
 }
 
+.project-list .project-deliverable {
+  margin-top: 4px;
+  color: var(--hp-ink-2);
+}
+
+.project-list .project-hours {
+  margin-top: 4px;
+  color: var(--hp-muted);
+  font-size: 12px;
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ---------- 推荐学习底部速览 ---------- */
 
 .recent {
@@ -2441,6 +2585,107 @@ onMounted(loadLearningData)
   color: var(--hp-muted);
   text-decoration: line-through;
 }
+.task-list__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hp-line);
+}
+
+.task-list__head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.task-list__head strong {
+  color: var(--hp-ink);
+  font-size: 14px;
+}
+
+.task-list__head small {
+  color: var(--hp-muted);
+  font-size: 11.5px;
+}
+
+.task-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0 2px;
+  color: var(--hp-blue-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.task-group__head em {
+  color: var(--hp-muted);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.task-group__empty {
+  margin: 14px 0 0;
+  color: var(--hp-muted);
+  font-size: 12.5px;
+}
+
+.task-more {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px dashed var(--hp-line-strong);
+  border-radius: var(--hp-r-sm);
+  color: var(--hp-blue-ink);
+  background: var(--hp-surface-2);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.task-more:hover {
+  border-color: var(--hp-blue-ink);
+  background: var(--hp-tint);
+}
+
+.task-group--done {
+  margin-top: 16px;
+  border-top: 1px solid var(--hp-line);
+}
+
+.task-done-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border: 0;
+  color: var(--hp-ink-2);
+  background: transparent;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.task-done-toggle em {
+  color: var(--hp-muted);
+  font-style: normal;
+}
+
+.task-done-toggle i {
+  color: var(--hp-blue-ink);
+  font-style: normal;
+}
+
+.goal-list__next {
+  overflow: hidden;
+  color: var(--hp-blue-ink) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 .task-list p {
   margin: 4px 0;

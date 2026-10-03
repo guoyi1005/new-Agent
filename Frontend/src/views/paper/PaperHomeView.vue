@@ -1,16 +1,18 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import AppTabBar from '../../components/AppTabBar.vue'
 import { deletePaper, listPapers } from '../../api/paper'
 import PaperPageShell from './PaperPageShell.vue'
 
 const router = useRouter()
+const route = useRoute()
 const papers = ref([])
 const loading = ref(false)
 const loadError = ref('')
 const deletingPaperId = ref(null)
+const backTo = computed(() => (route.query.from === 'learning' ? '/learning?tab=python' : '/ai-tools'))
 
 const sources = [
   { key: 'public', icon: '🌐', name: '共有题库', desc: '共同维护' },
@@ -73,7 +75,7 @@ onMounted(load)
 <template>
   <div class="paper-home-page">
     <AppTabBar />
-  <PaperPageShell title="试卷生成" subtitle="创建、选题并导出试卷" back-to="/ai-tools">
+  <PaperPageShell title="试卷生成" subtitle="创建、选题并导出试卷" :back-to="backTo">
     <section class="paper-grid-2">
       <button class="feature-card feature-card--primary" type="button" @click="createPaper">
         <span class="feature-icon">＋</span>
@@ -154,7 +156,7 @@ onMounted(load)
 .paper-home-page :deep(.paper-header) {
   position: relative;
   top: auto;
-  width: min(1180px, calc(100% - 48px));
+  width: min(1400px, calc(100% - 48px));
   margin: 0 auto;
   padding: 32px 0 0;
   border-bottom: 0;
@@ -188,7 +190,7 @@ onMounted(load)
 }
 
 .paper-home-page :deep(.paper-main) {
-  width: min(1180px, calc(100% - 48px));
+  width: min(1400px, calc(100% - 48px));
   padding: 0 0 56px;
 }
 

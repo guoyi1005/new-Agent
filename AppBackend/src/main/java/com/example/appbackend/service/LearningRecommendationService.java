@@ -6,12 +6,14 @@ import com.example.appbackend.entity.ExternalCourse;
 import com.example.appbackend.entity.JobSkillRequirement;
 import com.example.appbackend.entity.LearningContentSkill;
 import com.example.appbackend.entity.LearningSkill;
+import com.example.appbackend.entity.LearningProject;
 import com.example.appbackend.entity.PythonProblem;
 import com.example.appbackend.repository.CampusCourseRepository;
 import com.example.appbackend.repository.ExternalCourseRepository;
 import com.example.appbackend.repository.JobSkillRequirementRepository;
 import com.example.appbackend.repository.LearningContentSkillRepository;
 import com.example.appbackend.repository.LearningSkillRepository;
+import com.example.appbackend.repository.LearningProjectRepository;
 import com.example.appbackend.repository.PythonProblemRepository;
 import com.example.appbackend.util.SkillTextMatcher;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -37,11 +39,14 @@ public class LearningRecommendationService {
     private static final String SOURCE_COURSE = "COURSE";
     private static final String SOURCE_PROBLEM = "PROBLEM";
     private static final String SOURCE_EXTERNAL_COURSE = "EXTERNAL_COURSE";
+    private static final String SOURCE_PROJECT = "PROJECT";
     private static final int DEFAULT_LIMIT = 8;
     /** 同一个技能最多推荐几道算法题，避免题目刷屏。 */
     private static final int MAX_PROBLEMS_PER_SKILL = 2;
     /** 同一个技能最多推荐几门外部课程，避免铺满跳转链接。 */
     private static final int MAX_EXTERNAL_PER_SKILL = 2;
+    /** 同一个技能最多推荐几个实战任务。 */
+    private static final int MAX_PROJECT_PER_SKILL = 1;
     /** 算法题对技能差距的固定相关度，低于已维护的课程关联权重。 */
     private static final double PROBLEM_RELEVANCE = 0.75;
 
@@ -51,6 +56,7 @@ public class LearningRecommendationService {
     private final CampusCourseRepository courseRepository;
     private final ExternalCourseRepository externalCourseRepository;
     private final PythonProblemRepository problemRepository;
+    private final LearningProjectRepository projectRepository;
     private final LearningRecordService learningRecordService;
     private final ObjectMapper objectMapper;
 
@@ -61,6 +67,7 @@ public class LearningRecommendationService {
             CampusCourseRepository courseRepository,
             ExternalCourseRepository externalCourseRepository,
             PythonProblemRepository problemRepository,
+            LearningProjectRepository projectRepository,
             LearningRecordService learningRecordService,
             ObjectMapper objectMapper
     ) {
@@ -70,6 +77,7 @@ public class LearningRecommendationService {
         this.courseRepository = courseRepository;
         this.externalCourseRepository = externalCourseRepository;
         this.problemRepository = problemRepository;
+        this.projectRepository = projectRepository;
         this.learningRecordService = learningRecordService;
         this.objectMapper = objectMapper;
     }
@@ -92,6 +100,7 @@ public class LearningRecommendationService {
             if (gap <= 0) continue;
 
             int externalCount = 0;
+            int projectCount = 0;
             for (LearningContentSkill link : contentSkillRepository.findBySkillId(requirement.getSkillId())) {
                 double relevance = link.getRelevance() == null ? 0.5 : link.getRelevance();
                 double multiplier = Boolean.TRUE.equals(link.getPrimarySkill()) ? 1.2 : 1.0;
@@ -114,6 +123,21 @@ public class LearningRecommendationService {
                     item.setUrl(external.getUrl());
                     scored.add(item);
                     externalCount++;
+                } else if (SOURCE_PROJECT.equals(link.getSourceType())
+                        && projectCount < MAX_PROJECT_PER_SKILL) {
+                    LearningProject project = projectRepository.findById(link.getSourceId()).orElse(null);
+                    if (project == null || !LearningProject.STATUS_ACTIVE.equals(project.getStatus())) continue;
+                    String key = SOURCE_PROJECT + "-" + link.getSourceId() + "-" + requirement.getSkillId();
+                    if (!seen.add(key)) continue;
+                    LearningRecommendationDTO item = view(skill, requirement, SOURCE_PROJECT,
+                            link.getSourceId(), project.getTitle(), current, gap,
+                            score(requirement, relevance, multiplier, gap));
+                    item.setObjective(project.getObjective());
+                    item.setDeliverable(project.getDeliverable());
+                    item.setDifficulty(project.getDifficulty());
+                    item.setEstimatedHours(project.getEstimatedHours());
+                    scored.add(item);
+                    projectCount++;
                 }
             }
 

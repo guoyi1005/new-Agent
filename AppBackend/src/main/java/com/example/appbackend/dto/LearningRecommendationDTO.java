@@ -17,4 +17,10 @@ public class LearningRecommendationDTO {
     private Integer gap;
     private String reason;
     private Double priority;
+
+    /** 以下字段仅 PROJECT（岗位实战任务）类型有值 */
+    private String objective;
+    private String deliverable;
+    private String difficulty;
+    private Integer estimatedHours;
 }
