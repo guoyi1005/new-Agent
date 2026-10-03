@@ -16,6 +16,7 @@ const saving = ref(false)
 const tags = ref(null)
 const chapterTags = ref({})
 const actionError = ref('')
+const actionNotice = ref('')
 const enrolling = ref(false)
 const activeVideoPage = ref(1)
 
@@ -95,8 +96,9 @@ async function joinCourse() {
   enrolling.value = true
   actionError.value = ''
   try {
-    await enrollCampusCourse(course.value.id)
+await enrollCampusCourse(course.value.id)
     await loadCourse()
+    actionNotice.value = '已加入课程，学习进度会记录在「学习实践 → 课程与专项 → 我加入的」里'
   } catch (requestError) {
     actionError.value = requestError.message || '加入课程失败，请稍后重试'
   } finally {
@@ -147,7 +149,8 @@ onMounted(loadCourse)
             <strong>{{ course.progressPercent }}%</strong>
             <small>{{ completedCount }}/{{ course.chapters.length }} 个章节已完成</small>
             <button v-if="course.enrolled === false" class="hero-join" type="button" :disabled="enrolling" @click="joinCourse">{{ enrolling ? '正在加入…' : '加入课程' }}</button>
-            <small v-else-if="course.enrolled === true" class="hero-joined">已加入课程</small>
+            <button v-else-if="course.enrolled === true" class="hero-joined" type="button" @click="router.push('/learning?tab=courses&filter=enrolled')">已加入课程 · 去我的课程 →</button>
+            <small v-if="actionNotice" class="hero-notice">{{ actionNotice }}</small>
           </div>
         </header>
 
@@ -747,4 +750,7 @@ onMounted(loadCourse)
     padding: 17px;
   }
 }
+.hero-joined{justify-self:start;margin-top:8px;padding:7px 14px;border:1px solid #cfe3d4;border-radius:999px;color:var(--hp-green-ink);background:var(--hp-green);font-size:12.5px;font-weight:600;cursor:pointer;transition:border-color .2s ease}
+.hero-joined:hover{border-color:var(--hp-green-ink)}
+.hero-notice{margin-top:8px;color:var(--hp-muted);font-size:12px;line-height:1.6}
 </style>

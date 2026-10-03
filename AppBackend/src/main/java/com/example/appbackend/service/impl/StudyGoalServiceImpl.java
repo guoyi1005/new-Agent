@@ -208,14 +208,15 @@ public class StudyGoalServiceImpl implements StudyGoalService {
         requireOwnedGoal(task.getGoalId(), userId);
         boolean completed = normalizedProgress >= 100;
         List<StudySubtask> subtasks = subtasksOf(task);
-        if (subtasks.isEmpty()) {
-            task.setProgressPercent(normalizedProgress);
-            task.setIsCompleted(completed);
-            task.setStatus(completed ? "completed" : normalizedProgress > 0 ? "in_progress" : "pending");
-        } else {
+        if (!subtasks.isEmpty()) {
             applyProgressToSubtasks(subtasks, normalizedProgress);
             studySubtaskRepository.saveAll(subtasks);
         }
+        // 无论任务有没有子任务，任务自身的进度与状态都要同步更新：
+        // 之前只在“无子任务”分支更新，导致带子任务的任务取消完成后仍停留在已完成。
+        task.setProgressPercent(normalizedProgress);
+        task.setIsCompleted(completed);
+        task.setStatus(completed ? "completed" : normalizedProgress > 0 ? "in_progress" : "pending");
         studyTaskRepository.save(task);
 
         StudyGoal goal = requireOwnedGoal(task.getGoalId(), userId);

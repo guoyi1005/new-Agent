@@ -248,10 +248,11 @@ public class CampusCourseService {
     @Transactional(readOnly = true)
     public List<CampusCourseDTO.CourseSummary> studentList(Long userId) {
         User user = requireUser(userId);
+        Set<Long> enrolledIds = enrolledCourseIds(userId);
         return courseRepository.findByPublishStatusOrderBySortOrderAscPublishTimeDesc(
                         CampusCourse.STATUS_PUBLISHED).stream()
                 .filter(course -> accessible(course, user))
-                .map(course -> summary(course, userId))
+                .map(course -> summary(course, userId, enrolledIds))
                 .toList();
     }
 
@@ -262,13 +263,14 @@ public class CampusCourseService {
     @Transactional(readOnly = true)
     public Map<String, Object> studentPage(Long userId, int page, int pageSize, String customType) {
         User user = requireUser(userId);
+        Set<Long> enrolledIds = enrolledCourseIds(userId);
         List<CampusCourse> all = courseRepository
                 .findByPublishStatusOrderBySortOrderAscPublishTimeDesc(CampusCourse.STATUS_PUBLISHED);
         List<CampusCourseDTO.CourseSummary> accessible = all.stream()
                 .filter(course -> accessible(course, user))
                 .filter(course -> customType == null || customType.isBlank()
                         || parseCustomTypes(course.getCustomCourseTypes()).contains(customType.trim()))
-                .map(course -> summary(course, userId))
+                .map(course -> summary(course, userId, enrolledIds))
                 .toList();
         int total = accessible.size();
         int from = (page - 1) * pageSize;
@@ -348,6 +350,14 @@ public class CampusCourseService {
         enrollmentRepository.deleteByUserIdAndCourseId(userId, courseId);
     }
 
+    /** 一次性取出用户已加入的课程 ID，供列表接口批量判断 */
+    private Set<Long> enrolledCourseIds(Long userId) {
+        if (userId == null) return Set.of();
+        return enrollmentRepository.findByUserIdOrderByEnrolledTimeDesc(userId).stream()
+                .map(CampusCourseEnrollment::getCourseId)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
     private void requireEnrolled(Long courseId, Long userId) {
         if (!enrollmentRepository.existsByUserIdAndCourseId(userId, courseId)) {
             throw new BusinessException(403, "请先加入课程后再学习");
@@ -359,10 +369,13 @@ public class CampusCourseService {
         requireUser(userId);
         List<CampusCourseEnrollment> enrollments = enrollmentRepository
                 .findByUserIdOrderByEnrolledTimeDesc(userId);
+        Set<Long> enrolledIds = enrollments.stream()
+                .map(CampusCourseEnrollment::getCourseId)
+                .collect(java.util.stream.Collectors.toSet());
         return enrollments.stream()
                 .map(enrollment -> courseRepository.findById(enrollment.getCourseId())
                         .filter(course -> CampusCourse.STATUS_PUBLISHED.equals(course.getPublishStatus()))
-                        .map(course -> summary(course, userId))
+                        .map(course -> summary(course, userId, enrolledIds))
                         .orElse(null))
                 .filter(Objects::nonNull)
                 .toList();
@@ -462,6 +475,14 @@ public class CampusCourseService {
     }
 
     private CampusCourseDTO.CourseSummary summary(CampusCourse course, Long userId) {
+        return summary(course, userId, null);
+    }
+
+    /**
+     * enrolledIds 非空时直接用内存集合判断是否已加入，
+     * 避免列表里每门课都查一次数据库（N+1）。
+     */
+    private CampusCourseDTO.CourseSummary summary(CampusCourse course, Long userId, Set<Long> enrolledIds) {
         List<CampusCourseChapter> chapters = chapterRepository
                 .findByCourseIdOrderBySortOrderAscIdAsc(course.getId());
         Set<Long> completed = userId == null ? Set.of()
@@ -475,8 +496,9 @@ public class CampusCourseService {
         CampusCourseDTO.CourseSummary view = new CampusCourseDTO.CourseSummary();
         view.setId(course.getId());
         view.setName(course.getName());
-        view.setEnrolled(userId != null
-                && enrollmentRepository.existsByUserIdAndCourseId(userId, course.getId()));
+        view.setEnrolled(enrolledIds != null
+                ? enrolledIds.contains(course.getId())
+                : userId != null && enrollmentRepository.existsByUserIdAndCourseId(userId, course.getId()));
         view.setBookTitle(course.getBookTitle());
         view.setTeacherName(course.getTeacherName());
         view.setLevel(course.getLevel());
