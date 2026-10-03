@@ -827,7 +827,7 @@ onMounted(loadLearningData)
 }
 
 .learning-shell {
-  width: min(1280px, calc(100% - 48px));
+  width: min(1400px, calc(100% - 48px));
   margin: 0 auto;
   padding: 96px 0 80px;
 }
@@ -2521,7 +2521,7 @@ onMounted(loadLearningData)
 
 @media (max-width: 680px) {
   .learning-shell {
-    width: min(100% - 24px, 1280px);
+    width: calc(100% - 32px);
     padding: 82px 0 64px;
   }
 

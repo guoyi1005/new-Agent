@@ -22,13 +22,23 @@ import { getToken } from '../utils/auth'
 const route = useRoute()
 const router = useRouter()
 
+// 板块划分对齐一级导航的预设：学长学姐成长路径 / 经验分享 / 就业案例 / 问答交流（+ 内推招聘、我的关注）
 const CATEGORIES = [
-  { id: 'recommended', label: '推荐', keywords: [] },
-  { id: 'experience', label: '经验分享', keywords: ['经验', '分享', '学习', '求职', '面试'] },
-  { id: 'cases', label: '就业案例', keywords: ['就业', '案例', '上岸', '校招', 'offer'] },
-  { id: 'referrals', label: '内推招聘', keywords: ['内推', '招聘', '实习', '岗位'] },
-  { id: 'qa', label: '问答交流', keywords: ['问答', '提问', '求助', '讨论'] },
-  { id: 'following', label: '我的关注', keywords: [] },
+  { id: 'recommended', label: '推荐', desc: '综合热度、话题与最新内容', keywords: [] },
+  { id: 'paths', label: '学长学姐成长路径', desc: '从入学到拿到 offer，看别人是怎么一步步走过来的', keywords: ['成长', '路径', '经历', '复盘', '总结', '规划'] },
+  { id: 'experience', label: '经验分享', desc: '求职准备、笔试面试、学习方法上的实战经验', keywords: ['经验', '分享', '学习', '求职', '面试'] },
+  { id: 'cases', label: '就业案例', desc: '岗位、行业、求职过程与结果复盘', keywords: ['就业', '案例', '上岸', '校招', 'offer'] },
+  { id: 'qa', label: '问答交流', desc: '有疑惑就提问，等学长学姐来回答', keywords: ['问答', '提问', '求助', '讨论'] },
+  { id: 'referrals', label: '内推招聘', desc: '校友发布的实习与内推机会', keywords: ['内推', '招聘', '实习', '岗位'] },
+  { id: 'following', label: '我的关注', desc: '你发布的帖子与收藏的内容', keywords: [] },
+]
+
+// 推荐页的板块导览：让第一次来的人知道"这个社区能提供什么"
+const BOARD_GUIDE = [
+  { id: 'paths', title: '学长学姐成长路径', line: '从大一到大四，别人怎么规划、怎么试错', action: '看成长路径' },
+  { id: 'experience', title: '经验分享', line: '笔试、面试、学习方法上的真实经验', action: '看经验分享' },
+  { id: 'cases', title: '就业案例', line: '岗位、行业与求职结果的完整复盘', action: '看就业案例' },
+  { id: 'qa', title: '问答交流', line: '把困惑写出来，等学长学姐回答', action: '去看问答' },
 ]
 const SORTS = [
   { id: 'latest', label: '最新' },
@@ -46,7 +56,8 @@ const searchDraft = ref('')
 const activeKeyword = ref('')
 const loading = ref(true)
 const loadError = ref('')
-const feedScope = ref('category')
+// 视图范围由 URL 的 ?scope=myPosts 决定：刷新、浏览器返回、分享链接都能还原
+const feedScope = computed(() => (String(route.query.scope || '') === 'myPosts' ? 'myPosts' : 'category'))
 
 const detailOpen = ref(false)
 const detailLoading = ref(false)
@@ -77,6 +88,26 @@ const selectedTopicId = computed(() => {
   return matched?.id || null
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+// 成长路径板块的帖子用时间线样式呈现，与普通讨论区分开
+const isPathBoard = computed(() => category.value === 'paths')
+// 板块没有对应话题时（话题表为空很常见），退化成用板块关键词检索，
+// 否则点进任何板块都只能看到空列表。
+const boardKeyword = computed(() => {
+  if (selectedTopicId.value) return ''
+  const keywords = currentCategory.value.keywords || []
+  return activeKeyword.value || keywords[0] || ''
+})
+// 发帖时按当前板块给出填写提示，降低"不知道写什么"的门槛
+const publishHint = computed(() => {
+  const map = {
+    paths: '建议写清：起点（当时年级与基础）→ 关键节点（做了什么选择）→ 结果与复盘。',
+    experience: '建议写清：面向什么岗位、准备了多久、用什么方法、踩过哪些坑。',
+    cases: '建议写清：岗位与行业、时间线、笔试面试轮次、最终结果与复盘。',
+    qa: '建议写清：你的具体情况 + 已经尝试过什么 + 具体想得到什么建议。',
+    referrals: '请写清：公司、岗位、地点、投递方式与截止时间，只有真实机会才发。',
+  }
+  return map[category.value] || '分享真实经历，让读到的人能照着做。'
+})
 
 async function loadTopics() {
   const [allResult, hotResult] = await Promise.allSettled([getTopicList(), getHotTopics({ limit: 8 })])
@@ -108,16 +139,11 @@ async function loadFeed() {
     } else if (category.value === 'following') {
       pageData = await getMyFavoritePosts({ pageNum: pageNum.value, pageSize })
     } else {
-      if (category.value !== 'recommended' && !selectedTopicId.value) {
-        posts.value = []
-        total.value = 0
-        return
-      }
       pageData = await getPostList({
         pageNum: pageNum.value,
         pageSize: sort.value === 'featured' ? 50 : pageSize,
-        topicId: selectedTopicId.value || undefined,
-        keyword: activeKeyword.value || undefined,
+        topicId: routeTopicId.value || selectedTopicId.value || undefined,
+        keyword: boardKeyword.value || undefined,
         sortBy: sort.value === 'hot' ? 'likeCount' : undefined,
       })
     }
@@ -137,9 +163,8 @@ async function loadFeed() {
 }
 
 function selectCategory(id) {
-  feedScope.value = 'category'
   pageNum.value = 1
-  router.replace({ path: '/community', query: { ...route.query, category: id, sort: sort.value } })
+  router.replace({ path: '/community', query: { category: id, sort: sort.value } })
 }
 
 function selectSort(id) {
@@ -160,12 +185,45 @@ function clearSearch() {
   loadFeed()
 }
 
+// 热门话题：用 topicId 精确筛选（后端支持），不再拿话题名做全文搜索
+const routeTopicId = computed(() => {
+  const value = Number(route.query.topicId)
+  return Number.isFinite(value) && value > 0 ? value : null
+})
+const activeTopic = computed(() => hotTopics.value.find((item) => item.id === routeTopicId.value) || null)
+
+// 排序只在"分类浏览"下生效：我的帖子 / 我的收藏接口不支持排序参数，
+// 与其放一个点了没反应的控件，不如换成说明文字。
+const sortAvailable = computed(() => feedScope.value === 'category' && category.value !== 'following')
+
+// 统一的"当前视图"提示条：话题筛选 / 我的帖子 / 我的收藏 共用同一个结构与样式
+const viewContext = computed(() => {
+  if (activeTopic.value) {
+    return { text: `正在查看话题：#${activeTopic.value.topicName}`, actionLabel: '清除话题筛选', action: clearTopic }
+  }
+  if (feedScope.value === 'myPosts') {
+    return { text: '我的帖子 · 只显示你自己发布的内容', actionLabel: '返回社区', action: () => selectCategory('recommended') }
+  }
+  if (category.value === 'following') {
+    return { text: '我的关注 · 展示你收藏过的帖子', actionLabel: '返回社区', action: () => selectCategory('recommended') }
+  }
+  return null
+})
+
 function selectTopic(topic) {
-  searchDraft.value = topic.topicName || ''
-  activeKeyword.value = searchDraft.value
-  feedScope.value = 'category'
+  if (!topic?.id) return
+  activeKeyword.value = ''
+  searchDraft.value = ''
   pageNum.value = 1
-  router.replace({ path: '/community', query: { category: 'recommended', sort: 'latest' } }).then(loadFeed)
+  router.replace({
+    path: '/community',
+    query: { category: 'recommended', sort: sort.value, topicId: topic.id },
+  })
+}
+
+function clearTopic() {
+  pageNum.value = 1
+  router.replace({ path: '/community', query: { category: 'recommended', sort: sort.value } })
 }
 
 function changePage(nextPage) {
@@ -175,14 +233,14 @@ function changePage(nextPage) {
 }
 
 function openMyPosts() {
-  feedScope.value = 'myPosts'
+  if (!ensureLogin()) return
   pageNum.value = 1
   selectedPost.value = null
-  loadFeed()
+  router.push({ path: '/community', query: { category: 'recommended', sort: sort.value, scope: 'myPosts' } })
 }
 
 function openMyFavorites() {
-  feedScope.value = 'category'
+  pageNum.value = 1
   router.replace({ path: '/community', query: { category: 'following', sort: sort.value } })
 }
 
@@ -267,7 +325,8 @@ function openPublish() {
   if (!ensureLogin()) return
   publishForm.title = ''
   publishForm.content = ''
-  publishForm.topicId = topics.value[0]?.id || ''
+  // 优先关联当前板块对应的话题；没有匹配话题时留空，由发布者自己选
+  publishForm.topicId = selectedTopicId.value || ''
   publishError.value = ''
   publishOpen.value = true
 }
@@ -319,7 +378,7 @@ function postImages(post) {
 }
 
 watch(
-  () => [category.value, sort.value],
+  () => [category.value, sort.value, feedScope.value, routeTopicId.value],
   () => {
     if (!loading.value) loadFeed()
   },
@@ -360,10 +419,15 @@ onMounted(loadFeed)
 
       <section class="community-layout">
         <div class="feed-column">
+          <div v-if="viewContext" class="scope-bar">
+            <span>{{ viewContext.text }}</span>
+            <button type="button" @click="viewContext.action()">{{ viewContext.actionLabel }}</button>
+          </div>
           <div class="feed-toolbar">
-            <div class="sort-tabs">
+            <div v-if="sortAvailable" class="sort-tabs">
               <button v-for="item in SORTS" :key="item.id" type="button" :class="{ active: sort === item.id }" @click="selectSort(item.id)">{{ item.label }}</button>
             </div>
+            <span v-else class="feed-hint">{{ feedScope === 'myPosts' ? '我发布的帖子' : '我收藏的帖子' }}</span>
             <div class="feed-meta">
               <span v-if="activeKeyword" class="search-result">搜索“{{ activeKeyword }}” <button type="button" @click="clearSearch">清除</button></span>
               <span>{{ total > 0 ? `${total} 条内容` : '暂无内容' }}</span>
@@ -373,17 +437,31 @@ onMounted(loadFeed)
           <p v-if="loadError" class="community-error"><span>{{ loadError }}</span><button type="button" @click="loadFeed">重新加载</button></p>
           <div v-if="loading" class="community-state">正在加载社区内容…</div>
           <div v-else-if="!posts.length" class="community-empty">
-            <strong>{{ activeKeyword ? '没有找到匹配的内容' : '暂无匹配内容' }}</strong>
-            <p>{{ activeKeyword ? '换个关键词试试，或者发布一条新经验。' : (category === 'recommended' ? '社区还没有发布真实内容，第一条经验从这里开始。' : '当前分类还没有真实帖子，发布第一条经验吧。') }}</p>
-            <button type="button" class="community-btn community-btn--primary" @click="openPublish">发布帖子</button>
+            <template v-if="!activeKeyword && category === 'recommended' && feedScope === 'category'">
+              <strong>社区还没有内容，先看看这里能做什么</strong>
+              <p>校友社区围绕「成长路径 · 经验分享 · 就业案例 · 问答交流」四类内容，只收录真实经历过的人写下的东西。</p>
+              <div class="board-guide">
+                <button v-for="board in BOARD_GUIDE" :key="board.id" type="button" class="board-card" @click="selectCategory(board.id)">
+                  <strong>{{ board.title }}</strong>
+                  <span>{{ board.line }}</span>
+                  <em>{{ board.action }} →</em>
+                </button>
+              </div>
+              <button type="button" class="community-btn community-btn--primary" @click="openPublish">写下你的第一条经验</button>
+            </template>
+            <template v-else>
+              <strong>{{ activeKeyword ? '没有找到匹配的内容' : (feedScope === 'myPosts' ? '你还没有发过帖子' : `「${currentCategory.label}」还没有内容`) }}</strong>
+              <p>{{ activeKeyword ? '换个关键词试试，或者把你了解的直接写下来。' : (feedScope === 'myPosts' ? '发布后会出现在这里，方便随时回看和补充。' : currentCategory.desc) }}</p>
+              <button type="button" class="community-btn community-btn--primary" @click="openPublish">{{ feedScope === 'myPosts' ? '发布我的第一篇帖子' : '在此板块发布' }}</button>
+            </template>
             <div class="empty-links">
               <button type="button" @click="selectSort('hot')">看热门内容</button>
-              <button type="button" @click="selectCategory('experience')">逛逛经验分享</button>
+              <button type="button" @click="selectCategory('paths')">看成长路径</button>
               <button type="button" @click="openMyFavorites">查看我的收藏</button>
             </div>
           </div>
 
-          <div v-else class="post-list">
+          <div v-else class="post-list" :class="{ 'post-list--paths': isPathBoard }">
             <article v-for="post in posts" :key="post.id" class="post-card" tabindex="0" @click="openPostDetail(post)" @keydown.enter="openPostDetail(post)">
               <header>
                 <span class="avatar">
@@ -421,7 +499,7 @@ onMounted(loadFeed)
           <section v-if="hotTopics.length" class="sidebar-panel">
             <div class="sidebar-head"><h2>热门话题</h2><span>{{ hotTopics.length }}</span></div>
             <div class="hot-topics">
-              <button v-for="(topic, index) in hotTopics" :key="topic.id" type="button" @click="selectTopic(topic)">
+              <button v-for="(topic, index) in hotTopics" :key="topic.id" type="button" :class="{ 'is-active': routeTopicId === topic.id }" @click="selectTopic(topic)">
                 <span><i class="rank">{{ String(index + 1).padStart(2, '0') }}</i>{{ topic.topicName }}</span>
                 <em>{{ topic.postCount || 0 }} 帖</em>
               </button>
@@ -441,9 +519,9 @@ onMounted(loadFeed)
           <section class="sidebar-panel sidebar-panel--slim">
             <strong>我的内容</strong>
             <div class="my-content-links">
-              <button type="button" @click="openMyPosts">我的帖子</button>
+              <button type="button" :class="{ 'is-active': feedScope === 'myPosts' }" @click="openMyPosts">我的帖子</button>
               <i>·</i>
-              <button type="button" @click="openMyFavorites">我的收藏</button>
+              <button type="button" :class="{ 'is-active': category === 'following' }" @click="openMyFavorites">我的收藏</button>
             </div>
           </section>
         </aside>
@@ -501,9 +579,10 @@ onMounted(loadFeed)
             <div><h2>发布帖子</h2><p>分享真实经历、经验或问题。</p></div>
             <button type="button" aria-label="关闭发布窗口" @click="closePublish">×</button>
           </header>
-          <label><span>标题</span><input v-model="publishForm.title" maxlength="200" type="text" placeholder="用一句话概括你的分享" /></label>
+          <label><span>标题 <em>*</em></span><input v-model="publishForm.title" maxlength="200" type="text" placeholder="用一句话概括你的分享" /></label>
           <label><span>话题</span><select v-model="publishForm.topicId"><option value="">不选择话题</option><option v-for="topic in topics" :key="topic.id" :value="topic.id">{{ topic.topicName }}</option></select></label>
-          <label><span>正文</span><textarea v-model="publishForm.content" rows="9" placeholder="分享你的学习、求职、面试或就业经历" /></label>
+          <p class="publish-hint">{{ publishHint }}</p>
+          <label><span>正文 <em>*</em></span><textarea v-model="publishForm.content" rows="9" placeholder="分享你的学习、求职、面试或就业经历" /></label>
           <p v-if="publishError" class="community-error">{{ publishError }}</p>
           <footer><button type="button" class="community-btn" :disabled="publishSaving" @click="closePublish">取消</button><button type="submit" class="community-btn community-btn--primary" :disabled="publishSaving">{{ publishSaving ? '发布中…' : '确认发布' }}</button></footer>
         </form>
@@ -513,5 +592,33 @@ onMounted(loadFeed)
 </template>
 
 <style scoped>
-.community-page{min-height:100vh;color:var(--hp-ink);background:var(--hp-bg)}.community-shell{width:min(1280px,calc(100% - 40px));margin:0 auto;padding:96px 0 80px}.community-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:24px 28px;border:1px solid #e4ebf2;border-radius:var(--hp-r-lg);background:var(--hp-tint);box-shadow:var(--hp-shadow-sm);overflow:hidden;animation:cm-fade-up .5s cubic-bezier(.22,.61,.36,1) both}.hero-info{display:grid;gap:7px;min-width:0}.community-hero h1{margin:0;color:var(--hp-ink);font-size:25px;line-height:1.2;letter-spacing:-.02em}.hero-line{margin:0;color:var(--hp-ink-2);font-size:13.5px;line-height:1.6}.community-hero p{margin:0;color:var(--hp-ink-2);font-size:15px}.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.community-search{display:flex;align-items:center;width:min(38vw,440px);padding:5px 5px 5px 16px;border:1px solid var(--hp-line-strong);border-radius:999px;background:var(--hp-surface);box-shadow:var(--hp-shadow-sm)}.community-search input{flex:1;min-width:0;height:40px;border:0;outline:0;color:var(--hp-ink);background:transparent;font:inherit}.community-search button{height:40px;padding:0 14px;border:0;border-radius:999px;color:var(--hp-blue-ink);background:transparent;font-weight:700;cursor:pointer;transition:background .2s ease}.community-search button:hover{background:var(--hp-surface-2)}.community-btn{min-height:46px;padding:0 24px;border:1px solid var(--hp-line-strong);border-radius:999px;color:var(--hp-ink);background:var(--hp-surface);font-size:14px;font-weight:600;cursor:pointer}.community-btn:hover{transform:translateY(-1px);border-color:var(--hp-ink)}.community-btn:disabled{opacity:.55;cursor:default;transform:none}.community-btn--primary{border-color:var(--hp-ink);color:#fff;background:var(--hp-ink);box-shadow:var(--hp-shadow-sm)}.community-tabs{position:sticky;top:60px;z-index:20;display:flex;gap:4px;margin:16px 0;padding:5px;overflow-x:auto;border:1px solid var(--hp-line);border-radius:999px;background:rgba(255,255,255,.96);box-shadow:var(--hp-shadow-sm);backdrop-filter:blur(6px);animation:cm-fade-up .5s cubic-bezier(.22,.61,.36,1) .08s both}.community-tabs button{flex:0 0 auto;min-height:40px;padding:0 18px;border:0;border-radius:999px;color:var(--hp-ink-2);background:transparent;font-size:14px;font-weight:600;cursor:pointer}.community-tabs button{transition:background .22s ease,color .22s ease}.community-tabs button:hover{color:var(--hp-ink);background:var(--hp-surface-2)}.community-tabs button.active{color:#fff;background:var(--hp-ink)}.community-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}.feed-column{min-width:0}.feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;color:var(--hp-muted);font-size:12px}.feed-meta{display:flex;align-items:center;gap:12px}.sort-tabs{display:flex;gap:16px}.sort-tabs button{padding:4px 2px;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--hp-ink-2);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;transition:color .2s ease,border-color .2s ease}.sort-tabs button:hover{color:var(--hp-ink)}.sort-tabs button.active{color:var(--hp-ink);border-bottom-color:var(--hp-ink)}.search-result button{margin-left:6px;padding:0;border:0;color:var(--hp-blue-ink);background:transparent;font-weight:700;cursor:pointer}.community-state,.community-error,.community-empty{padding:18px;border:1px solid var(--hp-line);border-radius:var(--hp-r-md);color:var(--hp-ink-2);background:var(--hp-surface);box-shadow:var(--hp-shadow-sm)}.community-error{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#8b4c49;background:#f8eeee}.community-error button{flex:none;padding:0;border:0;color:#8b4c49;background:transparent;font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer}.community-empty{text-align:center;padding:34px 24px 30px}.community-empty strong{color:var(--hp-ink);font-size:15px}.community-empty p{margin:7px auto 16px;max-width:430px;font-size:13px;line-height:1.7}.empty-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin-top:13px}.empty-links button{padding:0;border:0;color:var(--hp-blue-ink);background:transparent;font-size:13px;font-weight:600;cursor:pointer}.empty-links button:hover{text-decoration:underline}.post-list{display:grid;gap:12px}.post-card{animation:cm-fade-up .45s cubic-bezier(.22,.61,.36,1) both}.post-list .post-card:nth-child(2){animation-delay:.05s}.post-list .post-card:nth-child(3){animation-delay:.1s}.post-list .post-card:nth-child(4){animation-delay:.15s}.post-list .post-card:nth-child(5){animation-delay:.2s}.post-list .post-card:nth-child(6){animation-delay:.25s}.post-card{padding:22px 24px;border:1px solid var(--hp-line);border-radius:var(--hp-r-lg);background:var(--hp-surface);box-shadow:var(--hp-shadow-sm);cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.post-card:hover{transform:translateY(-2px);border-color:var(--hp-line-strong);box-shadow:var(--hp-shadow-md)}.post-card header{display:flex;align-items:center;gap:10px}.avatar{display:grid;width:38px;height:38px;flex:none;place-items:center;overflow:hidden;border-radius:50%;color:var(--hp-blue-ink);background:var(--hp-blue);font-style:normal;font-weight:700}.avatar img{width:100%;height:100%;object-fit:cover}.author{display:grid;gap:3px;flex:1;min-width:0}.author strong{color:var(--hp-ink);font-size:14px}.author span{color:var(--hp-muted);font-size:12px}.soft-tag,.topic-tag{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}.soft-tag{color:var(--hp-blue-ink);background:var(--hp-blue)}.soft-tag--gold{color:#806d35;background:#f5edc9}.topic-tag{color:var(--hp-ink-2);background:var(--hp-surface-2);border:1px solid var(--hp-line)}.post-card h2{margin:17px 0 9px;color:var(--hp-ink);font-size:20px;line-height:1.35;letter-spacing:-.02em}.post-card>p{margin:0;color:var(--hp-ink-2);font-size:14px;line-height:1.75}.post-image{display:block;width:100%;max-height:280px;margin-top:14px;border-radius:var(--hp-r-md);object-fit:cover}.post-card footer{display:flex;align-items:center;gap:18px;margin-top:17px;color:var(--hp-muted);font-size:12px}.post-card footer button{padding:0;border:0;color:var(--hp-ink-2);background:transparent;font-size:12px;font-weight:600;cursor:pointer}.pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px}.pagination button{min-height:36px;padding:0 14px;border:1px solid var(--hp-line-strong);border-radius:999px;color:var(--hp-ink);background:var(--hp-surface);cursor:pointer}.pagination button:disabled{opacity:.45;cursor:default}.community-sidebar{display:grid;gap:12px;position:sticky;top:128px}.sidebar-panel{padding:20px;border:1px solid var(--hp-line);border-radius:var(--hp-r-lg);background:var(--hp-surface);box-shadow:var(--hp-shadow-sm)}.sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.sidebar-head h2{margin:0;font-size:16px}.sidebar-head span{color:var(--hp-muted);font-size:12px}.hot-topics{display:grid;gap:6px;margin-top:14px}.hot-topics button{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border:0;color:var(--hp-ink-2);background:transparent;text-align:left;cursor:pointer}.hot-topics button:hover{color:var(--hp-blue-ink)}.hot-topics em{color:var(--hp-muted);font-size:11px;font-style:normal}.hot-topics .rank{margin-right:8px;color:var(--hp-blue-ink);font-size:11px;font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}.community-rules{margin:14px 0 0;padding-left:18px;color:var(--hp-ink-2);font-size:13px;line-height:1.8}.sidebar-panel--slim{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}.sidebar-panel--slim strong{font-size:14px}.my-content-links{display:flex;align-items:center;gap:8px}.my-content-links i{color:var(--hp-muted);font-style:normal}.my-content-links button{padding:0;border:0;color:var(--hp-blue-ink);background:transparent;font-size:13px;font-weight:600;cursor:pointer}.my-content-links button:hover{text-decoration:underline}.sidebar-empty{color:var(--hp-muted);font-size:13px;line-height:1.7}.sidebar-empty--bare{padding:2px 4px;font-size:12.5px}.community-mask{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:rgba(27,35,41,.36)}.post-detail,.publish-dialog{width:min(760px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:26px;border:1px solid var(--hp-line);border-radius:var(--hp-r-lg);background:var(--hp-surface);box-shadow:var(--hp-shadow-lg)}.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.detail-head h2{margin:10px 0 7px;color:var(--hp-ink);font-size:26px;line-height:1.3}.detail-head p{margin:0;color:var(--hp-muted);font-size:13px}.detail-head>button{width:36px;height:36px;flex:none;border:0;border-radius:50%;color:var(--hp-ink-2);background:var(--hp-surface-2);font-size:22px;cursor:pointer}.detail-body{margin-top:22px;color:var(--hp-ink-2);font-size:15px;line-height:1.9;white-space:pre-wrap}.detail-body img{display:block;width:100%;margin-top:12px;border-radius:var(--hp-r-md);object-fit:cover}.detail-actions{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--hp-line)}.detail-actions button,.detail-actions span{padding:7px 11px;border:1px solid var(--hp-line);border-radius:999px;color:var(--hp-ink-2);background:var(--hp-surface);font-size:12px}.detail-actions button{cursor:pointer}.comment-section{margin-top:24px}.comment-editor{display:grid;gap:10px;margin-top:14px}.comment-editor textarea,.publish-dialog input,.publish-dialog select,.publish-dialog textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--hp-line-strong);border-radius:10px;outline:0;color:var(--hp-ink);background:var(--hp-surface-2);font:inherit}.comment-editor textarea:focus,.publish-dialog input:focus,.publish-dialog select:focus,.publish-dialog textarea:focus{border-color:var(--hp-blue-ink);background:var(--hp-surface)}.comment-editor button{justify-self:end}.comment-list{display:grid;gap:0;margin-top:12px}.comment-list article{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:14px 0;border-top:1px solid var(--hp-line)}.avatar--small{width:32px;height:32px}.comment-list strong{font-size:13px}.comment-list p{margin:4px 0;color:var(--hp-ink-2);font-size:13px;line-height:1.65}.comment-list small{color:var(--hp-muted);font-size:11px}.publish-dialog{display:grid;gap:15px}.publish-dialog label{display:grid;gap:7px;color:var(--hp-ink-2);font-size:12px;font-weight:600}.publish-dialog footer{display:flex;justify-content:flex-end;gap:10px}@keyframes cm-fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes cm-pop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}@keyframes cm-fade{from{opacity:0}to{opacity:1}}.community-mask{animation:cm-fade .2s ease both}.post-detail,.publish-dialog{animation:cm-pop .28s cubic-bezier(.22,.61,.36,1) both}@media(max-width:980px){.community-layout{grid-template-columns:1fr}.community-sidebar{position:static;grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.community-shell{width:min(100% - 24px,1280px);padding-top:82px}.community-hero{display:grid;gap:14px;padding:20px 20px}.hero-actions{display:grid}.community-search{width:100%}.community-tabs{top:52px}.community-sidebar{grid-template-columns:1fr}.post-card{padding:18px}.post-card footer{flex-wrap:wrap}.community-search button{padding:0 14px}}@media(prefers-reduced-motion:reduce){.community-page *,.community-page *::before,.community-page *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.community-page{min-height:100vh;color:var(--hp-ink);background:var(--hp-bg)}.community-shell{width:min(1400px,calc(100% - 48px));margin:0 auto;padding:96px 0 80px}.community-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:24px 28px;border:1px solid #e4ebf2;border-radius:var(--hp-r-lg);background:var(--hp-tint);box-shadow:var(--hp-shadow-sm);overflow:hidden;animation:cm-fade-up .5s cubic-bezier(.22,.61,.36,1) both}.hero-info{display:grid;gap:7px;min-width:0}.community-hero h1{margin:0;color:var(--hp-ink);font-size:25px;line-height:1.2;letter-spacing:-.02em}.hero-line{margin:0;color:var(--hp-ink-2);font-size:13.5px;line-height:1.6}.community-hero p{margin:0;color:var(--hp-ink-2);font-size:15px}.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}.community-search{display:flex;align-items:center;width:min(38vw,440px);padding:5px 5px 5px 16px;border:1px solid var(--hp-line-strong);border-radius:999px;background:var(--hp-surface);box-shadow:var(--hp-shadow-sm)}.community-search input{flex:1;min-width:0;height:40px;border:0;outline:0;color:var(--hp-ink);background:transparent;font:inherit}.community-search button{height:40px;padding:0 14px;border:0;border-radius:999px;color:var(--hp-blue-ink);background:transparent;font-weight:700;cursor:pointer;transition:background .2s ease}.community-search button:hover{background:var(--hp-surface-2)}.community-btn{min-height:46px;padding:0 24px;border:1px solid var(--hp-line-strong);border-radius:999px;color:var(--hp-ink);background:var(--hp-surface);font-size:14px;font-weight:600;cursor:pointer}.community-btn:hover{transform:translateY(-1px);border-color:var(--hp-ink)}.community-btn:disabled{opacity:.55;cursor:default;transform:none}.community-btn--primary{border-color:var(--hp-ink);color:#fff;background:var(--hp-ink);box-shadow:var(--hp-shadow-sm)}.community-tabs{position:sticky;top:60px;z-index:20;display:flex;gap:4px;margin:16px 0;padding:5px;overflow-x:auto;border:1px solid var(--hp-line);border-radius:999px;background:rgba(255,255,255,.96);box-shadow:var(--hp-shadow-sm);backdrop-filter:blur(6px);animation:cm-fade-up .5s cubic-bezier(.22,.61,.36,1) .08s both}.community-tabs button{flex:0 0 auto;min-height:40px;padding:0 18px;border:0;border-radius:999px;color:var(--hp-ink-2);background:transparent;font-size:14px;font-weight:600;cursor:pointer}.community-tabs button{transition:background .22s ease,color .22s ease}.community-tabs button:hover{color:var(--hp-ink);background:var(--hp-surface-2)}.community-tabs button.active{color:#fff;background:var(--hp-ink)}.community-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}.feed-column{min-width:0}.feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;color:var(--hp-muted);font-size:12px}.feed-meta{display:flex;align-items:center;gap:12px}.sort-tabs{display:flex;gap:16px}.sort-tabs button{padding:4px 2px;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--hp-ink-2);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;transition:color .2s ease,border-color .2s ease}.sort-tabs button:hover{color:var(--hp-ink)}.sort-tabs button.active{color:var(--hp-ink);border-bottom-color:var(--hp-ink)}.search-result button{margin-left:6px;padding:0;border:0;color:var(--hp-blue-ink);background:transparent;font-weight:700;cursor:pointer}.community-state,.community-error,.community-empty{padding:18px;border:1px solid var(--hp-line);border-radius:var(--hp-r-md);color:var(--hp-ink-2);background:var(--hp-surface);box-shadow:var(--hp-shadow-sm)}.community-error{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#8b4c49;background:#f8eeee}.community-error button{flex:none;padding:0;border:0;color:#8b4c49;background:transparent;font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer}.community-empty{text-align:center;padding:34px 24px 30px}.community-empty strong{color:var(--hp-ink);font-size:15px}.community-empty p{margin:7px auto 16px;max-width:430px;font-size:13px;line-height:1.7}.empty-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin-top:13px}.empty-links button{padding:0;border:0;color:var(--hp-blue-ink);background:transparent;font-size:13px;font-weight:600;cursor:pointer}.empty-links button:hover{text-decoration:underline}.post-list{display:grid;gap:12px}.post-card{animation:cm-fade-up .45s cubic-bezier(.22,.61,.36,1) both}.post-list .post-card:nth-child(2){animation-delay:.05s}.post-list .post-card:nth-child(3){animation-delay:.1s}.post-list .post-card:nth-child(4){animation-delay:.15s}.post-list .post-card:nth-child(5){animation-delay:.2s}.post-list .post-card:nth-child(6){animation-delay:.25s}.post-card{padding:22px 24px;border:1px solid var(--hp-line);border-radius:var(--hp-r-lg);background:var(--hp-surface);box-shadow:var(--hp-shadow-sm);cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.post-card:hover{transform:translateY(-2px);border-color:var(--hp-line-strong);box-shadow:var(--hp-shadow-md)}.post-card header{display:flex;align-items:center;gap:10px}.avatar{display:grid;width:38px;height:38px;flex:none;place-items:center;overflow:hidden;border-radius:50%;color:var(--hp-blue-ink);background:var(--hp-blue);font-style:normal;font-weight:700}.avatar img{width:100%;height:100%;object-fit:cover}.author{display:grid;gap:3px;flex:1;min-width:0}.author strong{color:var(--hp-ink);font-size:14px}.author span{color:var(--hp-muted);font-size:12px}.soft-tag,.topic-tag{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}.soft-tag{color:var(--hp-blue-ink);background:var(--hp-blue)}.soft-tag--gold{color:#806d35;background:#f5edc9}.topic-tag{color:var(--hp-ink-2);background:var(--hp-surface-2);border:1px solid var(--hp-line)}.post-card h2{margin:17px 0 9px;color:var(--hp-ink);font-size:20px;line-height:1.35;letter-spacing:-.02em}.post-card>p{margin:0;color:var(--hp-ink-2);font-size:14px;line-height:1.75}.post-image{display:block;width:100%;max-height:280px;margin-top:14px;border-radius:var(--hp-r-md);object-fit:cover}.post-card footer{display:flex;align-items:center;gap:18px;margin-top:17px;color:var(--hp-muted);font-size:12px}.post-card footer button{padding:0;border:0;color:var(--hp-ink-2);background:transparent;font-size:12px;font-weight:600;cursor:pointer}.pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px}.pagination button{min-height:36px;padding:0 14px;border:1px solid var(--hp-line-strong);border-radius:999px;color:var(--hp-ink);background:var(--hp-surface);cursor:pointer}.pagination button:disabled{opacity:.45;cursor:default}.community-sidebar{display:grid;gap:12px;position:sticky;top:128px}.sidebar-panel{padding:20px;border:1px solid var(--hp-line);border-radius:var(--hp-r-lg);background:var(--hp-surface);box-shadow:var(--hp-shadow-sm)}.sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.sidebar-head h2{margin:0;font-size:16px}.sidebar-head span{color:var(--hp-muted);font-size:12px}.hot-topics{display:grid;gap:6px;margin-top:14px}.hot-topics button{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border:0;color:var(--hp-ink-2);background:transparent;text-align:left;cursor:pointer}.hot-topics button:hover{color:var(--hp-blue-ink)}.hot-topics em{color:var(--hp-muted);font-size:11px;font-style:normal}.hot-topics .rank{margin-right:8px;color:var(--hp-blue-ink);font-size:11px;font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}.community-rules{margin:14px 0 0;padding-left:18px;color:var(--hp-ink-2);font-size:13px;line-height:1.8}.sidebar-panel--slim{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}.sidebar-panel--slim strong{font-size:14px}.my-content-links{display:flex;align-items:center;gap:8px}.my-content-links i{color:var(--hp-muted);font-style:normal}.my-content-links button{padding:0;border:0;color:var(--hp-blue-ink);background:transparent;font-size:13px;font-weight:600;cursor:pointer}.my-content-links button:hover{text-decoration:underline}.sidebar-empty{color:var(--hp-muted);font-size:13px;line-height:1.7}.sidebar-empty--bare{padding:2px 4px;font-size:12.5px}.community-mask{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:rgba(27,35,41,.36)}.post-detail,.publish-dialog{width:min(760px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:26px;border:1px solid var(--hp-line);border-radius:var(--hp-r-lg);background:var(--hp-surface);box-shadow:var(--hp-shadow-lg)}.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.detail-head h2{margin:10px 0 7px;color:var(--hp-ink);font-size:26px;line-height:1.3}.detail-head p{margin:0;color:var(--hp-muted);font-size:13px}.detail-head>button{width:36px;height:36px;flex:none;border:0;border-radius:50%;color:var(--hp-ink-2);background:var(--hp-surface-2);font-size:22px;cursor:pointer}.detail-body{margin-top:22px;color:var(--hp-ink-2);font-size:15px;line-height:1.9;white-space:pre-wrap}.detail-body img{display:block;width:100%;margin-top:12px;border-radius:var(--hp-r-md);object-fit:cover}.detail-actions{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--hp-line)}.detail-actions button,.detail-actions span{padding:7px 11px;border:1px solid var(--hp-line);border-radius:999px;color:var(--hp-ink-2);background:var(--hp-surface);font-size:12px}.detail-actions button{cursor:pointer}.comment-section{margin-top:24px}.comment-editor{display:grid;gap:10px;margin-top:14px}.comment-editor textarea,.publish-dialog input,.publish-dialog select,.publish-dialog textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--hp-line-strong);border-radius:10px;outline:0;color:var(--hp-ink);background:var(--hp-surface-2);font:inherit}.comment-editor textarea:focus,.publish-dialog input:focus,.publish-dialog select:focus,.publish-dialog textarea:focus{border-color:var(--hp-blue-ink);background:var(--hp-surface)}.comment-editor button{justify-self:end}.comment-list{display:grid;gap:0;margin-top:12px}.comment-list article{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:14px 0;border-top:1px solid var(--hp-line)}.avatar--small{width:32px;height:32px}.comment-list strong{font-size:13px}.comment-list p{margin:4px 0;color:var(--hp-ink-2);font-size:13px;line-height:1.65}.comment-list small{color:var(--hp-muted);font-size:11px}.publish-dialog{display:grid;gap:15px}.publish-dialog label{display:grid;gap:7px;color:var(--hp-ink-2);font-size:12px;font-weight:600}.publish-dialog footer{display:flex;justify-content:flex-end;gap:10px}@keyframes cm-fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes cm-pop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}@keyframes cm-fade{from{opacity:0}to{opacity:1}}.community-mask{animation:cm-fade .2s ease both}.post-detail,.publish-dialog{animation:cm-pop .28s cubic-bezier(.22,.61,.36,1) both}@media(max-width:980px){.community-layout{grid-template-columns:1fr}.community-sidebar{position:static;grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.community-shell{width:calc(100% - 32px);padding-top:82px}.community-hero{display:grid;gap:14px;padding:20px 20px}.hero-actions{display:grid}.community-search{width:100%}.community-tabs{top:52px}.community-sidebar{grid-template-columns:1fr}.post-card{padding:18px}.post-card footer{flex-wrap:wrap}.community-search button{padding:0 14px}}@media(prefers-reduced-motion:reduce){.community-page *,.community-page *::before,.community-page *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* ---------- 社区板块导览（推荐页空状态） ---------- */
+.board-guide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:760px;margin:18px auto 20px;text-align:left}
+.board-card{display:grid;gap:6px;padding:16px 18px;border:1px solid var(--hp-line);border-radius:var(--hp-r-md);background:var(--hp-surface-2);text-align:left;cursor:pointer;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.board-card:hover{transform:translateY(-2px);border-color:var(--hp-line-strong);background:var(--hp-surface)}
+.board-card strong{color:var(--hp-ink);font-size:14px}
+.board-card span{color:var(--hp-muted);font-size:12.5px;line-height:1.6}
+.board-card em{color:var(--hp-blue-ink);font-size:12.5px;font-style:normal;font-weight:600}
+
+/* ---------- 成长路径板块：时间线样式 ---------- */
+.post-list--paths{position:relative;padding-left:22px}
+.post-list--paths::before{content:'';position:absolute;left:6px;top:16px;bottom:16px;width:1px;background:var(--hp-line-strong)}
+.post-list--paths .post-card{position:relative}
+.post-list--paths .post-card::before{content:'';position:absolute;left:-20px;top:32px;width:9px;height:9px;border:2px solid var(--hp-surface);border-radius:50%;background:var(--hp-blue-ink);box-shadow:0 0 0 1px var(--hp-blue-ink)}
+
+/* ---------- 发帖填写提示 ---------- */
+.publish-hint{margin:0;padding:10px 12px;border-left:3px solid var(--hp-blue-ink);border-radius:0 8px 8px 0;color:var(--hp-ink-2);background:var(--hp-tint);font-size:12.5px;line-height:1.7}
+
+@media(max-width:760px){.board-guide{grid-template-columns:1fr}.post-list--paths{padding-left:18px}.post-list--paths .post-card::before{left:-16px}}
+/* ---------- 当前视图提示条（我的帖子等） ---------- */
+.scope-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;padding:11px 16px;border:1px solid var(--hp-line);border-radius:var(--hp-r-md);color:var(--hp-ink-2);background:var(--hp-tint);font-size:13px}
+.scope-bar strong{color:var(--hp-ink)}
+.scope-bar button{padding:6px 14px;border:1px solid var(--hp-line-strong);border-radius:999px;color:var(--hp-ink-2);background:var(--hp-surface);font-size:12.5px;font-weight:600;cursor:pointer;transition:border-color .2s ease,color .2s ease}
+.scope-bar button:hover{border-color:var(--hp-blue-ink);color:var(--hp-blue-ink)}
+.my-content-links button.is-active{color:var(--hp-ink);text-decoration:underline}
+.hot-topics button.is-active{color:var(--hp-ink);font-weight:700}
+.hot-topics button.is-active .rank{color:var(--hp-ink)}
+.feed-hint{color:var(--hp-muted);font-size:12px}
+.publish-dialog label span em{color:#b4544c;font-style:normal}
 </style>
