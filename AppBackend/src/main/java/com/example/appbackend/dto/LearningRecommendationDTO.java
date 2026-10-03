@@ -18,9 +18,11 @@ public class LearningRecommendationDTO {
     private String reason;
     private Double priority;
 
-    /** 以下字段仅 PROJECT（岗位实战任务）类型有值 */
+    /** 以下字段仅 PROJECT_TASK（岗位实战任务）类型有值 */
     private String objective;
     private String deliverable;
     private String difficulty;
     private Integer estimatedHours;
+    /** 仅 PROJECT_TASK：当前用户是否已完成该实战任务 */
+    private Boolean completed;
 }

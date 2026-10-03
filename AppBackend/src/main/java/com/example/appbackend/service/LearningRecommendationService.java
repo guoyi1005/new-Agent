@@ -39,7 +39,10 @@ public class LearningRecommendationService {
     private static final String SOURCE_COURSE = "COURSE";
     private static final String SOURCE_PROBLEM = "PROBLEM";
     private static final String SOURCE_EXTERNAL_COURSE = "EXTERNAL_COURSE";
+    /** 学习内容关联表里岗位实战任务的类型。 */
     private static final String SOURCE_PROJECT = "PROJECT";
+    /** 对外与学习记录使用 PROJECT_TASK，避免和学习路径节点的事件冲突。 */
+    private static final String SOURCE_PROJECT_TASK = "PROJECT_TASK";
     private static final int DEFAULT_LIMIT = 8;
     /** 同一个技能最多推荐几道算法题，避免题目刷屏。 */
     private static final int MAX_PROBLEMS_PER_SKILL = 2;
@@ -89,6 +92,7 @@ public class LearningRecommendationService {
         if (requirements.isEmpty()) return List.of();
         Map<Long, Integer> levels = learningRecordService.currentSkillLevels(userId);
         Map<PythonProblem, Set<String>> problemSkills = problemSkillIndex();
+        Set<Long> completedProjectTasks = learningRecordService.completedProjectTaskIds(userId);
 
         List<LearningRecommendationDTO> scored = new ArrayList<>();
         Set<String> seen = new HashSet<>();
@@ -127,15 +131,16 @@ public class LearningRecommendationService {
                         && projectCount < MAX_PROJECT_PER_SKILL) {
                     LearningProject project = projectRepository.findById(link.getSourceId()).orElse(null);
                     if (project == null || !LearningProject.STATUS_ACTIVE.equals(project.getStatus())) continue;
-                    String key = SOURCE_PROJECT + "-" + link.getSourceId() + "-" + requirement.getSkillId();
+                    String key = SOURCE_PROJECT_TASK + "-" + link.getSourceId() + "-" + requirement.getSkillId();
                     if (!seen.add(key)) continue;
-                    LearningRecommendationDTO item = view(skill, requirement, SOURCE_PROJECT,
+                    LearningRecommendationDTO item = view(skill, requirement, SOURCE_PROJECT_TASK,
                             link.getSourceId(), project.getTitle(), current, gap,
                             score(requirement, relevance, multiplier, gap));
                     item.setObjective(project.getObjective());
                     item.setDeliverable(project.getDeliverable());
                     item.setDifficulty(project.getDifficulty());
                     item.setEstimatedHours(project.getEstimatedHours());
+                    item.setCompleted(completedProjectTasks.contains(link.getSourceId()));
                     scored.add(item);
                     projectCount++;
                 }

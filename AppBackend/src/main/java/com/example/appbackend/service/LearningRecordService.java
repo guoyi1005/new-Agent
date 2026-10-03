@@ -3,6 +3,7 @@ package com.example.appbackend.service;
 import com.example.appbackend.entity.CampusCourse;
 import com.example.appbackend.entity.CampusCourseChapter;
 import com.example.appbackend.entity.LearningContentSkill;
+import com.example.appbackend.entity.LearningProject;
 import com.example.appbackend.entity.LearningRecord;
 import com.example.appbackend.entity.LearningSkill;
 import com.example.appbackend.entity.PythonProblem;
@@ -17,8 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 统一学习记录：课程章节、算法题、学习路径/项目节点完成后都写入同一张 learning_record 表，
@@ -34,12 +37,15 @@ public class LearningRecordService {
     public static final String SOURCE_COURSE_CHAPTER = "COURSE_CHAPTER";
     public static final String SOURCE_PROBLEM = "PROBLEM";
     public static final String SOURCE_PROJECT = "PROJECT";
+    /** 岗位实战任务完成记录：与学习路径节点的 PROJECT 事件分开，避免主键相同时事件冲突。 */
+    public static final String SOURCE_PROJECT_TASK = "PROJECT_TASK";
     public static final String SOURCE_SPECIAL_TRAINING = "SPECIAL_TRAINING";
     public static final String SOURCE_PYTHON = "PYTHON";
 
     public static final String ACTION_COURSE_CHAPTER_COMPLETED = "COURSE_CHAPTER_COMPLETED";
     public static final String ACTION_PROBLEM_SOLVED = "PROBLEM_SOLVED";
     public static final String ACTION_PROJECT_COMPLETED = "PROJECT_COMPLETED";
+    public static final String ACTION_PROJECT_TASK_COMPLETED = "PROJECT_TASK_COMPLETED";
 
     /** 刷题带来的技能增量：简单 10 / 中等 15 / 困难 20。 */
     private static final int PROBLEM_INCREMENT_EASY = 10;
@@ -47,6 +53,8 @@ public class LearningRecordService {
     private static final int PROBLEM_INCREMENT_HARD = 20;
     /** 完成一个学习路径 / 项目节点带来的技能增量。 */
     private static final int PROJECT_INCREMENT = 15;
+    /** 完成一个岗位实战任务带来的技能增量。 */
+    private static final int PROJECT_TASK_INCREMENT = 25;
 
     private final LearningRecordRepository recordRepository;
     private final LearningContentSkillRepository contentSkillRepository;
@@ -115,6 +123,38 @@ public class LearningRecordService {
         String metadata = "{\"pathItemId\":" + itemId + "}";
         return writeIncremental(userId, SOURCE_PROJECT, itemId, ACTION_PROJECT_COMPLETED,
                 evidence, metadata, codes, PROJECT_INCREMENT);
+    }
+
+    /** 岗位实战任务完成时按任务关联的技能写回进度；同一任务同一技能只计一次。 */
+    @Transactional
+    public List<LearningRecord> recordProjectTaskCompleted(Long userId, LearningProject project) {
+        if (userId == null || project == null || project.getId() == null) return List.of();
+        List<String> codes = new ArrayList<>();
+        for (LearningContentSkill link
+                : contentSkillRepository.findBySourceTypeAndSourceId(SOURCE_PROJECT, project.getId())) {
+            if (link.getSkillId() == null) continue;
+            LearningSkill skill = skillRepository.findById(link.getSkillId()).orElse(null);
+            if (skill != null && !codes.contains(skill.getCode())) codes.add(skill.getCode());
+        }
+        if (codes.isEmpty()) return List.of();
+        String evidence = "完成岗位实战任务：" + project.getTitle();
+        String metadata = "{\"projectId\":" + project.getId() + ",\"title\":\""
+                + (project.getTitle() == null ? "" : project.getTitle().replace("\"", "")) + "\"}";
+        return writeIncremental(userId, SOURCE_PROJECT_TASK, project.getId(),
+                ACTION_PROJECT_TASK_COMPLETED, evidence, metadata, codes, PROJECT_TASK_INCREMENT);
+    }
+
+    /** 已完成岗位实战任务的主键集合，供推荐结果标记「已完成」。 */
+    @Transactional(readOnly = true)
+    public Set<Long> completedProjectTaskIds(Long userId) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (userId == null) return ids;
+        for (LearningRecord record : recordRepository.findByUserIdOrderByOccurredAtDesc(userId)) {
+            if (SOURCE_PROJECT_TASK.equals(record.getSourceType()) && record.getSourceId() != null) {
+                ids.add(record.getSourceId());
+            }
+        }
+        return ids;
     }
 
     /** 汇总用户在每个技能上的当前等级：取历史记录中的最高进度。 */

@@ -49,6 +49,11 @@ export const reportProblemSolved = (problemId) => unwrap(request({
   method: 'POST',
 }))
 
+export const completeProjectTask = (projectId) => unwrap(request({
+  url: `/api/app/learning/project-tasks/${encode(projectId)}/completed`,
+  method: 'POST',
+}))
+
 export const getLearningWorkflow = (workflowId) => unwrap(request({
   url: `/api/app/learning/workflows/${encode(workflowId)}`,
 }))

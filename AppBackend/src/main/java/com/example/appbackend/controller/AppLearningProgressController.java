@@ -1,9 +1,11 @@
 package com.example.appbackend.controller;
 
 import com.example.appbackend.dto.LearningPracticeSummaryDTO;
+import com.example.appbackend.entity.LearningProject;
 import com.example.appbackend.entity.PythonProblem;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.exception.BusinessException;
+import com.example.appbackend.repository.LearningProjectRepository;
 import com.example.appbackend.repository.PythonProblemRepository;
 import com.example.appbackend.service.LearningPracticeSummaryService;
 import com.example.appbackend.service.LearningRecordService;
@@ -24,13 +26,16 @@ import java.util.Map;
 public class AppLearningProgressController {
 
     private final PythonProblemRepository problemRepository;
+    private final LearningProjectRepository projectRepository;
     private final LearningRecordService learningRecordService;
     private final LearningPracticeSummaryService summaryService;
 
     public AppLearningProgressController(PythonProblemRepository problemRepository,
                                          LearningRecordService learningRecordService,
+                                         LearningProjectRepository projectRepository,
                                          LearningPracticeSummaryService summaryService) {
         this.problemRepository = problemRepository;
+        this.projectRepository = projectRepository;
         this.learningRecordService = learningRecordService;
         this.summaryService = summaryService;
     }
@@ -50,6 +55,20 @@ public class AppLearningProgressController {
         int recorded = learningRecordService.recordProblemSolved(userId, problem).size();
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("problemId", problemId);
+        body.put("recorded", recorded);
+        return Result.success(body);
+    }
+
+    /** 上报岗位实战任务完成：幂等，同一任务重复提交不会重复累计技能进度。 */
+    @PostMapping("/project-tasks/{projectId}/completed")
+    public Result<Map<String, Object>> projectTaskCompleted(@PathVariable Long projectId,
+                                                           HttpServletRequest request) {
+        Long userId = requireUserId(request);
+        LearningProject project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(Result.NOT_FOUND_CODE, "实战任务不存在"));
+        int recorded = learningRecordService.recordProjectTaskCompleted(userId, project).size();
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("projectId", projectId);
         body.put("recorded", recorded);
         return Result.success(body);
     }

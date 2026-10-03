@@ -55,6 +55,7 @@ public class LearningPracticeSummaryService {
     private final LearningRecordRepository recordRepository;
     private final PythonProblemRepository problemRepository;
     private final LearningPathService learningPathService;
+    private final LearningDemoDataSeeder demoDataSeeder;
 
     public LearningPracticeSummaryService(
             CampusCourseEnrollmentRepository enrollmentRepository,
@@ -65,7 +66,8 @@ public class LearningPracticeSummaryService {
             LearningSkillRepository skillRepository,
             LearningRecordRepository recordRepository,
             PythonProblemRepository problemRepository,
-            LearningPathService learningPathService
+            LearningPathService learningPathService,
+            LearningDemoDataSeeder demoDataSeeder
     ) {
         this.enrollmentRepository = enrollmentRepository;
         this.courseRepository = courseRepository;
@@ -76,12 +78,16 @@ public class LearningPracticeSummaryService {
         this.recordRepository = recordRepository;
         this.problemRepository = problemRepository;
         this.learningPathService = learningPathService;
+        this.demoDataSeeder = demoDataSeeder;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LearningPracticeSummaryDTO summary(Long userId) {
         LearningPracticeSummaryDTO view = new LearningPracticeSummaryDTO();
         if (userId == null) return view;
+        // 账号完全没有学习痕迹时补一份演示轨迹，保证队友拉取代码后页面不为空；
+        // 只要已有真实记录或已加入课程就会直接跳过。
+        demoDataSeeder.seedIfEmpty(userId);
         Map<String, LearningSkill> skillByCode = allSkillsByCode();
         Map<Long, LearningSkill> skillById = allSkillsById();
         List<LearningRecord> records = recordRepository.findByUserIdOrderByOccurredAtDesc(userId);
