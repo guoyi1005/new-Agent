@@ -436,7 +436,7 @@ body .map-page {
 
 /* ---------- 岗位星图与 AI 面试 ---------- */
 
-body .nebula-page,
+/* 星图/星云页自带深色星图主题，不参与通用浅色覆盖，否则深色主题的浅色文字会压在浅色底上看不清 */
 body .career-planet-page,
 body .interview-shell,
 .interview-shell .page-layout {
@@ -444,7 +444,7 @@ body .interview-shell,
   background: var(--hp-bg) !important;
 }
 
-:is(.nebula-page, .career-planet-page, .interview-shell)
+:is(.career-planet-page, .interview-shell)
   :is(.panel, .card, .content-card, .ability-card, .question-card, .report-card, .plan-card, .profile-card, .stat-card, .config-card, .dialog-content) {
   border: 1px solid var(--hp-line) !important;
   border-radius: var(--hp-r-md) !important;

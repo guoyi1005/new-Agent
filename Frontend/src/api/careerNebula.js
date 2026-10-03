@@ -5,6 +5,15 @@ export const getCareerNebulaMap = async () => {
   return response?.data || { careers: [], skills: [], edges: [] }
 }
 
+/**
+ * 职业路径图谱：岗位关系 + 每个关系的人岗匹配分析（可复用技能 / 待补齐技能）。
+ * 星球的大小与坐标仍然来自星图配置，这里只补充匹配度、技能差距与推荐标签。
+ */
+export const getCareerPathOverview = async () => {
+  const response = await request({ url: '/api/app/career-path/overview' })
+  return response?.data || { jobs: [], relations: [], userData: {} }
+}
+
 /** 人岗匹配：匹配度、已掌握、待提升与逐技能差距（由岗位要求 + 我的技能等级算出） */
 export const getCareerJobFit = async (jobName) => {
   const response = await request({

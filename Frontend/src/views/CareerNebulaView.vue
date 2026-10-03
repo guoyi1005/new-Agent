@@ -3,9 +3,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  getCareerPathOverview,
   getCareerExploration,
   getCareerNebulaMap,
 } from '../api/careerNebula'
+import { JOB_DETAILS, getJobDetailId } from '../data_tmp/jobCatalog'
 import AppTabBar from '../components/AppTabBar.vue'
 import CareerPlanetView from './CareerPlanetView.vue'
 
@@ -23,41 +25,42 @@ const showFullCareerDescription = ref(false)
 const searchQuery = ref('')
 const detailDescription = ref(null)
 const descriptionOverflow = ref(false)
+/* ---------- 职业路径图谱 ---------- */
+// 顶部三种模式：岗位关系 / 职业路径 / 我的可转方向
+const pathMode = ref('path')
+// 路径类型筛选，只影响连线与列表的显示，不影响星球本身
+const relationTypeFilter = ref('ALL')
+// 当前打开「迁移分析抽屉」的目标岗位
+const analysisTargetId = ref('')
+const hoveredJobId = ref('')
+const showJobPicker = ref(false)
+// 后端算出来的岗位关系与匹配结果
+const pathOverview = ref({ jobs: [], relations: [], userData: {} })
 let latestLoadRequest = 0
 let lastAutomaticRefreshAt = 0
+
+const PATH_MODES = [
+  { id: 'relations', label: '岗位关系' },
+  { id: 'path', label: '职业路径' },
+  { id: 'transfer', label: '我的可转方向' },
+]
+const RELATION_TYPES = [
+  { id: 'ALL', label: '全部' },
+  { id: 'PROMOTION', label: '职业进阶' },
+  { id: 'TRANSFER', label: '横向转岗' },
+  { id: 'RELATED', label: '相近岗位' },
+  { id: 'BRANCH', label: '发展分支' },
+]
+const LINE_LEGENDS = [
+  { id: 'SOLID', label: '职业进阶', sample: 'solid' },
+  { id: 'DASHED', label: '横向转岗', sample: 'dashed' },
+  { id: 'THIN', label: '相近岗位', sample: 'thin' },
+  { id: 'GLOW', label: '系统推荐方向', sample: 'glow' },
+]
 
 const isLearningGalaxy = computed(() => Boolean(route.params.careerId))
 const enabledCareers = computed(() => careers.value.filter((career) => career.status === 'enabled'))
 const enabledSkills = computed(() => skills.value.filter((skill) => skill.status === 'enabled'))
-const configuredSkills = computed(() => enabledSkills.value.filter((skill) => skill.configured))
-const learningSummary = computed(() => {
-  const totalChapters = enabledSkills.value.reduce((sum, skill) => sum + Number(skill.chapterCount || 0), 0)
-  const completedChapters = enabledSkills.value.reduce(
-    (sum, skill) => sum + Number(skill.completedChapterCount || 0),
-    0,
-  )
-  const averageProgress = enabledCareers.value.length
-    ? Math.round(enabledCareers.value.reduce((sum, career) => sum + careerProgress(career).percentage, 0) / enabledCareers.value.length)
-    : 0
-  return { totalChapters, completedChapters, averageProgress }
-})
-const chapterPercent = computed(() => {
-  const total = learningSummary.value.totalChapters
-  return total ? Math.round((learningSummary.value.completedChapters / total) * 100) : 0
-})
-const inProgressSkills = computed(() => configuredSkills.value
-  .filter((skill) => Number(skill.explorationProgress || 0) > 0 && Number(skill.explorationProgress || 0) < 100)
-  .sort((a, b) => Number(b.explorationProgress || 0) - Number(a.explorationProgress || 0)))
-// 学习任务卡：优先展示进行中的星球，其次是尚未开始的星球
-const taskSkills = computed(() => {
-  const notStarted = configuredSkills.value
-    .filter((skill) => Number(skill.explorationProgress || 0) <= 0)
-    .sort((a, b) => Number(a.chapterCount || 0) - Number(b.chapterCount || 0))
-  return [...inProgressSkills.value, ...notStarted].slice(0, 3)
-})
-const careerProgressRows = computed(() => enabledCareers.value
-  .map((career) => ({ id: career.id, name: career.name, percentage: careerProgress(career).percentage }))
-  .sort((a, b) => b.percentage - a.percentage))
 const visibleCareers = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   if (!query) return enabledCareers.value
@@ -81,6 +84,132 @@ const enabledSkillsForCareer = (careerId) => skills.value.filter(
   (skill) => (skill.careerId || 'testing') === careerId && skill.status === 'enabled',
 )
 
+/* ---------- 职业路径图谱：岗位关系与迁移分析 ---------- */
+
+const pathJobs = computed(() => pathOverview.value.jobs || [])
+const pathJobMap = computed(() => new Map(pathJobs.value.map((job) => [job.jobId, job])))
+const pathRelations = computed(() => pathOverview.value.relations || [])
+const userDataReady = computed(() => Boolean(pathOverview.value.userData?.ready))
+const userDataText = computed(() => pathOverview.value.userData?.text || '')
+
+const jobNodeOf = (careerId) => pathJobMap.value.get(careerId) || null
+const currentJobId = computed(() => selectedCareerId.value)
+const currentRelations = computed(() => pathRelations.value
+  .filter((relation) => relation.sourceJobId === currentJobId.value))
+const relationTo = (careerId) => currentRelations.value
+  .find((relation) => relation.targetJobId === careerId) || null
+
+// 岗位关系模式看全部连线，职业路径/我的可转方向模式只看当前岗位的连线
+const focusRelations = computed(() => {
+  const list = pathMode.value === 'relations' ? pathRelations.value : currentRelations.value
+  return relationTypeFilter.value === 'ALL'
+    ? list
+    : list.filter((relation) => relation.relationType === relationTypeFilter.value)
+})
+const highlightedJobIds = computed(() => {
+  const ids = new Set()
+  focusRelations.value.forEach((relation) => {
+    ids.add(relation.sourceJobId)
+    ids.add(relation.targetJobId)
+  })
+  return ids
+})
+const isJobDimmed = (careerId) => highlightedJobIds.value.size > 0 && !highlightedJobIds.value.has(careerId)
+
+// 推荐路径：当前岗位能走的方向，按「匹配度 + 推荐程度」排序
+const recommendedPaths = computed(() => [...currentRelations.value].sort((left, right) => {
+  const score = (item) => (item.hasMatch ? item.matchRate || 0 : 0) * 0.6 + (item.recommendation || 0) * 0.4
+  return score(right) - score(left)
+}))
+// 我的可转方向：所有岗位按技能匹配度排序
+const transferDirections = computed(() => pathJobs.value
+  .filter((job) => job.hasMatch)
+  .sort((left, right) => (right.matchRate || 0) - (left.matchRate || 0)))
+
+const relationLine = (relation) => {
+  const source = careers.value.find((career) => career.id === relation.sourceJobId)
+  const target = careers.value.find((career) => career.id === relation.targetJobId)
+  if (!source || !target) return null
+  return { x1: `${source.x}%`, y1: `${source.y}%`, x2: `${target.x}%`, y2: `${target.y}%` }
+}
+
+/** 星球标签：有成长数据时给技能匹配，没有数据时只给岗位关系/方向，不编造数字。 */
+const nodeFacts = (career) => {
+  const job = jobNodeOf(career.id)
+  const relation = relationTo(career.id)
+  const facts = { line1: '', line2: '', tone: '' }
+  if (relation) {
+    facts.line1 = relation.relationName || '相关岗位'
+    facts.tone = `type-${String(relation.relationType || '').toLowerCase()}`
+  } else if (job?.direction) {
+    facts.line1 = job.direction
+  }
+  if (job?.hasMatch) {
+    facts.line1 = `技能匹配 ${job.matchRate}%`
+    facts.line2 = `待补齐 ${job.missingCount || 0} 项`
+    facts.tone = (job.matchRate || 0) >= 80 ? 'recommended' : 'matched'
+  }
+  if (pathMode.value === 'transfer' && job?.hasMatch) {
+    facts.line2 = (job.matchRate || 0) >= 80 ? '推荐转向' : `待补齐 ${job.missingCount || 0} 项`
+  }
+  return facts
+}
+
+const hoveredCareer = computed(() => careers.value.find((career) => career.id === hoveredJobId.value) || null)
+const hoveredRelation = computed(() => (hoveredJobId.value ? relationTo(hoveredJobId.value) : null))
+const hoveredJob = computed(() => (hoveredJobId.value ? jobNodeOf(hoveredJobId.value) : null))
+
+const analysisCareer = computed(() => careers.value.find((career) => career.id === analysisTargetId.value) || null)
+const analysisJob = computed(() => (analysisTargetId.value ? jobNodeOf(analysisTargetId.value) : null))
+const analysisRelation = computed(() => (analysisTargetId.value ? relationTo(analysisTargetId.value) : null))
+const analysisReusable = computed(() => analysisRelation.value?.reusableSkills || [])
+const analysisMissing = computed(() => analysisRelation.value?.missingSkills || [])
+const analysisTotal = computed(() => analysisRelation.value?.totalSkills || 0)
+const analysisMastered = computed(() => analysisJob.value?.masteredCount || 0)
+const analysisMissingCount = computed(() => analysisJob.value?.missingCount || 0)
+
+/* 星图里的岗位名（例如「Java 开发工程师」）和岗位详情里的名字（「Java 后端开发工程师」）
+ * 不完全一致，这里按「完全相同 → 去掉空格后相同 → 名称相似度」逐层兜底，找不到就隐藏入口。 */
+const normalizeJobName = (value) => String(value || '').replace(/[\s·/]/g, '')
+const nameBigrams = (value) => {
+  const grams = new Set()
+  for (let index = 0; index + 1 < value.length; index += 1) grams.add(value.slice(index, index + 2))
+  return grams
+}
+const nameSimilarity = (left, right) => {
+  const a = nameBigrams(left)
+  const b = nameBigrams(right)
+  if (!a.size || !b.size) return 0
+  let shared = 0
+  a.forEach((gram) => { if (b.has(gram)) shared += 1 })
+  return shared / (a.size + b.size - shared)
+}
+const JOB_DETAIL_BY_NAME = new Map(
+  Object.entries(JOB_DETAILS).map(([id, detail]) => [normalizeJobName(detail.title), id]),
+)
+const findJobDetailId = (title) => {
+  const exact = getJobDetailId(title)
+  if (exact) return exact
+  const key = normalizeJobName(title)
+  if (!key) return ''
+  if (JOB_DETAIL_BY_NAME.has(key)) return JOB_DETAIL_BY_NAME.get(key)
+  let best = ''
+  let bestScore = 0.5
+  JOB_DETAIL_BY_NAME.forEach((id, name) => {
+    const score = nameSimilarity(key, name)
+    if (score > bestScore) {
+      best = id
+      bestScore = score
+    }
+  })
+  return best
+}
+const jobPortraitLink = computed(() => {
+  const title = analysisJob.value?.name || analysisCareer.value?.name || ''
+  const detailId = findJobDetailId(title)
+  return detailId ? `/career/job/${detailId}` : ''
+})
+
 const skillProgress = (skill) => {
   return { total: skill?.chapterCount || 0, completed: skill?.completedChapterCount || 0,
     percentage: skill?.explorationProgress || 0 }
@@ -93,11 +222,12 @@ const careerProgress = (career) => {
   return { percentage }
 }
 
-const nodeStyle = (node, compact = false) => ({
+// 星球尺寸与坐标完全来自管理端配置，前端不做任何自动缩放（匹配度只影响标签与高亮）
+const nodeStyle = (node) => ({
   left: `${node.x}%`,
   top: `${node.y}%`,
-  width: `${Math.max(66, Number(node.size) || 88) * (compact ? 0.82 : 1)}px`,
-  height: `${Math.max(66, Number(node.size) || 88) * (compact ? 0.82 : 1)}px`,
+  width: `${Math.max(66, Number(node.size) || 88)}px`,
+  height: `${Math.max(66, Number(node.size) || 88)}px`,
 })
 
 const edgeLine = (edge) => {
@@ -114,14 +244,67 @@ const edgeLine = (edge) => {
 
 const monogram = (name = '') => name.replace(/工程师|开发|测试|应用/g, '').slice(0, 2) || '星'
 
+/**
+ * 点击星球：
+ * - 还没选岗位时，第一次点击设成「当前探索岗位」；
+ * - 点与当前岗位有关系的岗位，滑出右侧迁移分析抽屉；
+ * - 点其它岗位，则切换当前探索岗位。
+ */
 function selectCareer(career) {
-  selectedCareerId.value = selectedCareerId.value === career.id ? '' : career.id
+  const related = Boolean(relationTo(career.id))
+  if (currentJobId.value && related) {
+    analysisTargetId.value = analysisTargetId.value === career.id ? '' : career.id
+    return
+  }
+  setCurrentJob(selectedCareerId.value === career.id ? '' : career.id)
+}
+
+function setCurrentJob(careerId) {
+  selectedCareerId.value = careerId
+  analysisTargetId.value = ''
   showFullCareerDescription.value = false
+  showJobPicker.value = false
 }
 
 function closeCareerDetail() {
   selectedCareerId.value = ''
+  analysisTargetId.value = ''
   showFullCareerDescription.value = false
+}
+
+function closeAnalysis() {
+  analysisTargetId.value = ''
+}
+
+function openJobPicker() {
+  showJobPicker.value = !showJobPicker.value
+  if (!showJobPicker.value) searchQuery.value = ''
+}
+
+function hoverJob(careerId) {
+  hoveredJobId.value = careerId
+}
+
+function openJobPortrait() {
+  if (jobPortraitLink.value) router.push(jobPortraitLink.value)
+}
+
+/** 生成转向学习计划：把目标岗位与待补齐技能带到学习实践页 */
+function createTransferPlan() {
+  const target = analysisJob.value
+  const relation = analysisRelation.value
+  const missing = (relation?.missingSkills?.length
+    ? relation.missingSkills
+    : [target?.topGap].filter(Boolean))
+  router.push({
+    path: '/learning',
+    query: {
+      tab: 'recommended',
+      targetJobId: analysisTargetId.value,
+      targetJob: target?.name || analysisCareer.value?.name || '',
+      missingSkills: missing.join('/'),
+    },
+  })
 }
 
 function enterLearningGalaxy(career) {
@@ -131,16 +314,6 @@ function enterLearningGalaxy(career) {
 const careerNameOf = (skill) => {
   const careerId = skill?.careerId || 'testing'
   return careers.value.find((career) => career.id === careerId)?.name || '岗位学习'
-}
-
-// 任务卡跳转：同一岗位星系直接打开星球，否则进入对应星系
-async function openTaskSkill(skill) {
-  const careerId = skill?.careerId || 'testing'
-  if (route.params.careerId === careerId) {
-    await openSkill(skill)
-    return
-  }
-  router.push({ name: 'career-nebula', params: { careerId } })
 }
 
 /**
@@ -200,10 +373,13 @@ async function loadMap({ silent = false } = {}) {
       const summaries = new Map(explorations.flatMap((item) => item.planets || []).map((planet) => [planet.id, planet]))
       nextSkills = nextSkills.map((skill) => summaries.has(skill.id) ? { ...skill, ...summaries.get(skill.id) } : skill)
     }
+    // 职业路径图谱：岗位关系与匹配分析（只在星图模式加载）
+    const nextPath = careerId ? null : await getCareerPathOverview().catch(() => null)
     if (requestId !== latestLoadRequest || careerId !== route.params.careerId) return
     careers.value = nextCareers
     skills.value = nextSkills
     edges.value = nextEdges
+    if (nextPath) pathOverview.value = nextPath
     if (selectedSkill.value) {
       selectedSkill.value = nextSkills.find((skill) => skill.id === selectedSkill.value.id) || null
     }
@@ -269,109 +445,24 @@ onBeforeUnmount(() => {
     <AppTabBar variant="product" />
 
     <main class="nebula-shell">
-      <header v-if="!isLearningGalaxy" class="nebula-hero">
-        <div class="nebula-hero__intro">
-          <p>CAREER CONSTELLATION</p>
-          <h1>星图探索</h1>
-          <span>沿着岗位与能力路径，发现下一站成长方向。</span>
-          <div class="nebula-hero__status">
-            <i aria-hidden="true"></i>
-            <span>学习数据已连接</span>
-          </div>
+      <header v-if="!isLearningGalaxy" class="path-hero">
+        <div class="path-hero__intro">
+          <p>CAREER PATH MAP</p>
+          <h1>职业路径图谱</h1>
+          <span>看见岗位之间的关系，也看见你的下一步。</span>
         </div>
-        <article class="python-entry">
-          <p class="python-entry__eyebrow">PYTHON PATH</p>
-          <h2 class="python-entry__title">进入 Python 学习空间</h2>
-          <p class="python-entry__desc">课程、练习、知识图谱</p>
-          <RouterLink class="python-entry__action" to="/career/nebula/python">进入 Python 空间</RouterLink>
-        </article>
+        <nav class="path-modes" aria-label="图谱模式">
+          <button
+            v-for="mode in PATH_MODES"
+            :key="mode.id"
+            type="button"
+            :class="{ active: pathMode === mode.id }"
+            @click="pathMode = mode.id"
+          >
+            {{ mode.label }}
+          </button>
+        </nav>
       </header>
-
-      <section v-if="!loading && !loadError && !isLearningGalaxy" class="nebula-metrics" aria-label="学习概览">
-        <article>
-          <span>开放岗位</span>
-          <strong>{{ enabledCareers.length }}</strong>
-          <small>条可探索方向</small>
-        </article>
-        <article>
-          <span>学习星球</span>
-          <strong>{{ configuredSkills.length }}<em>/{{ enabledSkills.length }}</em></strong>
-          <small>已关联课程内容</small>
-        </article>
-        <article>
-          <span>章节进度</span>
-          <strong>{{ learningSummary.completedChapters }}<em>/{{ learningSummary.totalChapters }}</em></strong>
-          <small>来自真实学习记录</small>
-        </article>
-        <article>
-          <span>平均探索度</span>
-          <strong>{{ learningSummary.averageProgress }}<em>%</em></strong>
-          <small>全部岗位综合进度</small>
-        </article>
-      </section>
-
-      <section v-if="!loading && !loadError && !isLearningGalaxy" class="nebula-panels" aria-label="学习任务与统计">
-        <article class="nebula-panel nebula-panel--tasks">
-          <header class="nebula-panel__head">
-            <div>
-              <small>LEARNING TASKS</small>
-              <h2>继续学习</h2>
-            </div>
-            <span>{{ inProgressSkills.length }} 个进行中</span>
-          </header>
-          <div v-if="taskSkills.length" class="task-list">
-            <button
-              v-for="skill in taskSkills"
-              :key="skill.id"
-              class="task-card"
-              type="button"
-              @click="openTaskSkill(skill)"
-            >
-              <span class="task-planet" :style="skill.image ? { backgroundImage: `url(${skill.image})` } : {}">
-                <span v-if="!skill.image">{{ monogram(skill.name) }}</span>
-              </span>
-              <span class="task-copy">
-                <strong>{{ skill.name }}</strong>
-                <small>{{ careerNameOf(skill) }} · {{ skillProgress(skill).completed }}/{{ skillProgress(skill).total }} 章节</small>
-                <i class="progress-track"><i :style="{ width: `${skillProgress(skill).percentage}%` }"></i></i>
-              </span>
-              <em>{{ skillProgress(skill).percentage }}%</em>
-            </button>
-          </div>
-          <p v-else class="task-empty">暂无可继续的学习星球，先从一个岗位星系开始探索。</p>
-        </article>
-
-        <article class="nebula-panel nebula-panel--chart">
-          <header class="nebula-panel__head">
-            <div>
-              <small>CHAPTER COMPLETION</small>
-              <h2>章节完成度</h2>
-            </div>
-            <span>{{ learningSummary.completedChapters }}/{{ learningSummary.totalChapters }}</span>
-          </header>
-          <div class="chapter-ring" :style="{ '--value': chapterPercent }">
-            <span>{{ chapterPercent }}<em>%</em></span>
-          </div>
-          <p class="chapter-hint">全部学习星球的章节完成比例，数据来自学习记录。</p>
-        </article>
-
-        <article class="nebula-panel nebula-panel--progress">
-          <header class="nebula-panel__head">
-            <div>
-              <small>CAREER PROGRESS</small>
-              <h2>岗位进度</h2>
-            </div>
-            <span>{{ enabledCareers.length }} 个岗位</span>
-          </header>
-          <ul class="career-progress">
-            <li v-for="row in careerProgressRows" :key="row.id">
-              <span class="career-progress__name">{{ row.name }}</span>
-              <i class="progress-track"><i :style="{ width: `${row.percentage}%` }"></i></i>
-              <em>{{ row.percentage }}%</em>
-            </li>
-          </ul>
-        </article>
-      </section>
 
       <div v-if="loading" class="center-message">
         <span class="loading-ring" aria-hidden="true"></span>
@@ -384,145 +475,253 @@ onBeforeUnmount(() => {
       </div>
 
       <template v-else-if="!isLearningGalaxy">
-        <section class="career-layout" :class="{ 'career-layout--selected': selectedCareer }">
-          <aside class="side-panel career-list-panel">
+        <section class="path-layout" :class="{ 'path-layout--analysis': analysisCareer }">
+          <!-- 左：职业路径控制中心 -->
+          <aside class="side-panel path-controls">
             <div class="panel-heading">
               <div>
-                <small>CAREER NEBULA</small>
-                <h2>岗位星云</h2>
+                <small>CAREER PATH</small>
+                <h2>职业路径</h2>
               </div>
-              <span>{{ visibleCareers.length }}</span>
+              <span>{{ pathRelations.length }} 条</span>
             </div>
 
-            <label class="career-search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-4-4" />
-              </svg>
-              <input
-                v-model="searchQuery"
-                type="search"
-                placeholder="搜索岗位或方向"
-                aria-label="搜索岗位"
-              />
-            </label>
+            <div class="control-block">
+              <small class="control-label">当前探索岗位</small>
+              <div class="current-job">
+                <strong>{{ selectedCareer ? selectedCareer.name : '未选择岗位' }}</strong>
+                <button type="button" @click="openJobPicker">
+                  {{ showJobPicker ? '收起' : '更换岗位' }}
+                </button>
+              </div>
+              <div v-if="showJobPicker" class="job-picker">
+                <label class="career-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-4-4" />
+                  </svg>
+                  <input v-model="searchQuery" type="search" placeholder="搜索岗位" aria-label="搜索岗位" />
+                </label>
+                <div class="job-picker__list">
+                  <button
+                    v-for="career in visibleCareers"
+                    :key="career.id"
+                    type="button"
+                    :class="{ active: selectedCareerId === career.id }"
+                    @click="setCurrentJob(career.id)"
+                  >
+                    {{ career.name }}
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <div class="career-list">
-              <button
-                v-for="(career, index) in visibleCareers"
-                :key="career.id"
-                class="career-list-item"
-                :class="{ active: selectedCareerId === career.id }"
-                type="button"
-                @click="selectCareer(career)"
-              >
-                <span class="item-index">{{ String(index + 1).padStart(2, '0') }}</span>
-                <span class="item-copy">
-                  <strong>{{ career.name }}</strong>
-                  <small>探索进度 {{ careerProgress(career).percentage }}%</small>
-                </span>
-                <span class="mini-nebula" :style="career.image ? { backgroundImage: `url(${career.image})` } : {}">
-                  <span v-if="!career.image">{{ monogram(career.name) }}</span>
-                </span>
-              </button>
+            <div class="control-block">
+              <small class="control-label">路径类型</small>
+              <div class="type-filter">
+                <button
+                  v-for="type in RELATION_TYPES"
+                  :key="type.id"
+                  type="button"
+                  :class="{ active: relationTypeFilter === type.id }"
+                  @click="relationTypeFilter = type.id"
+                >
+                  <i aria-hidden="true"></i>{{ type.label }}
+                </button>
+              </div>
+            </div>
+
+            <div class="control-block control-block--list">
+              <small class="control-label">推荐路径</small>
+              <ol v-if="recommendedPaths.length" class="path-list">
+                <li v-for="(item, index) in recommendedPaths" :key="item.id">
+                  <button
+                    type="button"
+                    :class="{ active: analysisTargetId === item.targetJobId }"
+                    @click="analysisTargetId = item.targetJobId"
+                  >
+                    <span class="path-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                    <span class="path-copy">
+                      <strong>{{ item.sourceName }} → {{ item.targetName }}</strong>
+                      <small>
+                        {{ item.relationName }}
+                        <template v-if="item.hasMatch"> · 匹配 {{ item.matchRate }}%</template>
+                      </small>
+                    </span>
+                  </button>
+                </li>
+              </ol>
+              <p v-else class="control-hint">
+                {{ selectedCareer ? '当前岗位还没有配置职业路径，可在管理端补充岗位关系。' : '选择岗位后，这里会列出可以发展到的方向。' }}
+              </p>
+            </div>
+
+            <div v-if="!userDataReady" class="control-block control-block--hint">
+              <p>{{ userDataText }}</p>
+              <RouterLink class="control-link" to="/profile-radar">完善成长档案</RouterLink>
             </div>
           </aside>
 
-          <section class="map-panel career-map" aria-label="岗位星图">
+          <!-- 中：职业路径星图 -->
+          <section class="map-panel path-map" aria-label="职业路径图谱">
             <div class="map-grid" aria-hidden="true"></div>
             <div class="orbit orbit--one" aria-hidden="true"></div>
             <div class="orbit orbit--two" aria-hidden="true"></div>
+
+            <div class="path-legend" aria-label="连线说明">
+              <small>连线说明</small>
+              <span v-for="legend in LINE_LEGENDS" :key="legend.id">
+                <i :class="`line-sample line-sample--${legend.sample}`" aria-hidden="true"></i>{{ legend.label }}
+              </span>
+            </div>
+
+            <svg class="edge-layer" preserveAspectRatio="none" aria-hidden="true">
+              <template v-for="relation in focusRelations" :key="`path-${relation.id}`">
+                <line
+                  v-if="relationLine(relation)"
+                  class="path-edge"
+                  :class="[
+                    `line-${String(relation.lineType || 'DASHED').toLowerCase()}`,
+                    `type-${String(relation.relationType || '').toLowerCase()}`,
+                  ]"
+                  v-bind="relationLine(relation)"
+                />
+              </template>
+            </svg>
+
             <button
-              v-for="career in visibleCareers"
+              v-for="career in enabledCareers"
               :key="career.id"
               class="career-node"
-              :class="{ active: selectedCareerId === career.id, muted: selectedCareer && selectedCareerId !== career.id }"
-              :style="nodeStyle(career, Boolean(selectedCareer))"
+              :class="[
+                nodeFacts(career).tone,
+                {
+                  active: selectedCareerId === career.id,
+                  related: highlightedJobIds.has(career.id),
+                  dimmed: isJobDimmed(career.id),
+                },
+              ]"
+              :style="nodeStyle(career)"
               type="button"
               :aria-label="`查看${career.name}`"
               @click="selectCareer(career)"
+              @mouseenter="hoverJob(career.id)"
+              @mouseleave="hoverJob('')"
+              @focus="hoverJob(career.id)"
+              @blur="hoverJob('')"
             >
               <span class="node-image" :style="career.image ? { backgroundImage: `url(${career.image})` } : {}">
                 <span v-if="!career.image">{{ monogram(career.name) }}</span>
               </span>
               <span class="node-label">
                 <strong>{{ career.name }}</strong>
-                <small>探索进度 {{ careerProgress(career).percentage }}%</small>
-                <i class="node-progress"><i :style="{ width: `${careerProgress(career).percentage}%` }"></i></i>
+                <small v-if="nodeFacts(career).line1">{{ nodeFacts(career).line1 }}</small>
+                <small v-if="nodeFacts(career).line2" class="node-fact">{{ nodeFacts(career).line2 }}</small>
               </span>
             </button>
+
+            <div
+              v-if="hoveredCareer && hoveredCareer.id !== analysisTargetId && hoveredCareer.id !== selectedCareerId"
+              class="node-hover"
+              :style="{ left: `${hoveredCareer.x}%`, top: `${hoveredCareer.y}%` }"
+            >
+              <strong>{{ hoveredCareer.name }}</strong>
+              <dl>
+                <template v-if="hoveredRelation">
+                  <dt>与当前岗位</dt>
+                  <dd>{{ hoveredRelation.relationName }}</dd>
+                </template>
+                <template v-if="hoveredJob?.hasMatch">
+                  <dt>技能匹配</dt>
+                  <dd>{{ hoveredJob.matchRate }}%</dd>
+                  <dt>可复用</dt>
+                  <dd>{{ (hoveredRelation?.reusableSkills || []).join(' / ') || '待积累记录' }}</dd>
+                  <dt>待补齐</dt>
+                  <dd>{{ (hoveredRelation?.missingSkills || []).join(' / ') || '暂无' }}</dd>
+                </template>
+              </dl>
+              <span class="node-hover__hint">
+                {{ hoveredRelation ? '点击查看详细分析' : '点击设为当前探索岗位' }} →
+              </span>
+            </div>
+
+            <div v-if="!selectedCareer && pathMode !== 'relations'" class="map-empty">
+              <p>请选择一个岗位开始探索，<br />我们将为你展示它的发展方向与相关岗位。</p>
+              <button type="button" @click="showJobPicker = true">选择岗位</button>
+            </div>
           </section>
 
+          <!-- 右：岗位迁移分析抽屉 -->
           <Transition name="detail-panel">
-            <aside v-if="selectedCareer" class="side-panel career-detail">
-              <button class="panel-close" type="button" aria-label="关闭岗位介绍" @click="closeCareerDetail">
+            <aside v-if="analysisCareer" class="side-panel path-analysis">
+              <button class="panel-close" type="button" aria-label="关闭迁移分析" @click="closeAnalysis">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
               </button>
-              <small class="detail-kicker">CAREER PROFILE</small>
-              <div
-                class="detail-image"
-                :style="selectedCareer.image ? { backgroundImage: `url(${selectedCareer.image})` } : {}"
-              >
-                <span v-if="!selectedCareer.image">{{ monogram(selectedCareer.name) }}</span>
-              </div>
-              <h2>{{ selectedCareer.name }}</h2>
-              <div class="detail-description-row">
-                <p ref="detailDescription" class="detail-description">{{ selectedCareer.description }}</p>
-                <button
-                  v-if="descriptionOverflow"
-                  class="description-more"
-                  type="button"
-                  aria-label="查看完整岗位介绍"
-                  @click="showFullCareerDescription = true"
-                >&gt;&gt;</button>
-              </div>
-              <div class="detail-progress-summary">
-                <div>
-                  <span>探索进度</span>
-                  <strong>{{ careerProgress(selectedCareer).percentage }}%</strong>
-                </div>
-                <div class="progress-track">
-                  <span :style="{ width: `${careerProgress(selectedCareer).percentage}%` }"></span>
-                </div>
-              </div>
-              <div class="planet-progress-section">
-                <h3>星球探索</h3>
-                <div class="planet-progress-list">
-                  <div v-for="skill in enabledSkillsForCareer(selectedCareer.id)" :key="skill.id" class="planet-progress-item">
-                    <span class="progress-planet" :style="skill.image ? { backgroundImage: `url(${skill.image})` } : {}">
-                      <span v-if="!skill.image">{{ monogram(skill.name) }}</span>
-                    </span>
-                    <span class="progress-copy">
-                      <strong>{{ skill.name }}</strong>
-                      <small>{{ skillProgress(skill).completed }} / {{ skillProgress(skill).total }}</small>
-                      <i class="progress-track"><i :style="{ width: `${skillProgress(skill).percentage}%` }"></i></i>
-                    </span>
-                    <em>{{ skillProgress(skill).percentage }}%</em>
-                  </div>
-                </div>
-              </div>
-              <button class="enter-button" type="button" @click="enterLearningGalaxy(selectedCareer)">
-                进入学习星系
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-              </button>
-            </aside>
-          </Transition>
+              <small class="detail-kicker">MIGRATION ANALYSIS</small>
+              <h2>{{ analysisCareer.name }}</h2>
+              <p class="analysis-sub">
+                {{ analysisJob?.direction || analysisJob?.type || analysisCareer.description || '岗位迁移分析' }}
+              </p>
 
-          <Transition name="description-popover">
-            <section
-              v-if="selectedCareer && showFullCareerDescription"
-              class="career-description-popover"
-              role="dialog"
-              aria-modal="true"
-              aria-label="完整岗位介绍"
-            >
-              <button class="panel-close" type="button" aria-label="关闭完整岗位介绍" @click="showFullCareerDescription = false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
-              <small>CAREER DESCRIPTION</small>
-              <h2>{{ selectedCareer.name }}</h2>
-              <p>{{ selectedCareer.description }}</p>
-            </section>
+              <div v-if="analysisRelation" class="analysis-relation">
+                <span>与当前岗位关系</span>
+                <strong>{{ analysisRelation.sourceName }} → {{ analysisRelation.targetName }}</strong>
+                <em>{{ analysisRelation.relationName }}</em>
+              </div>
+
+              <template v-if="analysisJob?.hasMatch">
+                <div class="analysis-match">
+                  <span>技能匹配度</span>
+                  <strong>{{ analysisJob.matchRate }}%</strong>
+                </div>
+                <div class="analysis-block">
+                  <h3>可复用能力</h3>
+                  <ul v-if="analysisReusable.length" class="skill-tags skill-tags--reuse">
+                    <li v-for="skill in analysisReusable" :key="skill">✓ {{ skill }}</li>
+                  </ul>
+                  <p v-else class="analysis-empty">还没有积累到可复用的技能记录。</p>
+                </div>
+                <div class="analysis-block">
+                  <h3>需要新增</h3>
+                  <ul v-if="analysisMissing.length" class="skill-tags skill-tags--missing">
+                    <li v-for="skill in analysisMissing" :key="skill">+ {{ skill }}</li>
+                  </ul>
+                  <p v-else class="analysis-empty">岗位要求已基本达成。</p>
+                </div>
+                <div class="analysis-counts">
+                  <span>岗位要求：{{ analysisTotal }} 项</span>
+                  <span>已具备：{{ analysisMastered }} 项</span>
+                  <span>待补齐：{{ analysisMissingCount }} 项</span>
+                </div>
+                <p class="analysis-difficulty">转向难度：{{ analysisRelation?.difficulty || '待评估' }}</p>
+              </template>
+              <div v-else class="analysis-empty analysis-empty--block">
+                <p>
+                  {{ userDataReady
+                    ? '这个岗位暂时没有可用的匹配数据，先完成相关课程或练习后再看。'
+                    : '当前成长画像还不完整。完善成长档案后，可以获得个性化岗位迁移分析。' }}
+                </p>
+                <p v-if="analysisTotal">岗位要求共 {{ analysisTotal }} 项技能。</p>
+                <RouterLink v-if="!userDataReady" class="control-link" to="/profile-radar">完善成长档案</RouterLink>
+              </div>
+
+              <p v-if="analysisRelation?.advice" class="analysis-advice">{{ analysisRelation.advice }}</p>
+
+              <div class="analysis-actions">
+                <button v-if="jobPortraitLink" class="ghost-button" type="button" @click="openJobPortrait">
+                  查看岗位画像
+                </button>
+                <button class="primary-action" type="button" @click="createTransferPlan">生成转向学习计划</button>
+                <button
+                  v-if="analysisCareer.id !== selectedCareerId"
+                  class="ghost-button"
+                  type="button"
+                  @click="setCurrentJob(analysisCareer.id)"
+                >
+                  设为当前岗位
+                </button>
+              </div>
+            </aside>
           </Transition>
         </section>
       </template>
@@ -1296,7 +1495,7 @@ onBeforeUnmount(() => {
 /* Deep future dashboard — scoped to Star Map content, the global navbar is untouched. */
 .nebula-page {
   --ink: #edf2ff;
-  --muted: #8893aa;
+  --muted: #9aa4bb;
   --paper: #070910;
   --surface: #111521;
   --violet: #737cff;
@@ -1312,6 +1511,8 @@ onBeforeUnmount(() => {
     radial-gradient(circle at 84% 12%, rgba(104, 82, 220, .18), transparent 28%),
     radial-gradient(circle at 12% 36%, rgba(39, 124, 184, .13), transparent 24%),
     linear-gradient(145deg, #060810 0%, #0a0d16 48%, #070911 100%);
+  /* 星云页底色必须是实色：渐变只作叠色，避免上层浅色主题透出后把浅色文字"吃掉" */
+  background-color: #070910;
 }
 .nebula-page::before {
   opacity: .2;
@@ -1347,7 +1548,7 @@ onBeforeUnmount(() => {
   height: 15px;
   flex: 0 0 auto;
   fill: none;
-  stroke: #7c87a3;
+  stroke: #93a0b8;
   stroke-width: 1.7;
   stroke-linecap: round;
 }
@@ -1363,7 +1564,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
-.career-search input::placeholder { color: #677188; }
+.career-search input::placeholder { color: #8a94ab; }
 .career-search input::-webkit-search-cancel-button { display: none; }
 
 .nebula-hero {
@@ -1388,7 +1589,11 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 4px 8px 4px 2px;
 }
-.nebula-hero p { color: #75809a; font-size: 10px; letter-spacing: .24em; }
+/* 详情页/学习弹窗的小标题曾被浅色主题改成暖棕色，在深色底上几乎看不见，这里统一回蓝色强调色 */
+.nebula-hero p { color: #8d98ae; font-size: 10px; letter-spacing: .24em; }
+.learning-header p,
+.detail-kicker,
+.learning-modal > small { color: #72c7ff; }
 .nebula-hero h1 { margin-top: 8px; color: #f5f7ff; font-size: clamp(34px, 4vw, 58px); letter-spacing: -.06em; }
 .nebula-hero__intro > span { max-width: 560px; color: #929db2; font-size: 14px; }
 .nebula-hero__status {
@@ -1441,8 +1646,8 @@ onBeforeUnmount(() => {
   padding: 0 24px;
   border-radius: 999px;
   color: #fff;
-  background: linear-gradient(135deg, #606af0, #8075e8);
-  box-shadow: 0 14px 32px rgba(82, 88, 203, .34);
+  background: linear-gradient(135deg, #525be4, #6f66e2);
+  box-shadow: 0 14px 32px rgba(70, 76, 190, .34);
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -1450,8 +1655,8 @@ onBeforeUnmount(() => {
 }
 .python-entry__action:hover {
   color: #fff;
-  background: linear-gradient(135deg, #7079fa, #8e84f0);
-  box-shadow: 0 18px 38px rgba(96, 102, 224, .42);
+  background: linear-gradient(135deg, #5a62e8, #7268e4);
+  box-shadow: 0 18px 38px rgba(80, 86, 206, .42);
   transform: translateY(-1px);
 }
 .python-entry__action:focus-visible { outline: 2px solid rgba(124, 137, 255, .75); outline-offset: 3px; }
@@ -1471,9 +1676,9 @@ onBeforeUnmount(() => {
 .nebula-metrics article:nth-child(3) { --metric-color: var(--mint); }
 .nebula-metrics article:nth-child(4) { --metric-color: var(--yellow); }
 .nebula-metrics span,
-.nebula-metrics small { display: block; color: #778298; font-size: 10px; }
+.nebula-metrics small { display: block; color: #8d98ae; font-size: 10px; }
 .nebula-metrics strong { display: block; margin: 8px 0 4px; color: #f4f6ff; font-size: 27px; line-height: 1; letter-spacing: -.04em; }
-.nebula-metrics em { color: #818ba2; font-size: 13px; font-style: normal; }
+.nebula-metrics em { color: #9aa5bd; font-size: 13px; font-style: normal; }
 .career-layout { height: 640px; grid-template-columns: 252px minmax(0, 1fr); }
 .career-layout--selected { grid-template-columns: 236px minmax(0, 1fr) 342px; }
 .learning-layout { height: calc(100vh - 170px); min-height: 620px; }
@@ -1481,9 +1686,9 @@ onBeforeUnmount(() => {
 .map-panel,
 .learning-header { border-color: rgba(148,163,184,.16); border-radius: 26px; background: rgba(15,19,30,.82); box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 18px 48px rgba(0,0,0,.18); backdrop-filter: blur(12px); }
 .panel-heading { border-bottom-color: rgba(148,163,184,.12); }
-.panel-heading small { color: #626e88; }
+.panel-heading small { color: #8b96b0; }
 .panel-heading h2 { color: #edf2ff; }
-.panel-heading > span { color: #7b87a1; }
+.panel-heading > span { color: #98a3ba; }
 .career-list,
 .skill-list { scrollbar-color: #454d68 transparent; }
 .career-list-item,
@@ -1497,7 +1702,7 @@ onBeforeUnmount(() => {
 .skill-list-item:hover,
 .skill-list-item.active { border-color: rgba(124,137,255,.5); color: #f4f6ff; background: linear-gradient(135deg, rgba(83,91,199,.32), rgba(49,44,102,.3)); box-shadow: 0 8px 22px rgba(25,26,63,.28); }
 .item-index { color: #707cf5; }
-.item-copy small { color: #6e7890; }
+.item-copy small { color: #8d98ae; }
 .mini-nebula { border-color: rgba(114,199,255,.42); color: #cfeeff; background-image: radial-gradient(circle at 34% 28%, #5eb6dd, #304770 50%, #181c31 76%); box-shadow: 0 0 18px rgba(87,163,225,.18); }
 .map-panel { background: radial-gradient(circle at 52% 44%, rgba(52,70,115,.42), transparent 42%), linear-gradient(145deg, #0b0f1a, #0d1321); }
 .map-grid { opacity: .28; background-image: linear-gradient(rgba(119,137,187,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(119,137,187,.16) 1px, transparent 1px); background-size: 54px 54px; }
@@ -1531,10 +1736,10 @@ onBeforeUnmount(() => {
 .panel-close { color: #b8c2d6; border-color: rgba(148,163,184,.22); background: rgba(7,10,18,.62); }
 .enter-button,
 .center-message button,
-.modal-close-button { border-color: transparent; color: #fff; background: linear-gradient(135deg, #606af0, #8075e8); box-shadow: 0 10px 24px rgba(82,88,203,.26); }
+.modal-close-button { border-color: transparent; color: #fff; background: linear-gradient(135deg, #525be4, #6f66e2); box-shadow: 0 10px 24px rgba(70,76,190,.3); }
 .enter-button:hover,
 .center-message button:hover,
-.modal-close-button:hover { border-color: transparent; color: #fff; background: linear-gradient(135deg, #7079fa, #8e84f0); }
+.modal-close-button:hover { border-color: transparent; color: #fff; background: linear-gradient(135deg, #5a62e8, #7268e4); }
 .center-message button {
   cursor: pointer;
   transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
@@ -1580,7 +1785,7 @@ onBeforeUnmount(() => {
   margin-bottom: 14px;
 }
 
-.nebula-panel__head small { display: block; color: #626e88; font-size: 9px; letter-spacing: .18em; }
+.nebula-panel__head small { display: block; color: #8b96b0; font-size: 9px; letter-spacing: .18em; }
 .nebula-panel__head h2 { margin: 6px 0 0; color: #edf2ff; font-size: 16px; }
 .nebula-panel__head > span {
   padding: 4px 10px;
@@ -1631,10 +1836,10 @@ onBeforeUnmount(() => {
 
 .task-copy { min-width: 0; }
 .task-copy strong { display: block; overflow: hidden; color: inherit; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.task-copy small { display: block; margin: 3px 0 6px; color: #6e7890; font-size: 10px; }
+.task-copy small { display: block; margin: 3px 0 6px; color: #8d98ae; font-size: 10px; }
 .task-copy .progress-track { display: block; height: 4px; }
 .task-card > em { color: #9aa5ff; font-size: 12px; font-style: normal; font-weight: 700; }
-.task-empty { margin: 0; padding: 16px 0; color: #778298; font-size: 12px; }
+.task-empty { margin: 0; padding: 16px 0; color: #8d98ae; font-size: 12px; }
 
 .chapter-ring {
   position: relative;
@@ -1657,14 +1862,14 @@ onBeforeUnmount(() => {
 }
 
 .chapter-ring span { position: relative; z-index: 1; color: #f2f5ff; font-size: 26px; font-weight: 800; letter-spacing: -.04em; }
-.chapter-ring em { color: #818ba2; font-size: 12px; font-style: normal; }
-.chapter-hint { margin: 0; color: #778298; font-size: 11px; line-height: 1.6; text-align: center; }
+.chapter-ring em { color: #9aa5bd; font-size: 12px; font-style: normal; }
+.chapter-hint { margin: 0; color: #8d98ae; font-size: 11px; line-height: 1.6; text-align: center; }
 
 .career-progress { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
 .career-progress li { display: grid; grid-template-columns: 88px minmax(0, 1fr) 38px; align-items: center; gap: 10px; }
 .career-progress__name { overflow: hidden; color: #cdd5e6; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .career-progress .progress-track { height: 5px; }
-.career-progress em { color: #858fa6; font-size: 11px; font-style: normal; text-align: right; }
+.career-progress em { color: #98a3ba; font-size: 11px; font-style: normal; text-align: right; }
 
 /* 主题里的 background 简写会重置尺寸，这里恢复节点的星球图片铺满效果 */
 .node-image,
@@ -1695,5 +1900,314 @@ onBeforeUnmount(() => {
 @media (max-width: 560px) {
   .nebula-metrics { grid-template-columns: 1fr; }
   .nebula-hero__intro { padding: 24px; }
+}
+
+/* ---------- 职业路径图谱（岗位关系 / 职业路径 / 我的可转方向） ---------- */
+
+.path-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0 0 14px;
+}
+.path-hero__intro p {
+  margin: 0 0 6px;
+  color: #72c7ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .24em;
+}
+.path-hero__intro h1 {
+  margin: 0;
+  color: #f5f7ff;
+  font-size: clamp(26px, 2.6vw, 38px);
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.path-hero__intro > span { display: block; margin-top: 6px; color: #8d98ae; font-size: 13px; }
+
+.path-modes {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: 999px;
+  background: rgba(5, 8, 15, .66);
+}
+.path-modes button {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  color: #8d98ae;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease;
+}
+.path-modes button:hover { color: #eef2fb; }
+.path-modes button.active { color: #fff; background: linear-gradient(135deg, #525be4, #6f66e2); }
+
+.path-layout {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  height: calc(100vh - 228px);
+  min-height: 560px;
+  grid-template-columns: 248px minmax(0, 1fr);
+}
+.path-layout--analysis { grid-template-columns: 248px minmax(0, 1fr) 392px; }
+
+/* 左侧：职业路径控制中心 */
+.path-controls { padding: 14px 16px 16px; }
+.path-controls .panel-heading { min-height: 54px; }
+.control-block { padding: 13px 0; border-top: 1px solid rgba(148, 163, 184, .12); }
+.control-block:first-of-type { border-top: 0; padding-top: 2px; }
+.control-label { display: block; margin-bottom: 8px; color: #8b96b0; font-size: 10px; letter-spacing: .16em; }
+.current-job { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.current-job strong { color: #f1f4ff; font-size: 15px; font-weight: 650; }
+.current-job button {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border: 1px solid rgba(124, 137, 255, .45);
+  border-radius: 999px;
+  color: #cfd6ff;
+  background: rgba(83, 91, 199, .18);
+  font-size: 11px;
+  cursor: pointer;
+}
+.current-job button:hover { border-color: rgba(124, 137, 255, .8); color: #fff; }
+.control-hint { margin: 8px 0 0; color: #8d98ae; font-size: 12px; line-height: 1.65; }
+
+.job-picker { margin-top: 10px; }
+.job-picker__list { display: grid; gap: 6px; max-height: 186px; margin-top: 8px; overflow-y: auto; }
+.job-picker__list button {
+  padding: 9px 12px;
+  border: 1px solid rgba(148, 163, 184, .12);
+  border-radius: 12px;
+  color: #aab4c8;
+  background: rgba(23, 28, 43, .72);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.job-picker__list button:hover,
+.job-picker__list button.active { border-color: rgba(124, 137, 255, .5); color: #f4f6ff; }
+
+.type-filter { display: grid; gap: 4px; }
+.type-filter button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #aab4c8;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.type-filter i { width: 8px; height: 8px; flex: 0 0 auto; border: 1px solid rgba(148, 163, 184, .6); border-radius: 50%; }
+.type-filter button.active {
+  border-color: rgba(124, 137, 255, .42);
+  color: #f2f5ff;
+  background: linear-gradient(135deg, rgba(83, 91, 199, .26), rgba(49, 44, 102, .24));
+}
+.type-filter button.active i { border-color: #72c7ff; background: #72c7ff; box-shadow: 0 0 10px rgba(114, 199, 255, .7); }
+
+.control-block--list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.path-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.path-list button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid rgba(148, 163, 184, .12);
+  border-radius: 14px;
+  color: #aab4c8;
+  background: rgba(23, 28, 43, .6);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+.path-list button:hover,
+.path-list button.active {
+  border-color: rgba(124, 137, 255, .5);
+  color: #f4f6ff;
+  background: linear-gradient(135deg, rgba(83, 91, 199, .3), rgba(49, 44, 102, .26));
+}
+.path-index { color: #707cf5; font-size: 12px; font-weight: 700; }
+.path-copy strong { display: block; font-size: 12px; font-weight: 600; }
+.path-copy small { display: block; margin-top: 3px; color: #8d98ae; font-size: 10px; }
+.control-block--hint p { margin: 0 0 8px; color: #8d98ae; font-size: 12px; line-height: 1.65; }
+.control-link { display: inline-block; color: #72c7ff; font-size: 12px; text-decoration: none; }
+.control-link:hover { text-decoration: underline; }
+
+/* 中间：星图与连线 */
+.path-map { padding: 0; }
+.path-legend {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: 14px;
+  background: rgba(7, 10, 18, .84);
+}
+.path-legend small { color: #8b96b0; font-size: 9px; letter-spacing: .16em; }
+.path-legend span { display: flex; align-items: center; gap: 8px; color: #9aa5bd; font-size: 10px; }
+.line-sample { display: inline-block; width: 26px; height: 2px; background: #7ddcff; }
+.line-sample--dashed { background: repeating-linear-gradient(90deg, #9db3ff 0 5px, transparent 5px 9px); }
+.line-sample--thin { height: 1px; background: rgba(154, 165, 189, .85); }
+.line-sample--glow { background: #b9a6ff; box-shadow: 0 0 8px rgba(167, 139, 250, .95); }
+
+.path-edge { stroke: rgba(146, 165, 205, .5); stroke-width: 1.4; }
+.path-edge.line-solid { stroke: #7ddcff; stroke-width: 2; }
+.path-edge.line-dashed { stroke: #9db3ff; stroke-width: 1.8; stroke-dasharray: 7 7; }
+.path-edge.line-thin { stroke: rgba(154, 165, 189, .55); stroke-width: 1; }
+.path-edge.line-glow { stroke: #b9a6ff; stroke-width: 2.4; filter: drop-shadow(0 0 6px rgba(167, 139, 250, .9)); }
+
+.career-node.dimmed { opacity: .3; }
+.career-node.related .node-image { box-shadow: 0 0 26px rgba(114, 199, 255, .42); }
+.career-node.recommended .node-image {
+  box-shadow: 0 0 0 3px rgba(234, 210, 123, .75), 0 0 30px rgba(234, 210, 123, .42);
+}
+.career-node.matched .node-image { box-shadow: 0 0 22px rgba(114, 199, 255, .34); }
+.node-label small.node-fact { color: #9aa5ff; }
+
+.node-hover {
+  position: absolute;
+  z-index: 6;
+  width: 232px;
+  margin-top: -66px;
+  padding: 12px 14px;
+  border: 1px solid rgba(124, 137, 255, .4);
+  border-radius: 16px;
+  background: rgba(10, 13, 22, .96);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .5);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.node-hover strong { display: block; color: #f2f5ff; font-size: 13px; }
+.node-hover dl { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 4px 8px; margin: 8px 0 0; }
+.node-hover dt { color: #8b96b0; font-size: 10px; }
+.node-hover dd { margin: 0; color: #c7d0e4; font-size: 10px; line-height: 1.5; }
+.node-hover__hint { display: block; margin-top: 10px; color: #72c7ff; font-size: 10px; }
+
+.map-empty {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  padding: 22px 26px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  background: rgba(8, 11, 19, .86);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+.map-empty p { margin: 0 0 12px; color: #8d98ae; font-size: 13px; line-height: 1.7; }
+.map-empty button {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #525be4, #6f66e2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* 右侧：岗位迁移分析抽屉 */
+.path-analysis { padding: 20px 18px 18px; overflow-y: auto; }
+.path-analysis h2 { margin: 6px 34px 4px 0; color: #f2f5ff; font-size: 20px; font-weight: 650; }
+.analysis-sub { margin: 0 0 14px; color: #8d98ae; font-size: 12px; line-height: 1.6; }
+.analysis-relation { padding: 12px 14px; border: 1px solid rgba(148, 163, 184, .14); border-radius: 14px; background: rgba(23, 28, 43, .6); }
+.analysis-relation span { display: block; color: #8b96b0; font-size: 10px; letter-spacing: .12em; }
+.analysis-relation strong { display: block; margin-top: 5px; color: #eef2ff; font-size: 13px; }
+.analysis-relation em {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: #9db3ff;
+  background: rgba(83, 91, 199, .22);
+  font-size: 10px;
+  font-style: normal;
+}
+.analysis-match { display: flex; align-items: baseline; justify-content: space-between; margin: 14px 0 12px; }
+.analysis-match span { color: #8b96b0; font-size: 11px; }
+.analysis-match strong { color: #72c7ff; font-size: 26px; font-weight: 800; }
+.analysis-block { margin-bottom: 14px; }
+.analysis-block h3 { margin: 0 0 8px; color: #cdd5e6; font-size: 12px; font-weight: 600; }
+.skill-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.skill-tags li { padding: 4px 9px; border-radius: 999px; font-size: 11px; }
+.skill-tags--reuse li { color: #8fdabb; background: rgba(69, 154, 126, .16); }
+.skill-tags--missing li { color: #ffd28a; background: rgba(196, 146, 60, .16); }
+.analysis-empty { margin: 0; color: #8d98ae; font-size: 11px; line-height: 1.65; }
+.analysis-empty--block {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px dashed rgba(148, 163, 184, .2);
+  border-radius: 14px;
+}
+.analysis-counts {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, .14);
+  border-radius: 14px;
+  color: #aab4c8;
+  background: rgba(23, 28, 43, .5);
+  font-size: 11px;
+}
+.analysis-difficulty { margin: 10px 0 0; color: #9aa5bd; font-size: 11px; }
+.analysis-advice {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 2px solid rgba(114, 199, 255, .6);
+  color: #9aa5bd;
+  background: rgba(20, 28, 48, .5);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.analysis-actions { display: grid; gap: 8px; margin-top: 16px; }
+.primary-action {
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #525be4, #6f66e2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primary-action:hover { background: linear-gradient(135deg, #5a62e8, #7268e4); }
+.ghost-button {
+  padding: 10px 16px;
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 999px;
+  color: #cdd5e6;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ghost-button:hover { border-color: rgba(124, 137, 255, .5); color: #f4f6ff; }
+
+@media (max-width: 1180px) {
+  .path-layout { grid-template-columns: 212px minmax(0, 1fr); }
+  .path-layout--analysis { grid-template-columns: 212px minmax(0, 1fr) 330px; }
+}
+
+@media (max-width: 900px) {
+  .path-hero { flex-direction: column; align-items: flex-start; }
+  .path-layout,
+  .path-layout--analysis { height: auto; grid-template-columns: 1fr; }
+  .path-map { min-height: 520px; }
+  .path-analysis { position: fixed; z-index: 20; right: 12px; bottom: 12px; left: 12px; max-height: 62vh; }
 }
 </style>

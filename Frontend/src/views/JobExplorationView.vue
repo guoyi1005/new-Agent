@@ -310,7 +310,7 @@ watch(targetJobTitle, loadJobFit)
       <section class="jobexplore-top">
         <article class="feature-card jobexplore-panel jobexplore-panel--map">
           <div class="feature-section__head">
-            <h2>岗位星图</h2>
+            <h2>职业路径图谱</h2>
             <span class="jobexplore-meta">{{ starmapNodes.length }} 个开放岗位</span>
           </div>
 
@@ -337,7 +337,7 @@ watch(targetJobTitle, loadJobFit)
               <button
                 class="jobexplore-node jobexplore-node--center"
                 type="button"
-                :aria-label="`进入岗位星图，我的目标岗位 ${centerNode.name}`"
+                :aria-label="`进入职业路径图谱，我的目标岗位 ${centerNode.name}`"
                 @click="router.push('/career/nebula')"
               >
                 <span
@@ -356,7 +356,7 @@ watch(targetJobTitle, loadJobFit)
                 :class="`is-${node.tone}`"
                 :style="{ left: `${node.x}%`, top: `${node.y}%`, '--node-size': '60px' }"
                 type="button"
-                :aria-label="`进入岗位星图查看${node.name}`"
+                :aria-label="`进入职业路径图谱查看${node.name}`"
                 @click="router.push('/career/nebula')"
               >
                 <span class="jobexplore-node__dot" :style="node.image ? { backgroundImage: `url(${node.image})` } : {}">
@@ -368,13 +368,13 @@ watch(targetJobTitle, loadJobFit)
           </div>
 
           <div class="jobexplore-panel__foot">
-            <p class="jobexplore-note">探索关联岗位与转岗路径</p>
+            <p class="jobexplore-note">看见岗位之间的关系，也看见你的下一步</p>
             <button
               class="feature-button feature-button--primary jobexplore-cta"
               type="button"
               @click="router.push('/career/nebula')"
             >
-              进入岗位星图 →
+              进入职业路径图谱 →
             </button>
           </div>
         </article>

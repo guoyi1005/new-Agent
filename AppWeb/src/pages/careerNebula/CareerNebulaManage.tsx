@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getCareerNebulaMap, saveCareerNebulaMap } from '../../api/careerNebula';
+import {
+  createCareerJobRelation,
+  deleteCareerJobRelation,
+  getCareerNebulaMap,
+  listCareerJobRelations,
+  saveCareerNebulaMap,
+  updateCareerJobRelation,
+} from '../../api/careerNebula';
 import { getCampusCourse, getCampusCourses } from '../../api/campusCourse';
 import styles from './CareerNebulaManage.module.css';
 
@@ -21,6 +28,51 @@ type CourseChapter = { id: number; title: string; summary?: string; estimatedMin
 type CourseChapterPreview = { id: number; name: string; chapters: CourseChapter[] };
 type Edge = { id: string; source: string; target: string; type: '主线' | '支线' };
 type PersistedMap = { careers: CareerNode[]; skills: SkillNode[]; edges: Edge[] };
+type JobRelationType = 'PROMOTION' | 'TRANSFER' | 'RELATED' | 'BRANCH';
+type JobLineType = 'SOLID' | 'DASHED' | 'THIN' | 'GLOW';
+type JobRelation = {
+  id?: number;
+  sourceJobId: string;
+  targetJobId: string;
+  relationType: JobRelationType;
+  relationName: string;
+  description: string;
+  reusableSkills: string;
+  missingSkills: string;
+  recommendation: number;
+  lineType: JobLineType;
+  enabled: boolean;
+  sortOrder: number;
+};
+
+const RELATION_TYPE_OPTIONS: Array<{ value: JobRelationType; label: string; line: JobLineType }> = [
+  { value: 'PROMOTION', label: '职业进阶', line: 'SOLID' },
+  { value: 'TRANSFER', label: '横向转岗', line: 'DASHED' },
+  { value: 'RELATED', label: '相近岗位', line: 'THIN' },
+  { value: 'BRANCH', label: '发展分支', line: 'GLOW' },
+];
+const LINE_TYPE_OPTIONS: Array<{ value: JobLineType; label: string }> = [
+  { value: 'SOLID', label: '实线（职业进阶）' },
+  { value: 'DASHED', label: '虚线（横向转岗）' },
+  { value: 'THIN', label: '细线（相近岗位）' },
+  { value: 'GLOW', label: '发光线（推荐方向）' },
+];
+
+function emptyRelation(): JobRelation {
+  return {
+    sourceJobId: '',
+    targetJobId: '',
+    relationType: 'TRANSFER',
+    relationName: '横向转岗',
+    description: '',
+    reusableSkills: '',
+    missingSkills: '',
+    recommendation: 60,
+    lineType: 'DASHED',
+    enabled: true,
+    sortOrder: 0,
+  };
+}
 
 function normalizePersistedMap(value: unknown): PersistedMap | undefined {
   if (!value || typeof value !== 'object') return undefined;
@@ -289,6 +341,11 @@ export default function CareerNebulaManage() {
   const [chapterPreview, setChapterPreview] = useState<CourseChapterPreview>();
   const [chapterPreviewLoading, setChapterPreviewLoading] = useState(false);
   const [chapterPreviewError, setChapterPreviewError] = useState('');
+  const [relationOpen, setRelationOpen] = useState(false);
+  const [relations, setRelations] = useState<JobRelation[]>([]);
+  const [relationLoading, setRelationLoading] = useState(false);
+  const [relationError, setRelationError] = useState('');
+  const [relationBusyId, setRelationBusyId] = useState<number | 'new' | undefined>(undefined);
   const canvasRef = useRef<HTMLDivElement>(null);
   const saveSuccessTimer = useRef<number | undefined>(undefined);
   const savedData = useRef<PersistedMap>({
@@ -486,6 +543,91 @@ export default function CareerNebulaManage() {
       setSaving(false);
     }
   }
+
+  /* ---------- 岗位关系管理（职业路径图谱的连线） ---------- */
+
+  async function openRelations() {
+    setRelationOpen(true);
+    await loadRelations();
+  }
+
+  async function loadRelations() {
+    setRelationLoading(true);
+    setRelationError('');
+    try {
+      const data = await listCareerJobRelations();
+      setRelations(Array.isArray(data) ? (data as JobRelation[]) : []);
+    } catch {
+      setRelationError('岗位关系加载失败，请确认后端服务已启动后重试');
+      setRelations([]);
+    } finally {
+      setRelationLoading(false);
+    }
+  }
+
+  function patchRelation(index: number, patch: Partial<JobRelation>) {
+    setRelations((all) => all.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+    setNotice('有未保存的岗位关系修改');
+  }
+
+  function changeRelationType(index: number, type: JobRelationType) {
+    const option = RELATION_TYPE_OPTIONS.find((item) => item.value === type);
+    patchRelation(index, {
+      relationType: type,
+      relationName: option?.label ?? '相近岗位',
+      lineType: option?.line ?? 'THIN',
+    });
+  }
+
+  function addRelation() {
+    setRelations((all) => [...all, emptyRelation()]);
+    setRelationError('');
+  }
+
+  async function saveRelation(index: number) {
+    const draft = relations[index];
+    if (!draft) return;
+    if (!draft.sourceJobId || !draft.targetJobId) {
+      setRelationError('请先选择源岗位与目标岗位');
+      return;
+    }
+    if (draft.sourceJobId === draft.targetJobId) {
+      setRelationError('源岗位与目标岗位不能相同');
+      return;
+    }
+    setRelationError('');
+    setRelationBusyId(draft.id ?? 'new');
+    try {
+      if (draft.id) await updateCareerJobRelation(draft.id, draft);
+      else await createCareerJobRelation(draft);
+      setNotice('岗位关系已保存');
+      await loadRelations();
+    } catch {
+      setRelationError('岗位关系保存失败，请稍后重试');
+    } finally {
+      setRelationBusyId(undefined);
+    }
+  }
+
+  async function removeRelation(index: number) {
+    const draft = relations[index];
+    if (!draft) return;
+    if (!draft.id) {
+      setRelations((all) => all.filter((_, i) => i !== index));
+      return;
+    }
+    setRelationBusyId(draft.id);
+    try {
+      await deleteCareerJobRelation(draft.id);
+      setNotice('岗位关系已删除');
+      await loadRelations();
+    } catch {
+      setRelationError('岗位关系删除失败，请稍后重试');
+    } finally {
+      setRelationBusyId(undefined);
+    }
+  }
+
   function move(clientX: number, clientY: number, id: string) {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -629,6 +771,7 @@ export default function CareerNebulaManage() {
           <button onClick={() => setPreview((value) => !value)}>
             {preview ? '返回编辑' : '预览效果'}
           </button>
+          <button onClick={openRelations}>岗位关系</button>
           <button className={styles.save} onClick={save}>
             保存星图
           </button>
@@ -1070,6 +1213,179 @@ export default function CareerNebulaManage() {
                 {saving ? '正在保存…' : '保存并返回'}
               </button>
             </div>
+          </section>
+        </div>
+      )}
+      {relationOpen && (
+        <div className={styles.relationBackdrop} onClick={() => setRelationOpen(false)}>
+          <section className={styles.relationDialog} onClick={(event) => event.stopPropagation()}>
+            <header className={styles.relationHead}>
+              <div>
+                <small>CAREER PATH / JOB RELATIONS</small>
+                <h2>岗位关系管理</h2>
+                <p>
+                  星球的大小、坐标、图片仍由上面画布决定；这里只维护岗位之间的路径连线。
+                  可复用技能与建议新增技能留空时，会按已有岗位技能要求与学生学习记录自动计算。
+                </p>
+              </div>
+              <button type="button" className={styles.relationClose} onClick={() => setRelationOpen(false)}>
+                关闭
+              </button>
+            </header>
+
+            {relationError && <p className={styles.relationError}>{relationError}</p>}
+
+            {relationLoading ? (
+              <p className={styles.relationEmpty}>正在加载岗位关系…</p>
+            ) : (
+              <div className={styles.relationList}>
+                {relations.length === 0 && (
+                  <p className={styles.relationEmpty}>
+                    还没有配置岗位关系，点击下方「新增岗位关系」开始。
+                  </p>
+                )}
+                {relations.map((relation, index) => (
+                  <article key={relation.id ?? `new-${index}`} className={styles.relationCard}>
+                    <div className={styles.relationGrid}>
+                      <label className={styles.relationField}>
+                        <span>源岗位</span>
+                        <select
+                          value={relation.sourceJobId}
+                          onChange={(event) => patchRelation(index, { sourceJobId: event.target.value })}
+                        >
+                          <option value="">请选择</option>
+                          {careers.map((career) => (
+                            <option key={career.id} value={career.id}>
+                              {career.name}
+                              {career.status === 'disabled' ? '（未展示）' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>目标岗位</span>
+                        <select
+                          value={relation.targetJobId}
+                          onChange={(event) => patchRelation(index, { targetJobId: event.target.value })}
+                        >
+                          <option value="">请选择</option>
+                          {careers.map((career) => (
+                            <option key={career.id} value={career.id}>
+                              {career.name}
+                              {career.status === 'disabled' ? '（未展示）' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>关系类型</span>
+                        <select
+                          value={relation.relationType}
+                          onChange={(event) =>
+                            changeRelationType(index, event.target.value as JobRelationType)
+                          }
+                        >
+                          {RELATION_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>连线类型</span>
+                        <select
+                          value={relation.lineType}
+                          onChange={(event) =>
+                            patchRelation(index, { lineType: event.target.value as JobLineType })
+                          }
+                        >
+                          {LINE_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>关系名称</span>
+                        <input
+                          value={relation.relationName}
+                          placeholder="例如：横向转岗"
+                          onChange={(event) => patchRelation(index, { relationName: event.target.value })}
+                        />
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>推荐程度（0-100）</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={relation.recommendation}
+                          onChange={(event) =>
+                            patchRelation(index, { recommendation: Number(event.target.value) })
+                          }
+                        />
+                      </label>
+                      <label className={`${styles.relationField} ${styles.relationFieldWide}`}>
+                        <span>关系说明</span>
+                        <input
+                          value={relation.description}
+                          placeholder="写给学生的说明，例如：后端能力可以向 AI 应用方向复用"
+                          onChange={(event) => patchRelation(index, { description: event.target.value })}
+                        />
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>可复用技能（留空自动计算）</span>
+                        <input
+                          value={relation.reusableSkills}
+                          placeholder="Python / MySQL"
+                          onChange={(event) => patchRelation(index, { reusableSkills: event.target.value })}
+                        />
+                      </label>
+                      <label className={styles.relationField}>
+                        <span>建议新增技能（留空自动计算）</span>
+                        <input
+                          value={relation.missingSkills}
+                          placeholder="LLM / RAG"
+                          onChange={(event) => patchRelation(index, { missingSkills: event.target.value })}
+                        />
+                      </label>
+                    </div>
+                    <div className={styles.relationActions}>
+                      <label className={styles.relationToggle}>
+                        <input
+                          type="checkbox"
+                          checked={relation.enabled}
+                          onChange={(event) => patchRelation(index, { enabled: event.target.checked })}
+                        />
+                        在职业路径图谱展示
+                      </label>
+                      <button
+                        type="button"
+                        disabled={relationBusyId === (relation.id ?? 'new')}
+                        onClick={() => saveRelation(index)}
+                      >
+                        {relationBusyId === (relation.id ?? 'new') ? '保存中…' : '保存'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.relationDelete}
+                        onClick={() => removeRelation(index)}
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            <footer className={styles.relationFoot}>
+              <button type="button" onClick={addRelation}>
+                新增岗位关系
+              </button>
+            </footer>
           </section>
         </div>
       )}
