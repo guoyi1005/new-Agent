@@ -12,7 +12,7 @@ const sections = {
     title: '成长中心',
     description: '集中查看能力、学习记录与成长路径，了解自己正在向目标前进到哪一步。',
     items: [
-      { code: '01', title: '成长树', description: '复用现有星图中的成长路线、学习节点与完成进度。', to: '/growth/tree', tone: 'green' },
+      { code: '01', title: '成长树', description: '按岗位方向查看成长分支，以及已点亮和未点亮的技能点。', to: '/growth/tree', tone: 'green' },
       { code: '02', title: '技能树', description: '查看已有技能掌握情况、技能关联与能力进度。', to: '/growth/skills', tone: 'blue' },
       { code: '03', title: '课程成绩', description: '查看已有试卷、测验成绩与答题记录。', to: '/growth/grades', tone: 'yellow' },
       { code: '04', title: '证书', description: '证书管理功能尚未接入真实数据。', tone: 'purple', pending: true },

@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { resolveBossJobSearchLink } from '../api/jobRecommendations'
+import { getHotMarketJobs, getInternshipRecommendations, resolveBossJobSearchLink } from '../api/jobRecommendations'
 import { getLocalJobSummary, listLocalJobs } from '../api/localJobs'
 import { getCampusRecruitmentSummary, getEmploymentAlumni } from '../api/employment'
 import AppTabBar from '../components/AppTabBar.vue'
@@ -10,13 +10,10 @@ import {
   EMPLOYMENT_AGGREGATE,
   EMPLOYMENT_ALUMNI,
   EMPLOYMENT_CAMPUS,
-  EMPLOYMENT_JOBS,
-  EMPLOYMENT_LOCAL,
-  EMPLOYMENT_RADAR,
   EMPLOYMENT_SOURCE_NAMES,
   EMPLOYMENT_TABS,
 } from '../data_tmp/employmentCatalog'
-import { getTargetProfile, readStoredTargetJob } from '../data_tmp/jobCatalog'
+import { readStoredTargetJob } from '../data_tmp/jobCatalog'
 
 /* 实习就业：顶部搜索 + 页签，下面依次是实习雷达 / 成都本地、推荐岗位、多平台聚合、校招与校友企业。
  * 页签和搜索框都作用于「为你推荐的岗位」这一份列表。 */
@@ -42,15 +39,50 @@ function goToJobs(tab = 'all') {
 }
 
 const targetJobTitle = ref(readStoredTargetJob())
-const targetJob = computed(() => getTargetProfile(targetJobTitle.value))
+const bestJobMatch = computed(() => allJobs.value.find((job) => job.matchRate != null)?.matchRate)
 
-/* 「为你推荐的岗位」用页面内的推荐数据（含匹配度 / 核心技能 / 推荐理由）；
- * 抓取到的真实岗位只参与「成都本地就业」的统计与来源标注，不直接渲染成卡片。 */
-function toSampleJobCard(job) {
-  return { ...job, salary: '', meta: `来源 ${job.sources} 个平台 · ${job.updated}`, detailUrl: '' }
+const internshipJobs = ref([])
+const hotJobs = ref([])
+const jobsLoading = ref(true)
+const jobsError = ref('')
+const allJobs = computed(() => internshipJobs.value.map((job) => ({
+  id: job.jobId,
+  title: job.title,
+  company: job.company,
+  matchRate: job.matchScore,
+  city: job.city || '',
+  district: '',
+  salary: job.salaryText,
+  skills: job.matchedSkills || [],
+  missingSkills: job.missingSkills || [],
+  reason: '',
+  meta: `来源：${job.source}${job.updatedAt ? ` · 更新于 ${new Date(job.updatedAt).toLocaleDateString('zh-CN')}` : ''}`,
+  detailUrl: job.sourceUrl,
+  tags: ['intern', ...(job.city === '成都' ? ['local'] : [])],
+})))
+const radarStats = computed(() => ({
+  found: allJobs.value.length,
+  high: allJobs.value.filter((job) => job.matchRate != null && job.matchRate >= 80).length,
+  priority: allJobs.value.filter((job) => job.matchRate != null && job.matchRate >= 70).length,
+}))
+
+async function loadJobs() {
+  jobsLoading.value = true
+  jobsError.value = ''
+  const [internships, hot] = await Promise.allSettled([
+    getInternshipRecommendations(100),
+    getHotMarketJobs(6),
+  ])
+  if (internships.status === 'fulfilled') {
+    internshipJobs.value = Array.isArray(internships.value.data?.items) ? internships.value.data.items : []
+  } else {
+    jobsError.value = '岗位暂时无法加载，请稍后重试。'
+  }
+  if (hot.status === 'fulfilled') {
+    hotJobs.value = Array.isArray(hot.value.data?.items) ? hot.value.data.items : []
+  }
+  jobsLoading.value = false
 }
-
-const allJobs = computed(() => EMPLOYMENT_JOBS.map(toSampleJobCard))
 
 /* 「成都在招岗位」：每天抓取到的真实岗位，点击进入招聘网站上的原始页面 */
 const localJobs = ref([])
@@ -111,18 +143,17 @@ function localJobHint(job) {
   return job.detailUrl ? '打开招聘网站上的原始岗位页面' : `在招聘平台搜索：${localJobQuery(job)}`
 }
 
-/* 「成都本地就业」用后端每天抓取的本地岗位统计；接口没有数据时退回页面内的展示数据，
- * 保证板块不会是空的，同时在下面注明当前用的是哪一份数据。 */
+/* 成都本地就业统计与全国实习推荐独立；没有本地数据时展示零值。 */
 const localSummary = ref(null)
 
 const localStats = computed(() => {
   const data = localSummary.value
   if (!data || !data.total) {
     return {
-      todayNew: EMPLOYMENT_LOCAL.todayNew,
-      intern: EMPLOYMENT_LOCAL.intern,
-      campus: EMPLOYMENT_LOCAL.campus,
-      stateOwned: EMPLOYMENT_LOCAL.stateOwned,
+      todayNew: 0,
+      intern: 0,
+      campus: 0,
+      stateOwned: 0,
     }
   }
   return {
@@ -135,16 +166,13 @@ const localStats = computed(() => {
 
 const localDistricts = computed(() => {
   const list = localSummary.value?.districts
-  if (!Array.isArray(list) || !list.length) {
-    return EMPLOYMENT_LOCAL.districts.map((name) => ({ name, total: 0 }))
-  }
-  return list
+  return Array.isArray(list) ? list : []
 })
 
 const localMeta = computed(() => {
   const data = localSummary.value
   if (!data || !data.total) {
-    return '本地岗位数据暂未接入，下面先显示示例数据'
+    return '成都本地岗位统计暂未更新；上方推荐岗位仍来自已核验的公开职位。'
   }
   // 平台名由后端按全表统计返回，避免只取最新若干条时漏掉某个站
   const platforms = (data.platforms || []).map((key) => EMPLOYMENT_SOURCE_NAMES[key] || key)
@@ -245,6 +273,11 @@ onMounted(() => {
   loadLocalSummary()
   loadLocalJobs()
   loadEmploymentSections()
+  loadJobs()
+  const targetId = window.location.hash.slice(1)
+  if (targetId === 'recommended-jobs' || targetId === 'market-trends') {
+    nextTick(() => document.getElementById(targetId)?.scrollIntoView({ block: 'start' }))
+  }
 })
 
 const visibleJobs = computed(() => {
@@ -265,7 +298,8 @@ const moreJobs = computed(() => (showAllJobs.value ? visibleJobs.value.slice(3) 
 
 /* 雷达图：取匹配度最高的 5 个岗位，匹配越高离中心越近 */
 const radarPoints = computed(() => {
-  const jobs = [...EMPLOYMENT_JOBS].sort((a, b) => b.matchRate - a.matchRate).slice(0, 5)
+  const jobs = allJobs.value.filter((job) => job.matchRate != null)
+    .sort((a, b) => b.matchRate - a.matchRate).slice(0, 5)
   const total = jobs.length || 1
   return jobs.map((job, index) => {
     const angle = ((-90 + (360 / total) * index + 18) * Math.PI) / 180
@@ -377,14 +411,14 @@ function runSearch() {
                   <dd>{{ targetJobTitle }}</dd>
                 </div>
                 <div>
-                  <dt>当前匹配</dt>
-                  <dd>{{ targetJob.matchRate ? `${targetJob.matchRate}%` : '尚未完成岗位体检' }}</dd>
+                  <dt>最高岗位匹配</dt>
+                  <dd>{{ bestJobMatch != null ? `${bestJobMatch}%` : '待评估' }}</dd>
                 </div>
               </dl>
 
               <div class="employment-radar__stats">
-                <p>已发现 <strong>{{ EMPLOYMENT_RADAR.found }}</strong> 个匹配机会</p>
-                <span>{{ EMPLOYMENT_RADAR.high }} 个高匹配 · {{ EMPLOYMENT_RADAR.priority }} 个建议优先关注</span>
+                <p>已发现 <strong>{{ radarStats.found }}</strong> 个真实实习机会</p>
+                <span>{{ radarStats.high }} 个匹配度达到 80% · {{ radarStats.priority }} 个达到 70%</span>
               </div>
 
               <div class="employment-card__foot">
@@ -424,12 +458,6 @@ function runSearch() {
           <p class="employment-local__districts">
             <span v-for="district in localDistricts" :key="district.name">{{ district.name }}</span>
           </p>
-          <ul class="employment-local__hotspots">
-            <li v-for="item in EMPLOYMENT_LOCAL.hotspots" :key="item.district">
-              <strong>{{ item.district }}</strong>
-              <span>{{ item.direction }}</span>
-            </li>
-          </ul>
           <p class="employment-local__meta">{{ localMeta }}</p>
           <div class="employment-card__foot">
             <button class="feature-button" type="button" @click="goToJobs('local')">进入成都专区 →</button>
@@ -437,7 +465,7 @@ function runSearch() {
         </article>
       </section>
 
-      <section ref="jobsSectionRef" class="employment-section">
+      <section id="recommended-jobs" ref="jobsSectionRef" class="employment-section">
         <div class="feature-section__head">
           <h2>为你推荐的岗位</h2>
           <button
@@ -451,7 +479,9 @@ function runSearch() {
         </div>
 
 
-        <div v-if="visibleJobs.length" class="employment-jobs">
+        <p v-if="jobsLoading" class="feature-empty" role="status">正在加载真实岗位…</p>
+        <p v-else-if="jobsError" class="feature-empty" role="status">{{ jobsError }} <button class="feature-link" type="button" @click="loadJobs">重试</button></p>
+        <div v-else-if="visibleJobs.length" class="employment-jobs">
           <template v-if="featuredJobs.length">
             <p class="employment-jobs__label">重点推荐</p>
             <div class="employment-jobs__featured">
@@ -465,13 +495,16 @@ function runSearch() {
                     </h3>
                     <p>{{ job.company }}</p>
                   </div>
-                  <span v-if="job.matchRate" class="employment-job__rate">{{ job.matchRate }}%</span>
-                  <span v-else-if="job.salary" class="employment-job__salary">{{ job.salary }}</span>
+                  <div class="employment-job__metrics">
+                    <span v-if="job.matchRate != null" class="employment-job__rate">{{ job.matchRate }}%</span>
+                    <span v-if="job.salary" class="employment-job__salary">{{ job.salary }}</span>
+                  </div>
                 </div>
                 <p class="employment-job__place">{{ placeText(job) }}</p>
                 <div v-if="job.skills && job.skills.length" class="employment-job__skills">
                   <span v-for="skill in job.skills" :key="skill" class="feature-chip">{{ skill }}</span>
                 </div>
+                <p v-if="job.missingSkills?.length" class="employment-job__meta">待提升：{{ job.missingSkills.join(' · ') }}</p>
                 <div v-if="job.reason" class="employment-job__reason">
                   <span>为什么推荐你？</span>
                   <p>{{ job.reason }}</p>
@@ -498,13 +531,14 @@ function runSearch() {
                     {{ job.title }}
                     <span v-if="job.tag" class="employment-job__tag">{{ job.tag }}</span>
                   </h4>
-                  <span v-if="job.matchRate">{{ job.matchRate }}%</span>
-                  <span v-else-if="job.salary">{{ job.salary }}</span>
+                  <span v-if="job.matchRate != null">{{ job.matchRate }}%</span>
                 </div>
                 <p class="employment-job__compact-meta">{{ job.company }} · {{ placeText(job) }}</p>
+                <p v-if="job.salary" class="employment-job__compact-meta">{{ job.salary }}</p>
                 <div v-if="job.skills && job.skills.length" class="employment-job__skills">
                   <span v-for="skill in job.skills" :key="skill" class="feature-chip">{{ skill }}</span>
                 </div>
+                <p v-if="job.missingSkills?.length" class="employment-job__compact-meta">待提升：{{ job.missingSkills.join(' · ') }}</p>
                 <p v-if="job.meta" class="employment-job__meta">{{ job.meta }}</p>
                 <button
                   class="feature-link employment-job__cta"
@@ -556,6 +590,21 @@ function runSearch() {
             </button>
           </article>
         </div>
+      </section>
+
+      <section id="market-trends" class="employment-section">
+        <div class="feature-section__head"><h2>热门岗位</h2></div>
+        <p v-if="!hotJobs.length" class="feature-empty">有效岗位样本正在积累，暂无可展示的热门统计。</p>
+        <ol v-else class="employment-hot-list">
+          <li v-for="(job, index) in hotJobs" :key="job.title" class="feature-card">
+            <span class="employment-hot-list__rank">{{ String(index + 1).padStart(2, '0') }}</span>
+            <div>
+              <h3>{{ job.title }}</h3>
+              <p>有效岗位 {{ job.activeJobCount }} 个 · 热度 {{ job.hotScore }}</p>
+              <p v-if="job.topSkills?.length">核心技能：{{ job.topSkills.map((skill) => `${skill.name} ${Math.round(skill.ratio * 100)}%`).join(' · ') }}</p>
+            </div>
+          </li>
+        </ol>
       </section>
 
       <section class="employment-section">
@@ -1041,6 +1090,40 @@ function runSearch() {
   gap: 16px;
 }
 
+.employment-hot-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.employment-hot-list li {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+}
+
+.employment-hot-list__rank {
+  color: var(--hp-muted);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.employment-hot-list h3 {
+  margin: 0 0 8px;
+  color: var(--hp-ink);
+  font-size: 15px;
+}
+
+.employment-hot-list p {
+  margin: 4px 0 0;
+  color: var(--hp-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .employment-jobs__label {
   margin: 0;
   color: var(--hp-ink);
@@ -1129,9 +1212,15 @@ function runSearch() {
   vertical-align: middle;
 }
 
+.employment-job__metrics {
+  display: grid;
+  gap: 5px;
+  margin-left: auto;
+  text-align: right;
+}
+
 .employment-job__rate {
   flex: 0 0 auto;
-  margin-left: auto;
   color: var(--hp-ink);
   font-size: 20px;
   font-weight: 700;
@@ -1140,7 +1229,6 @@ function runSearch() {
 
 .employment-job__salary {
   flex: 0 0 auto;
-  margin-left: auto;
   color: var(--hp-ink);
   font-size: 13.5px;
   font-weight: 700;
@@ -1579,6 +1667,7 @@ function runSearch() {
   .employment-top,
   .employment-bottom,
   .employment-jobs__featured,
+  .employment-hot-list,
   .employment-aggregate {
     grid-template-columns: minmax(0, 1fr);
   }

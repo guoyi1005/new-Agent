@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .data/
+.data-before-recovery-*/
 .redis-data/
 .neo4j-data/
 

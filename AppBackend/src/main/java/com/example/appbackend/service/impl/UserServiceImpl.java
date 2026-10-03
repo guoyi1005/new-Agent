@@ -31,6 +31,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse register(RegisterRequest request) {
+        return createUser(request, "STUDENT");
+    }
+
+    @Override
+    public UserResponse adminRegister(RegisterRequest request) {
+        String roleName = request.getRole();
+        if (!"ADMIN".equals(roleName) && !"MERCHANT".equals(roleName)) {
+            throw new IllegalArgumentException("管理端注册仅支持 ADMIN 或 MERCHANT 角色");
+        }
+        return createUser(request, roleName);
+    }
+
+    private UserResponse createUser(RegisterRequest request, String roleName) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("用户名已存在");
         }
@@ -74,16 +87,11 @@ public class UserServiceImpl implements UserService {
             user.setShareCode(generateShareCode());
         }
 
-        // 获取用户选择的角色，如果没有选择或无效则默认为STUDENT
-        String requestedRole = request.getRole();
-        Role role;
-        if (requestedRole != null && !requestedRole.isEmpty()) {
-            role = roleRepository.findByName(requestedRole.toUpperCase())
-                    .orElseThrow(() -> new RuntimeException("请选择有效身份"));
-        } else {
-            role = roleRepository.findByName("STUDENT")
-                    .orElseThrow(() -> new RuntimeException("无角色存在"));
-        }
+        Role role = roleRepository.findByName(roleName).orElseGet(() -> {
+            Role newRole = new Role();
+            newRole.setName(roleName);
+            return roleRepository.save(newRole);
+        });
         user.setRole(role);
 
         userRepository.save(user);

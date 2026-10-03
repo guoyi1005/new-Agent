@@ -4,6 +4,7 @@ import AiAssistantView from '../views/AiAssistantView.vue'
 import AiToolsView from '../views/AiToolsView.vue'
 import CampusActivitiesView from '../views/CampusActivitiesView.vue'
 import HomeView from '../views/HomeView.vue'
+import GrowthTreeView from '../views/GrowthTreeView.vue'
 import LoginView from '../views/LoginView.vue'
 import MapView from '../views/MapView.vue'
 import MessageCenterView from '../views/MessageCenterView.vue'
@@ -112,7 +113,7 @@ const routes = [
   { path: '/community/map', redirect: '/growth/campus-map' },
   { path: '/community/activities', redirect: '/growth/campus-activity' },
   { path: '/growth/star-map', redirect: '/career/nebula' },
-  { path: '/growth/tree', redirect: '/career/nebula' },
+  { path: '/growth/tree', name: 'growth-tree', component: GrowthTreeView },
   { path: '/growth/skills', redirect: '/profile-radar' },
   { path: '/growth/grades', redirect: '/mine/papers' },
   { path: '/growth/profile', redirect: '/profile-radar' },
