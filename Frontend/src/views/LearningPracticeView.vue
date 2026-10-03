@@ -55,6 +55,8 @@ const goalForm = reactive({
   targetDate: '',
   dailyStudyMinutes: 60,
 })
+// 「按能力缺口生成」时置为 true：任务由缺口直接确定，保存时不再调用 AI 拆解
+const goalFromGaps = ref(false)
 
 const activeTab = computed(() => {
   const tab = String(route.query.tab || 'recommended')
@@ -446,8 +448,84 @@ function openGoalForCheckin(goalId) {
 function openGoalDialog() {
   resetGoalForm()
   goalAiUnavailable.value = false
+  goalFromGaps.value = false
   goalDialogOpen.value = true
 }
+
+/** 用岗位探索页算出的真实能力缺口，拼一份可以直接拆解的学习计划。 */
+function buildGapGoalPlan() {
+  const jobName = targetJobTitle.value || '目标岗位'
+  const gaps = targetSkillGaps.value.slice(0, 5)
+  if (!gaps.length) return null
+  const lines = gaps.map((gap, index) => {
+    const need = Math.max(0, Number(gap.required || 0) - Number(gap.current || 0))
+    return `${index + 1}. ${gap.name}（当前 ${gap.current} / 岗位要求 ${gap.required}，需要提升 ${need}）`
+  })
+  const names = gaps.map((gap) => gap.name).join('、')
+  return {
+    title: `${jobName}能力提升计划`,
+    description: `针对 ${jobName} 的能力缺口，优先补齐 ${names}。`,
+    planText: [
+      `目标岗位：${jobName}`,
+      '需要补齐的能力缺口：',
+      ...lines,
+      '请按缺口优先级安排学习任务，每天学习 60 分钟，30 天内完成。',
+    ].join('\n'),
+  }
+}
+
+/** 打开「按能力缺口生成」：预填缺口计划，保存时仍走原有的 AI 拆解流程。 */
+function openGapGoalDialog() {
+  const plan = buildGapGoalPlan()
+  if (!plan) {
+    pageMessage.value = '还没有可用的能力缺口数据：先设置目标岗位，或在题库、课程里积累一些学习记录'
+    openGoalDialog()
+    return
+  }
+  resetGoalForm()
+  goalForm.title = plan.title
+  goalForm.description = plan.description
+  goalForm.planText = plan.planText
+  goalAiUnavailable.value = false
+  goalFromGaps.value = true
+  goalDialogOpen.value = true
+}
+
+/** 每个能力缺口直接生成一项任务，不依赖 AI 拆解。 */
+function buildGapGoalTasks() {
+  const recommended = new Map(jobPathSteps.value.map((step) => [step.skillCode, step.next]))
+  const gaps = targetSkillGaps.value.slice(0, 5)
+  // 每项任务的天数按「开始日期 → 目标日期」的总跨度平均分配，避免排期超出目标日期
+  const spanDays = goalSpanDays()
+  const daysPerTask = Math.max(1, Math.floor(spanDays / Math.max(1, gaps.length)))
+  return gaps.map((gap, index) => {
+    const need = Math.max(0, Number(gap.required || 0) - Number(gap.current || 0))
+    const next = recommended.get(gap.code)
+    return {
+      taskName: `${gap.name}：从 ${gap.current} 提升到 ${gap.required}`.slice(0, 120),
+      stage: '能力补齐',
+      estimatedDays: daysPerTask,
+      plannedStartDate: todayString(),
+      priority: index === 0 ? '高' : '中',
+      orderNum: index + 1,
+      isCompleted: false,
+      progressPercent: 0,
+      description: `当前 ${gap.current}，岗位要求 ${gap.required}，需要提升 ${need}。${next?.title ? `建议先从「${next.title}」开始。` : ''}`,
+      subtasks: [],
+    }
+  })
+}
+
+/** 目标日期与开始日期之间的天数，缺省按 30 天。 */
+function goalSpanDays() {
+  const start = goalForm.startDate ? new Date(goalForm.startDate) : null
+  const end = goalForm.targetDate ? new Date(goalForm.targetDate) : null
+  if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+    return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000))
+  }
+  return 30
+}
+
 function closeGoalDialog() {
   if (!goalSaving.value) goalDialogOpen.value = false
 }
@@ -486,7 +564,19 @@ async function saveGoal(skipDecompose = false) {
   goalError.value = ''
   try {
     let payload
-    if (goalForm.planText.trim() && !skipDecompose) {
+    if (goalFromGaps.value && !skipDecompose && targetSkillGaps.value.length) {
+      // 能力缺口已经拆好每一项任务，直接入库，不依赖 AI 拆解服务
+      payload = {
+        goal: {
+          title: goalForm.title.trim(),
+          description: goalForm.description.trim(),
+          startDate: goalForm.startDate || null,
+          targetDate: goalForm.targetDate || null,
+          dailyStudyMinutes: Number(goalForm.dailyStudyMinutes) || 60,
+        },
+        tasks: buildGapGoalTasks(),
+      }
+    } else if (goalForm.planText.trim() && !skipDecompose) {
       let preview
       try {
         preview = await decomposeStudyText(goalForm.planText.trim())
@@ -534,6 +624,7 @@ async function saveGoal(skipDecompose = false) {
     const saved = await saveStudyGoal(payload)
     goalDialogOpen.value = false
     goalAiUnavailable.value = false
+    goalFromGaps.value = false
     await reloadGoals(saved?.goal?.id)
     pageMessage.value = '学习目标已保存'
   } catch (error) {
@@ -665,7 +756,13 @@ function openProblem(id) {
   router.push(`/career/nebula/python/practice/${id}`)
 }
 
-onMounted(loadLearningData)
+onMounted(async () => {
+  await loadLearningData()
+  // 从岗位探索页的「生成我的提升计划」进来时，直接按能力缺口预填学习目标
+  if (String(route.query.plan || '') === 'gaps') {
+    openGapGoalDialog()
+  }
+})
 </script>
 
 <template>
@@ -741,6 +838,7 @@ onMounted(loadLearningData)
               <template v-else>
                 <p>设置四六级、证书或技能学习目标，系统会按任务记录进度。</p>
                 <button type="button" class="link" @click="openGoalDialog">立即设置目标</button>
+                <button type="button" class="link" @click="openGapGoalDialog">按能力缺口生成</button>
               </template>
             </article>
           </section>
@@ -833,7 +931,7 @@ onMounted(loadLearningData)
         </template>
 
         <template v-else>
-          <section class="panel toolbar"><div><h2>我的练习</h2><p>课程、刷题、项目和技能进度汇总在同一个视图里。</p></div><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></section>
+          <section class="panel toolbar"><div><h2>我的练习</h2><p>课程、刷题、项目和技能进度汇总在同一个视图里。</p></div><div class="toolbar-actions"><button type="button" class="btn" @click="openGapGoalDialog">按能力缺口生成</button><button type="button" class="btn btn--primary" @click="openGoalDialog">新建学习目标</button></div></section>
           <section class="practice-layout panel">
             <aside class="goal-list"><div class="head"><h2>学习目标</h2><span>{{ studyGoals.length }} 个</span></div><p v-if="dataErrors.goals" class="error"><span>{{ dataErrors.goals }}</span><button type="button" class="link" @click="loadLearningData">重新加载</button></p><button v-for="goal in studyGoals" :key="goal.id" type="button" :class="{ active: selectedGoalId === goal.id }" @click="loadGoalDetail(goal.id)"><span><strong>{{ goal.title }}</strong><small>{{ goal.completedTasks || 0 }}/{{ goal.totalTasks || 0 }} 项任务</small><small v-if="goal.nextTaskName" class="goal-list__next">下一步 · {{ goal.nextTaskName }}</small></span><em>{{ goal.progress || 0 }}%</em></button><div v-if="!studyGoals.length" class="empty empty--small"><strong>还没有学习目标</strong><p>创建四六级、证书或技能目标后，任务会显示在这里。</p></div></aside>
             <section class="goal-detail"><template v-if="selectedGoalDetail?.goal"><div class="head"><div><h2>{{ selectedGoalDetail.goal.title }}</h2></div><span class="tag">{{ goalStatusLabel(selectedGoalDetail.goal.status) }}</span></div><p>{{ selectedGoalDetail.goal.description || '暂无目标说明' }}</p><div class="meta"><span>开始 {{ formatDate(selectedGoalDetail.goal.startDate) }}</span><span>目标 {{ formatDate(selectedGoalDetail.goal.targetDate) }}</span><span>每日 {{ selectedGoalDetail.goal.dailyStudyMinutes || 60 }} 分钟</span></div><div class="progress"><i :style="{ width: `${selectedGoalDetail.goal.progress || 0}%` }" /></div><div v-if="nextGoalTask" class="next-task"><div><small>下一步</small><strong>{{ nextGoalTask.taskName }}</strong><p>{{ nextGoalTask.description || nextGoalTask.stage || '完成这项任务，推进当前学习目标' }}</p></div><button type="button" class="btn" :disabled="busyAction === `task-${nextGoalTask.id}`" @click="toggleTask(nextGoalTask)">标记完成</button></div><div v-if="activeGoalTasks.length" class="task-list">
@@ -921,7 +1019,7 @@ onMounted(loadLearningData)
           <label><span>学习计划文本</span><textarea v-model="goalForm.planText" rows="5" placeholder="例如：每天背 30 个单词，周一三五练习听力，周末完成一套真题。填写后会调用 AI 拆解为任务。" /></label>
           <div class="dialog-row"><label><span>开始日期</span><input v-model="goalForm.startDate" type="date" /></label><label><span>目标日期</span><input v-model="goalForm.targetDate" type="date" /></label><label><span>每日分钟</span><input v-model.number="goalForm.dailyStudyMinutes" type="number" min="10" max="600" /></label></div>
           <p v-if="goalError" class="error">{{ goalError }}</p>
-          <footer><button type="button" class="btn" :disabled="goalSaving" @click="closeGoalDialog">取消</button><button v-if="goalAiUnavailable" type="button" class="btn btn--primary" :disabled="goalSaving" @click="saveGoal(true)">{{ goalSaving ? '正在保存…' : '直接保存（不拆解）' }}</button><button v-else type="submit" class="btn btn--primary" :disabled="goalSaving">{{ goalSaving ? '正在保存…' : (goalForm.planText.trim() ? 'AI 拆解并保存' : '保存目标') }}</button></footer>
+          <footer><button type="button" class="btn" :disabled="goalSaving" @click="closeGoalDialog">取消</button><button v-if="goalAiUnavailable" type="button" class="btn btn--primary" :disabled="goalSaving" @click="saveGoal(true)">{{ goalSaving ? '正在保存…' : '直接保存（不拆解）' }}</button><button v-else type="submit" class="btn btn--primary" :disabled="goalSaving">{{ goalSaving ? '正在保存…' : (goalFromGaps ? '生成学习目标' : (goalForm.planText.trim() ? 'AI 拆解并保存' : '保存目标')) }}</button></footer>
         </form>
       </div>
     </Teleport>
@@ -1636,6 +1734,13 @@ onMounted(loadLearningData)
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .toolbar p {

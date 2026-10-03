@@ -1,8 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getCareerNebulaMap } from '../api/careerNebula'
+import { getCareerFitJobs, getCareerJobFit, getCareerNebulaMap } from '../api/careerNebula'
 import { resolveBossJobSearchLink } from '../api/jobRecommendations'
 import AppTabBar from '../components/AppTabBar.vue'
 import {
@@ -40,11 +40,126 @@ const targetJob = computed(() => getTargetProfile(targetJobTitle.value))
 
 const fitJobs = computed(() => resolveFitJobs(targetJob.value))
 
+/* ---------- 真实人岗匹配 ----------
+ * 匹配度、已掌握、待提升与能力差距优先用后端 /api/app/career/job-fit：
+ * 后端按「岗位技能要求 × 我在各技能上的学习记录等级」加权计算，可解释、可追溯。
+ * 接口不可用或学习记录不足时，回落到页面内的展示数据，保证页面不空。 */
+
+const remoteFit = ref(null)
+const remoteFitJobs = ref([])
+
+const fitData = computed(() => {
+  const data = remoteFit.value
+  if (!data || data.jobName !== targetJob.value.title) return null
+  if (data.dataStatus === 'insufficient' || !data.totalSkills) return null
+  return data
+})
+
+/** 页面统一读这份数据：有真实结果用真实结果，否则用展示层数据兜底。 */
+const viewProfile = computed(() => {
+  const base = targetJob.value
+  const data = fitData.value
+  const remote = remoteFit.value
+  const remoteMatches = Boolean(remote) && remote.jobName === base.title
+
+  if (!data && remoteMatches && remote.dataStatus === 'insufficient') {
+    // 后端有结论但学习记录不足：不显示任何匹配度数字，只提示先积累证据。
+    return {
+      ...base,
+      matchRate: null,
+      mastered: [],
+      toImprove: [],
+      gaps: [],
+      advice: remote.dataStatusText || base.advice,
+      dataStatus: remote.dataStatus,
+      dataStatusText: remote.dataStatusText,
+      evidenceCount: remote.evidenceCount || 0,
+    }
+  }
+  if (!data) {
+    // 接口不可用：回落到展示层数据，保证页面结构完整。
+    return {
+      ...base,
+      dataStatus: 'unavailable',
+      dataStatusText: '',
+      evidenceCount: 0,
+    }
+  }
+  return {
+    ...base,
+    matchRate: data.matchRate,
+    mastered: data.mastered.map((item) => item.skillName),
+    toImprove: data.toImprove.map((item) => item.skillName),
+    gaps: data.gaps.map((item) => ({
+      name: item.skillName,
+      current: item.current,
+      required: item.required,
+    })),
+    advice: data.advice || base.advice,
+    dataStatus: data.dataStatus,
+    dataStatusText: data.dataStatusText,
+    evidenceCount: data.evidenceCount,
+  }
+})
+
+/** 「适合你的岗位」：后端排行优先，回落展示层数据。 */
+const fitJobCards = computed(() => {
+  if (!usableRemoteJobs.value.length) {
+    // 后端有响应但学习记录不足：不展示任何匹配度，交给空状态提示。
+    if (fitJobsLoaded.value) return []
+    return fitJobs.value.map((job) => ({
+      ...job,
+      reasonText: `你的${job.strength}`,
+      improveText: `需要提升：${job.improve}`,
+    }))
+  }
+  return usableRemoteJobs.value.slice(0, 3).map((item) => ({
+    id: getJobDetailId(item.jobName) || item.jobCode,
+    title: item.jobName,
+    direction: item.direction || '',
+    type: item.type || '',
+    matchRate: item.matchRate,
+    skills: item.topSkills || [],
+    reasonText: item.topStrength
+      ? `你在「${item.topStrength}」上已经有基础`
+      : '还没有足够的学习记录，先做题或完成课程章节',
+    improveText: item.topGap ? `需要提升：${item.topGap}` : '继续完成课程与项目练习',
+  }))
+})
+
+/** 有真实匹配结论的岗位；证据不足的岗位不参与排行展示。 */
+const usableRemoteJobs = computed(() =>
+  remoteFitJobs.value.filter((item) => item.dataStatus && item.dataStatus !== 'insufficient'))
+
+/** 岗位排行接口是否成功返回（用于区分「接口不可用」和「证据不足」）。 */
+const fitJobsLoaded = ref(false)
+
+async function loadJobFit() {
+  const jobName = targetJob.value.title
+  const [fitRes, jobsRes] = await Promise.allSettled([
+    getCareerJobFit(jobName),
+    getCareerFitJobs(jobName, 10),
+  ])
+  remoteFit.value = fitRes.status === 'fulfilled' ? fitRes.value : null
+  remoteFitJobs.value = jobsRes.status === 'fulfilled' ? jobsRes.value : []
+  fitJobsLoaded.value = jobsRes.status === 'fulfilled'
+}
+
+/** 更换岗位弹窗里显示的真实匹配度；没有真实结果的岗位不显示数字。 */
+const remoteMatchByJob = computed(() => {
+  const map = new Map()
+  if (remoteFit.value?.dataStatus && remoteFit.value.dataStatus !== 'insufficient') {
+    map.set(remoteFit.value.jobName, remoteFit.value.matchRate)
+  }
+  usableRemoteJobs.value.forEach((item) => map.set(item.jobName, item.matchRate))
+  return map
+})
+
 /* 「我的目标岗位」卡里的三条轻量信息，全部由现有数据推导，不额外维护一份。 */
-const targetDirection = computed(() => getJobDirection(targetJob.value.title))
-const targetSkills = computed(() => [...targetJob.value.mastered, ...targetJob.value.toImprove].slice(0, 3))
-const targetNextStep = computed(() => targetJob.value.toImprove[0] || targetJob.value.gaps[0]?.name || '')
-const targetDetailId = computed(() => getJobDetailId(targetJob.value.title))
+const targetDirection = computed(() => getJobDirection(viewProfile.value.title))
+const targetSkills = computed(() => [...viewProfile.value.mastered, ...viewProfile.value.toImprove].slice(0, 3))
+const targetNextStep = computed(() => viewProfile.value.toImprove[0] || viewProfile.value.gaps[0]?.name || '')
+const targetDetailId = computed(() => getJobDetailId(viewProfile.value.title))
 
 /* ---------- 更换目标岗位 ---------- */
 
@@ -147,7 +262,13 @@ async function loadNebula() {
   }
 }
 
-onMounted(loadNebula)
+onMounted(() => {
+  loadNebula()
+  loadJobFit()
+})
+
+/* 更换目标岗位后重新拉取匹配结果 */
+watch(targetJobTitle, loadJobFit)
 </script>
 
 <template>
@@ -265,17 +386,20 @@ onMounted(loadNebula)
           </div>
 
           <div class="jobexplore-target">
-            <p class="jobexplore-job">{{ targetJob.title }}</p>
-            <template v-if="targetJob.matchRate">
+            <p class="jobexplore-job">{{ viewProfile.title }}</p>
+            <template v-if="viewProfile.matchRate">
               <div class="jobexplore-match">
                 <span>当前匹配度</span>
-                <strong>{{ targetJob.matchRate }}%</strong>
+                <strong>{{ viewProfile.matchRate }}%</strong>
               </div>
               <span class="jobexplore-meter" aria-hidden="true">
-                <i :style="{ width: `${targetJob.matchRate}%` }"></i>
+                <i :style="{ width: `${viewProfile.matchRate}%` }"></i>
               </span>
+              <p class="jobexplore-note">{{ viewProfile.dataStatusText }}</p>
             </template>
-            <p v-else class="jobexplore-match jobexplore-match--quiet">尚未完成岗位体检</p>
+            <p v-else class="jobexplore-match jobexplore-match--quiet">
+              {{ viewProfile.dataStatusText || '尚未完成岗位体检' }}
+            </p>
           </div>
 
           <dl class="jobexplore-facts">
@@ -292,7 +416,7 @@ onMounted(loadNebula)
               <dd>优先补齐 {{ targetNextStep }}</dd>
             </div>
           </dl>
-          <p v-if="!targetJob.matchRate" class="jobexplore-note">{{ targetJob.advice }}</p>
+          <p v-if="!viewProfile.matchRate" class="jobexplore-note">{{ viewProfile.advice }}</p>
 
           <div class="jobexplore-panel__foot jobexplore-panel__foot--actions">
             <RouterLink
@@ -315,9 +439,9 @@ onMounted(loadNebula)
           <button class="feature-link" type="button" @click="router.push('/employment')">查看全部 →</button>
         </div>
 
-        <div v-if="fitJobs.length" class="jobexplore-fit">
+        <div v-if="fitJobCards.length" class="jobexplore-fit">
           <RouterLink
-            v-for="job in fitJobs"
+            v-for="job in fitJobCards"
             :key="job.id"
             class="jobexplore-fitcard"
             :to="`/career/job/${job.id}`"
@@ -336,14 +460,20 @@ onMounted(loadNebula)
             </div>
 
             <p class="jobexplore-fitcard__reason">
-              <span>推荐理由</span>你的{{ job.strength }}
+              <span>推荐理由</span>{{ job.reasonText }}
             </p>
-            <p class="jobexplore-fitcard__weak">需要提升：{{ job.improve }}</p>
+            <p class="jobexplore-fitcard__weak">{{ job.improveText }}</p>
 
             <span class="feature-link jobexplore-fitcard__cta">查看岗位详情 →</span>
           </RouterLink>
         </div>
-        <p v-else class="feature-empty">更换目标岗位后，这里会显示与它匹配度更高、值得先投递的岗位方向。</p>
+        <p v-else class="feature-empty">
+          {{
+            fitJobsLoaded
+              ? '还没有足够的学习记录。先做题或完成课程章节，这里会按你的真实水平推荐岗位。'
+              : '更换目标岗位后，这里会显示与它匹配度更高、值得先投递的岗位方向。'
+          }}
+        </p>
       </section>
 
       <section class="jobexplore-section">
@@ -352,8 +482,8 @@ onMounted(loadNebula)
             <h2>你与目标岗位的差距</h2>
           </div>
 
-          <div v-if="targetJob.gaps.length" class="jobexplore-gaps">
-            <div v-for="gap in targetJob.gaps" :key="gap.name" class="jobexplore-gaprow">
+          <div v-if="viewProfile.gaps.length" class="jobexplore-gaps">
+            <div v-for="gap in viewProfile.gaps" :key="gap.name" class="jobexplore-gaprow">
               <div class="jobexplore-gaprow__head">
                 <strong>{{ gap.name }}</strong>
                 <span>我的 {{ gap.current }} · 岗位 {{ gap.required }}</span>
@@ -368,15 +498,15 @@ onMounted(loadNebula)
 
           <footer class="jobexplore-gap__foot">
             <div>
-              <p v-if="targetJob.gaps.length" class="jobexplore-gap__summary">
-                已识别 {{ targetJob.gaps.length }} 项关键能力缺口
+              <p v-if="viewProfile.gaps.length" class="jobexplore-gap__summary">
+                已识别 {{ viewProfile.gaps.length }} 项关键能力缺口
               </p>
-              <p class="jobexplore-gap__advice">当前建议：{{ targetJob.advice }}</p>
+              <p class="jobexplore-gap__advice">当前建议：{{ viewProfile.advice }}</p>
             </div>
             <button
               class="feature-button feature-button--primary jobexplore-cta"
               type="button"
-              @click="router.push('/interview/ai-career-plan')"
+              @click="router.push({ path: '/learning', query: { tab: 'practice', plan: 'gaps' } })"
             >
               生成我的提升计划 →
             </button>
@@ -412,7 +542,13 @@ onMounted(loadNebula)
                   @click="selectTargetJob(option.title)"
                 >
                   <span class="jobexplore-modal__name">{{ option.title }}</span>
-                  <span class="jobexplore-modal__meta">{{ option.matchRate }}% 匹配</span>
+                  <span v-if="remoteMatchByJob.has(option.title)" class="jobexplore-modal__meta">
+                    {{ remoteMatchByJob.get(option.title) }}% 匹配
+                  </span>
+                  <span v-else-if="!fitJobsLoaded" class="jobexplore-modal__meta">
+                    {{ option.matchRate }}% 匹配
+                  </span>
+                  <span v-else class="jobexplore-modal__meta">待积累学习记录</span>
                 </button>
               </li>
               <li v-if="!filteredJobOptions.length" class="jobexplore-modal__empty">
