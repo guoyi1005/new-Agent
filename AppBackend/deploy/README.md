@@ -15,7 +15,7 @@ GitHub builds and pushes three application images. MySQL and Redis use the pinne
 5. Run:
 
 ```bash
-cd /path/to/AgentA3
+cd /path/to/zhihang
 chmod +x AppBackend/deploy/deploy-on-server.sh deploy/verify.sh
 ./AppBackend/deploy/deploy-on-server.sh
 ```

@@ -20,7 +20,7 @@ class PdfConversionTest(unittest.TestCase):
     def _sample_pdf(self) -> bytes:
         document = fitz.open()
         page = document.new_page(width=300, height=220)
-        page.insert_text((36, 60), "Smart Campus PDF Convert Test", fontsize=14)
+        page.insert_text((36, 60), "Zhihang PDF Convert Test", fontsize=14)
         page.insert_text((36, 90), "This page has extractable text.", fontsize=11)
         page.insert_image(
             fitz.Rect(36, 110, 86, 160),
@@ -35,7 +35,7 @@ class PdfConversionTest(unittest.TestCase):
         self.assertEqual("md", result["format"])
         self.assertEqual("zip", result["downloadType"])
         self.assertEqual(1, result["imageCount"])
-        self.assertIn("Smart Campus PDF Convert Test", result["preview"])
+        self.assertIn("Zhihang PDF Convert Test", result["preview"])
         self.assertTrue(result["assets"][0]["previewDataUrl"].startswith("data:image/png;base64,"))
 
         with TemporaryDirectory() as temp_dir:
@@ -57,7 +57,7 @@ class PdfConversionTest(unittest.TestCase):
         docx_bytes = base64.b64decode(result["contentBase64"])
         document = Document(io.BytesIO(docx_bytes))
         text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-        self.assertIn("Smart Campus PDF Convert Test", text)
+        self.assertIn("Zhihang PDF Convert Test", text)
         self.assertIn("This page has extractable text.", text)
 
         with zipfile.ZipFile(io.BytesIO(docx_bytes)) as archive:

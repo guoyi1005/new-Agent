@@ -21,10 +21,10 @@ public class ArchitectureDTO {
     @Schema(description = "架构图生成请求")
     public static class GenerateRequest {
 
-        @Schema(description = "系统需求描述", example = "生成一个智慧校园就业服务架构图...")
+        @Schema(description = "系统需求描述", example = "生成一个知航就业服务架构图...")
         private String description;
 
-        @Schema(description = "用户原始输入内容", example = "智慧校园平台")
+        @Schema(description = "用户原始输入内容", example = "知航平台")
         private String content;
 
         @Schema(description = "上传文件信息数组")

@@ -106,10 +106,10 @@ const renderToolTriggerType = (value) => {
 
 const TOOL_TEST_PROMPTS = {
   recognize_image_tool: '请识别我上传的图片，概括主要内容并读取其中清晰可见的文字。',
-  generate_image_tool: '请生成一张简洁的智慧校园首页插图，浅色背景，蓝灰色调，不包含文字。',
+  generate_image_tool: '请生成一张简洁的知航首页插图，浅色背景，蓝灰色调，不包含文字。',
   generate_mind_map_tool: '请生成“校园就业服务流程”思维导图，包含岗位探索、能力诊断、学习提升三个分支。',
-  generate_flowchart_tool: '请生成智慧校园就业服务流程图。',
-  generate_architecture_tool: '请生成智慧校园平台的前端、后端、MySQL、Redis 系统架构图。',
+  generate_flowchart_tool: '请生成知航就业服务流程图。',
+  generate_architecture_tool: '请生成知航平台的前端、后端、MySQL、Redis 系统架构图。',
   image_stitching_tool: '请将我上传的图片按照上传顺序拼接成一张图片。',
   java_schedule_api: '请查询我本周的课程安排。',
   java_activity_api: '请查询当前可报名的校园活动。',
@@ -120,7 +120,7 @@ const TOOL_TEST_PROMPTS = {
   text_to_markdown_tool: '请把以下内容整理为 Markdown 文件并提供下载：校园服务信息应及时更新，并保证内容准确。',
   text_to_txt_tool: '请把以下内容按原文转成纯文本文件：校园服务信息应及时更新，并保证内容准确。',
   text_to_docx_tool: '请把以下内容整理为 Word 文件并提供下载：校园服务信息应及时更新，并保证内容准确。',
-  ai_ppt_generation_tool: '请生成一份 8 页 PPT，主题是智慧校园就业服务，包含岗位探索、能力诊断、学习提升三个部分。',
+  ai_ppt_generation_tool: '请生成一份 8 页 PPT，主题是知航就业服务，包含岗位探索、能力诊断、学习提升三个部分。',
   meeting_task_tool: '测试个人任务管理工具的注册状态，返回工具定义信息。',
 }
 

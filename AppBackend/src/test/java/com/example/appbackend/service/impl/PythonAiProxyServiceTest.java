@@ -720,7 +720,7 @@ class PythonAiProxyServiceTest {
                 systemConfigService,
                 newSystemConfigRepository(systemConfigService)
         ).generateArchitecture(
-                Map.of("description", "智慧校园就业服务架构图"),
+                Map.of("description", "知航就业服务架构图"),
                 "Bearer " + token
         );
 
@@ -734,7 +734,7 @@ class PythonAiProxyServiceTest {
         Assertions.assertEquals("deepseek-v4-flash-0731", modelRef.get());
 
         JsonNode request = new ObjectMapper().readTree(requestBodyRef.get());
-        Assertions.assertEquals("智慧校园就业服务架构图", request.path("description").asText());
+        Assertions.assertEquals("知航就业服务架构图", request.path("description").asText());
     }
 
     @Test
@@ -754,7 +754,7 @@ class PythonAiProxyServiceTest {
                         systemConfigService,
                         newSystemConfigRepository(systemConfigService)
                 ).generateArchitecture(
-                        Map.of("description", "智慧校园就业服务架构图"),
+                        Map.of("description", "知航就业服务架构图"),
                         "Bearer " + token
                 )
         );

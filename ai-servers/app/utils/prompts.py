@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List
 
-DEFAULT_SYSTEM_PROMPT = "你是智慧校园助手，请基于已有上下文和用户输入进行清晰、简洁的回答。"
+DEFAULT_SYSTEM_PROMPT = "你是知航助手，请基于已有上下文和用户输入进行清晰、简洁的回答。"
 
 KEYWORD_EXTRACTION_PROMPT = (
     "你是一个搜索词提取器。"

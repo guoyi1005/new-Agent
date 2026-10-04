@@ -761,10 +761,10 @@ public class SystemConfigAdminServiceImpl implements SystemConfigAdminService {
 
     private String defaultAiModelTestPrompt(String modality) {
         return switch (modality) {
-            case "image" -> "生成一张简洁的智慧校园图标，蓝绿色科技风，干净背景。";
-            case "video" -> "生成一个 5 秒的智慧校园欢迎动画，镜头缓慢推进，现代科技感。";
-            case "audio" -> "欢迎使用智慧校园模型测试。";
-            case "embedding" -> "智慧校园向量模型连接测试";
+            case "image" -> "生成一张简洁的知航图标，蓝绿色科技风，干净背景。";
+            case "video" -> "生成一个 5 秒的知航欢迎动画，镜头缓慢推进，现代科技感。";
+            case "audio" -> "欢迎使用知航模型测试。";
+            case "embedding" -> "知航向量模型连接测试";
             case "vision" -> "请用一句中文回复：视觉模型连接测试成功。";
             default -> "请用一句中文回复：模型连接测试成功。";
         };

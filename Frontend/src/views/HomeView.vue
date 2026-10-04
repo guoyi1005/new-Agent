@@ -676,7 +676,7 @@ onMounted(() => {
         </div>
       </Teleport>
       <footer class="hp-footer">
-        <p>© 2026 数智诊断港 | 本平台数据仅用于学术研究与个人职业发展规划</p>
+        <p>© 2026 知航 | 本平台数据仅用于学术研究与个人职业发展规划</p>
         <p>ICP备案号：粤 ICP 备 XXXXXXX 号</p>
       </footer>
     </main>

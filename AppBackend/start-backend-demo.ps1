@@ -1,4 +1,4 @@
-# No-Docker / no-MySQL local demo start for AgentA3 (Windows)
+# No-Docker / no-MySQL local demo start for 知航 (Windows)
 # Uses embedded H2 + existing local Redis (if running).
 $ErrorActionPreference = "Stop"
 

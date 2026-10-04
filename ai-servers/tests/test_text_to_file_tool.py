@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from app.rag.document_conversion import export_text_to_file
 from app.rag.document_conversion import generated_exporter
 
-SAMPLE_CONTENT = "# 智慧校园服务\n\n- 及时更新\n- 核对信息\n- 保持准确"
+SAMPLE_CONTENT = "# 知航服务\n\n- 及时更新\n- 核对信息\n- 保持准确"
 
 
 class TextToFileExporterTest(unittest.TestCase):
@@ -33,7 +33,7 @@ class TextToFileExporterTest(unittest.TestCase):
 
         md_text = (generated_exporter.EXPORT_ROOT / md_result.attachments[0]["storageKey"]).read_text(encoding="utf-8")
         txt_text = (generated_exporter.EXPORT_ROOT / txt_result.attachments[0]["storageKey"]).read_text(encoding="utf-8")
-        self.assertIn("智慧校园服务", md_text)
+        self.assertIn("知航服务", md_text)
         self.assertEqual(SAMPLE_CONTENT, txt_text)
 
     def test_docx_is_a_valid_word_document(self):
@@ -42,7 +42,7 @@ class TextToFileExporterTest(unittest.TestCase):
         self.assertEqual(["docx"], [item["ext"] for item in result.attachments])
         document = Document(generated_exporter.EXPORT_ROOT / result.attachments[0]["storageKey"])
         text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-        self.assertIn("智慧校园服务", text)
+        self.assertIn("知航服务", text)
         self.assertIn("当面验货", text)
 
     def test_word_alias_maps_to_docx(self):
@@ -106,13 +106,13 @@ class TextToFileRagRouteTest(unittest.TestCase):
 
     def test_export_instruction_is_stripped_from_content(self):
         content = self._rag_routes._extract_text_content_from_export_request(
-            "请把以下内容转换为 txt 文件：智慧校园服务信息应及时更新。\n第二行内容。"
+            "请把以下内容转换为 txt 文件：知航服务信息应及时更新。\n第二行内容。"
         )
-        self.assertEqual("智慧校园服务信息应及时更新。\n第二行内容。", content)
+        self.assertEqual("知航服务信息应及时更新。\n第二行内容。", content)
         content = self._rag_routes._extract_text_content_from_export_request(
-            "请把以下内容转换为 Word 文件\n智慧校园服务信息应及时更新。"
+            "请把以下内容转换为 Word 文件\n知航服务信息应及时更新。"
         )
-        self.assertEqual("智慧校园服务信息应及时更新。", content)
+        self.assertEqual("知航服务信息应及时更新。", content)
 
     def test_transform_plan_routes_txt_md_docx_to_format_tools(self):
         expected = {
@@ -234,10 +234,10 @@ class TextToFileLeaderRouteTest(unittest.TestCase):
 
     def test_txt_md_word_requests_route_to_format_tools(self):
         cases = [
-            ("请把这段文字转成txt文件：智慧校园服务信息应及时更新", "text_to_txt_tool"),
-            ("请把这段文字转成md：智慧校园服务信息应及时更新", "text_to_markdown_tool"),
-            ("请把这段文字转成Word文件：智慧校园服务信息应及时更新", "text_to_docx_tool"),
-            ("请把这段文字转成Markdown文件：智慧校园服务信息应及时更新", "text_to_markdown_tool"),
+            ("请把这段文字转成txt文件：知航服务信息应及时更新", "text_to_txt_tool"),
+            ("请把这段文字转成md：知航服务信息应及时更新", "text_to_markdown_tool"),
+            ("请把这段文字转成Word文件：知航服务信息应及时更新", "text_to_docx_tool"),
+            ("请把这段文字转成Markdown文件：知航服务信息应及时更新", "text_to_markdown_tool"),
             ("请把这段话保存为纯文本文件", "text_to_txt_tool"),
         ]
         for query, tool_name in cases:
@@ -250,9 +250,9 @@ class TextToFileLeaderRouteTest(unittest.TestCase):
 
     def test_admin_test_prompts_route_by_selected_format(self):
         prompts = {
-            "text_to_markdown_tool": "请把以下内容按原文转成Markdown文件：智慧校园服务信息应及时更新，并保证内容准确。",
-            "text_to_txt_tool": "请把以下内容按原文转成纯文本文件：智慧校园服务信息应及时更新，并保证内容准确。",
-            "text_to_docx_tool": "请把以下内容按原文转成Word文件：智慧校园服务信息应及时更新，并保证内容准确。",
+            "text_to_markdown_tool": "请把以下内容按原文转成Markdown文件：知航服务信息应及时更新，并保证内容准确。",
+            "text_to_txt_tool": "请把以下内容按原文转成纯文本文件：知航服务信息应及时更新，并保证内容准确。",
+            "text_to_docx_tool": "请把以下内容按原文转成Word文件：知航服务信息应及时更新，并保证内容准确。",
         }
         for tool_name, query in prompts.items():
             with self.subTest(tool_name=tool_name):
@@ -270,7 +270,7 @@ class TextToFileLeaderRouteTest(unittest.TestCase):
         self.assertEqual("ai_ppt_generation_tool", plan.tool_name)
 
     def test_ppt_and_pdf_requests_do_not_route_to_text_to_file_tool(self):
-        plan = self._plan_for("请把这段文字转成PPT文件：智慧校园服务信息应及时更新")
+        plan = self._plan_for("请把这段文字转成PPT文件：知航服务信息应及时更新")
         self.assertEqual("ai_ppt_generation_tool", plan.tool_name)
         plan = self._plan_for("请把这份 pdf 转成 word 文档")
         self.assertIsNotNone(plan)

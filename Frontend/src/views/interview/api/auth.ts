@@ -114,14 +114,14 @@ function redirectToCampusLogin(): Promise<never> {
 // 认证 API
 export const authApi = {
   /**
-   * 面试独立登录已停用，统一走 AgentA3 校园登录
+   * 面试独立登录已停用，统一走知航校园登录
    */
   login: (_params: LoginParams): Promise<LoginResponse> => {
     return redirectToCampusLogin()
   },
 
   /**
-   * 面试独立注册已停用，统一走 AgentA3 校园登录
+   * 面试独立注册已停用，统一走知航校园登录
    */
   register: (_params: Partial<RegisterParams>): Promise<RegisterResponse> => {
     return redirectToCampusLogin()

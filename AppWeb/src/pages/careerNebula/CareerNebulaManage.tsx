@@ -379,7 +379,7 @@ export default function CareerNebulaManage() {
         setEdges(data.edges);
         setCourseOptions(Array.isArray(courseResponse.data) ? courseResponse.data : []);
         savedData.current = JSON.parse(JSON.stringify(data)) as PersistedMap;
-        setNotice('已从智慧校园数据库加载');
+        setNotice('已从知航数据库加载');
       } catch {
         if (cancelled) return;
         setCareers(localData.careers);
@@ -533,7 +533,7 @@ export default function CareerNebulaManage() {
       if (saveSuccessTimer.current) window.clearTimeout(saveSuccessTimer.current);
       saveSuccessTimer.current = window.setTimeout(() => setSaveSucceeded(false), 1800);
       setNotice(
-        `已保存到智慧校园数据库 ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+        `已保存到知航数据库 ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
       );
       return true;
     } catch {
@@ -1422,7 +1422,7 @@ export default function CareerNebulaManage() {
           <span>✓</span>
           <div>
             <b>保存成功</b>
-            <small>星图数据已保存到智慧校园数据库</small>
+            <small>星图数据已保存到知航数据库</small>
           </div>
         </div>
       )}

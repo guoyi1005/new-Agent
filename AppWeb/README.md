@@ -1,6 +1,6 @@
 # AppWeb
 
-React + Vite management web for AgentA3.
+React + Vite management web for 知航.
 
 ## API target modes
 

@@ -22,7 +22,7 @@ export const diagramToolConfig = {
     title: '架构图',
     subtitle: '生成系统架构可视化资源',
     inputLabel: '描述您的架构需求',
-    placeholder: '例如：生成智慧校园就业系统的整体架构图，包含 Web 前端、业务服务、数据存储和第三方服务。',
+    placeholder: '例如：生成知航就业系统的整体架构图，包含 Web 前端、业务服务、数据存储和第三方服务。',
     progress: ['理解系统需求', '识别系统边界', '规划架构层级', '梳理模块关系', '完成架构图'],
     defaults: { systemType: 'WEB', autoLayers: true, layers: [], focus: ['FRONTEND', 'BACKEND', 'DATABASE'], relation: 'AUTO' },
     systemTypes: [option('WEB', 'Web系统'), option('APP', 'APP系统'), option('MINI_PROGRAM', '小程序'), option('ADMIN', '管理后台')],

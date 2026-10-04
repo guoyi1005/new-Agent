@@ -18,7 +18,7 @@ public class LlmChatRequest {
     private String sessionId;
 
     @Size(max = 2000, message = "提示词最多 2000 字符")
-    @Schema(description = "系统提示词，可为空", example = "你是智慧校园助手，请简洁回答。")
+    @Schema(description = "系统提示词，可为空", example = "你是知航助手，请简洁回答。")
     private String prompt;
 
     @Size(max = 64, message = "兼容策略字段最多 64 字符")

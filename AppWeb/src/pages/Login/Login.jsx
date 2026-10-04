@@ -62,7 +62,7 @@ function Login() {
     <div className="login-container">
       <div className="login-box">
         <div className="login-header">
-          <h1>智慧校园</h1>
+          <h1>知航</h1>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">

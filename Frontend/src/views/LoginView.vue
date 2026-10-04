@@ -131,11 +131,11 @@ async function handleRegister() {
                   font-size="26" font-weight="900" fill="#171717"
                   stroke="#171717" stroke-width="2"
                   style="paint-order: stroke fill;"
-                  letter-spacing="1.5">A3</text>
+                  letter-spacing="1.5">ZH</text>
           </svg>
         </div>
         <div class="brand-text-group">
-          <h1 class="brand-title">A3 Campus</h1>
+          <h1 class="brand-title">知航</h1>
         </div>
       </div>
 

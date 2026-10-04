@@ -219,7 +219,7 @@ class RagApiRoutesTest(unittest.TestCase):
                 "/internal/rag/query",
                 headers=self.headers,
                 json={
-                    "input": "请生成一份 8 页 PPT，主题是智慧校园就业服务介绍。",
+                    "input": "请生成一份 8 页 PPT，主题是知航就业服务介绍。",
                     "agentName": "leader_agent",
                     "metadata": {
                         "testFrom": "admin_tool_console",
@@ -246,7 +246,7 @@ class RagApiRoutesTest(unittest.TestCase):
             "/internal/rag/query",
             headers=self.headers,
             json={
-                "input": "请生成一份 8 页 PPT，主题是智慧校园就业服务介绍。",
+                "input": "请生成一份 8 页 PPT，主题是知航就业服务介绍。",
                 "agentName": "leader_agent",
                 "metadata": {
                     "testFrom": "admin_tool_console",
@@ -261,7 +261,7 @@ class RagApiRoutesTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual("ppt_template_selection", payload["answerType"])
         self.assertGreaterEqual(len(payload["metadata"].get("pptTemplateCatalog") or []), 1)
-        self.assertIn("智慧校园就业服务介绍", payload["metadata"]["pptGenerationDraft"]["topic"])
+        self.assertIn("知航就业服务介绍", payload["metadata"]["pptGenerationDraft"]["topic"])
 
     def test_file_content_extraction_tools_are_exposed_for_admin_toggles(self):
         response = self.client.get("/internal/rag/agents", headers=self.headers)
@@ -463,7 +463,7 @@ class RagApiRoutesTest(unittest.TestCase):
             "/internal/rag/query",
             headers=self.headers,
             json={
-                "input": "请把以下内容按原文转成纯文本文件：智慧校园服务信息应及时更新。",
+                "input": "请把以下内容按原文转成纯文本文件：知航服务信息应及时更新。",
                 "agentName": "leader_agent",
                 "metadata": {
                     "testFrom": "admin_tool_console",

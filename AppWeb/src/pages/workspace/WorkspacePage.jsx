@@ -2767,11 +2767,11 @@ function WorkspacePage({ pageKey }) {
   const getAiModelTestDefaultPrompt = (modality) => {
     switch (modality) {
       case 'image':
-        return '生成一张简洁的智慧校园图标，蓝绿色科技风，干净背景。'
+        return '生成一张简洁的知航图标，蓝绿色科技风，干净背景。'
       case 'video':
-        return '生成一个 5 秒的智慧校园欢迎动画，镜头缓慢推进，现代科技感。'
+        return '生成一个 5 秒的知航欢迎动画，镜头缓慢推进，现代科技感。'
       case 'audio':
-        return '欢迎使用智慧校园模型测试。'
+        return '欢迎使用知航模型测试。'
       case 'vision':
         return '请用一句中文回复：视觉模型连接测试成功。'
       default:

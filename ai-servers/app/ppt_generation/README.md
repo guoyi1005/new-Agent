@@ -1,29 +1,29 @@
-# AgentA3 built-in PPT engine
+# Zhihang built-in PPT engine
 
 The PPT generation flow is part of `ai-servers`; no Presenton service, API key,
 database, or administrator account is required.
 
 ## Runtime flow
 
-1. AgentA3 stores the authenticated user's source file in `AI_PPT_SOURCE_ROOT`.
+1. Zhihang stores the authenticated user's source file in `AI_PPT_SOURCE_ROOT`.
 2. `ppt_outline_agent` creates the editable outline from source evidence.
 3. `ppt_structure_agent` selects a layout by the Presenton structure prompt and
    component schema.
 4. `ppt_content_agent` returns the complete Presenton UI JSON tree for each
    selected layout. Geometry, nesting, CSS attributes, SVGs, fonts, and asset
    references are validated and passed through unchanged.
-5. Optional AI visuals are generated asynchronously by AgentA3's `image_agent`
+5. Optional AI visuals are generated asynchronously by Zhihang's `image_agent`
    during the task, so the outline/slides endpoints are not held open by image
    generation.
 6. The embedded Presenton runtime resolves only local asset URLs and passes the
    complete UI tree to Presenton's original `template-v2-json-to-html` renderer
    in Chromium. This preserves the template's CSS, SVG, fonts, charts, and
-   component hierarchy without an AgentA3-side hydration layer.
+   component hierarchy without an Zhihang-side hydration layer.
 7. The pinned `presenton-export` runtime converts the rendered presentation to
     PPTX in the Linux export environment; the same Chromium page creates the
     previews. Windows preview rendering does not fall back to a different PPTX
     writer, because that would make the downloadable deck visually diverge.
-8. AgentA3's existing task and capability-token stores protect generated files.
+8. Zhihang's existing task and capability-token stores protect generated files.
 
 ## API surface
 
@@ -59,7 +59,7 @@ PPT_TASK_TTL_SECONDS=604800
 ```
 
 The seven bundled template resource packages are derived from the pinned
-Presenton source recorded in `vendor_notices/presenton/UPSTREAM.md`. AgentA3
+Presenton source recorded in `vendor_notices/presenton/UPSTREAM.md`. Zhihang
 owns the runtime implementation; upstream account, database, API, and editor
 code are not used.
 

@@ -1381,7 +1381,7 @@ class LeaderAgent:
         }
         text = provider.complete(
             system_prompt=(
-                "你负责把智慧校园系统接口返回的数据整理成给用户看的最终回答。"
+                "你负责把知航系统接口返回的数据整理成给用户看的最终回答。"
                 "你不是路由器，不要重新选择工具或智能体；不要输出 JSON 或内部字段名。"
                 "当 answer_policy 要求 card_companion 时，明细已在上方结果卡片展示，正文只做简短 companion 说明。"
                 "默认用清晰的 Markdown 层级组织答案；若 answer_policy 指定纯文本、固定格式或 card_companion，则严格遵守。"

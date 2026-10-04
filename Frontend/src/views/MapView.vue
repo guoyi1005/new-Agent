@@ -1067,7 +1067,7 @@ onUnmounted(() => {
       <Transition name="fade">
         <div v-if="indoorOpen" class="indoor-guide-mask" @click.self="closeIndoorGuide">
           <section class="indoor-guide-dialog">
-            <div class="indoor-breadcrumb">智慧校园 <b>›</b> {{ indoorCanteen?.name || '食堂' }} <b>›</b> <strong>{{ selectedIndoorFloor?.name || '楼层' }}</strong></div>
+            <div class="indoor-breadcrumb">知航 <b>›</b> {{ indoorCanteen?.name || '食堂' }} <b>›</b> <strong>{{ selectedIndoorFloor?.name || '楼层' }}</strong></div>
             <button class="indoor-guide-close" type="button" @click="closeIndoorGuide">×</button>
 
             <header class="indoor-toolbar">

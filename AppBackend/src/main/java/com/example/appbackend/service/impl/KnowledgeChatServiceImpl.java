@@ -128,7 +128,7 @@ public class KnowledgeChatServiceImpl implements KnowledgeChatService {
         chatRequest.setSessionId(request.getSessionId());
         chatRequest.setAgentName(StringUtils.hasText(request.getAgentName()) ? request.getAgentName().trim() : DEFAULT_AGENT_NAME);
         chatRequest.setLlmModel(StringUtils.hasText(request.getLlmModel()) ? request.getLlmModel().trim() : null);
-        chatRequest.setPrompt("你是智慧校园知识库问答助手。回答时优先依据提供的知识库片段；资料不足时明确说明，不要编造。");
+        chatRequest.setPrompt("你是知航知识库问答助手。回答时优先依据提供的知识库片段；资料不足时明确说明，不要编造。");
         chatRequest.setInput(buildAgentInput(request.getQuestion(), references));
 
         LlmChatResponse llmResponse = llmService.chat(chatRequest, authorization);

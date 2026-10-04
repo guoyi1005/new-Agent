@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title AgentA3 User Web Development Server
+title 知航 User Web Development Server
 cd /d "%~dp0"
 
 set "NODEJS_DIR=D:\DevTools\NodeJS"
@@ -11,7 +11,7 @@ if exist "%NODEJS_DIR%\npm.cmd" (
   set "NPM_CMD=npm.cmd"
 )
 
-echo Starting AgentA3 browser user application...
+echo Starting 知航 browser user application...
 call "%NPM_CMD%" run dev
 
 echo.

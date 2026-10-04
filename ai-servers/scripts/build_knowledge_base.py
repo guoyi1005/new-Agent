@@ -16,7 +16,7 @@ from app.rag.vector_stores import DEFAULT_VECTOR_STORE_BACKEND, build_vector_sto
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build Smart Campus RAG knowledge base.")
+    parser = argparse.ArgumentParser(description="Build Zhihang RAG knowledge base.")
     parser.add_argument("--source-dir", default=KNOWLEDGE_BASE_DIR)
     parser.add_argument("--backend", default=DEFAULT_VECTOR_STORE_BACKEND)
     parser.add_argument("--limit", type=int, default=0)

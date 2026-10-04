@@ -159,10 +159,10 @@ function NavBar({ mobileOpen, onClose }) {
         role="button"
         tabIndex={0}
       >
-        <div className="navbar-brand-mark">SC</div>
+        <div className="navbar-brand-mark">ZH</div>
         <div>
-          <strong>智慧校园</strong>
-          <span>Smart Campus Console</span>
+          <strong>知航</strong>
+          <span>Zhihang Console</span>
         </div>
       </div>
 

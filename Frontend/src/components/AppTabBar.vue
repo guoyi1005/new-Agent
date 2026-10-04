@@ -88,7 +88,7 @@ const isAiCareerRoute = computed(() => (
   >
     <div class="app-site-header__inner">
       <RouterLink class="app-site-header__brand" to="/home">
-        数智<span>诊断</span>港
+        知<span>航</span>
       </RouterLink>
 
       <nav class="app-site-header__nav" aria-label="主导航">
