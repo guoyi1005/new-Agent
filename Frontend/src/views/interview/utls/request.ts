@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { resolveApiBase } from '../../../config/androidApi'
 
 // 错误码翻译映射
 const errorCodeMap = {
@@ -40,16 +41,7 @@ function clearInterviewTokens() {
   localStorage.removeItem('nickname')
 }
 
-const rawApiOrigin = import.meta.env.VITE_API_BASE_URL
-const apiOrigin =
-  rawApiOrigin === undefined || rawApiOrigin === null
-    ? 'http://localhost:8080'
-    : String(rawApiOrigin).replace(/\/$/, '')
-const baseURL = !apiOrigin
-  ? '/api'
-  : apiOrigin.endsWith('/api')
-    ? apiOrigin
-    : `${apiOrigin}/api`
+const baseURL = resolveApiBase()
 
 const request = axios.create({
   baseURL,

@@ -1,18 +1,10 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AppTabBar from '../components/AppTabBar.vue'
-import { polishOrExpandResume } from '../api/aiGeneration'
 
 const route = useRoute()
-const activeAiCareerItem = ref('智能简历')
-const resumeDraft = ref('')
-const targetPosition = ref('')
-const targetJobDescription = ref('')
-const aiResult = ref('')
-const aiBusy = ref(false)
-const aiError = ref('')
 
 const sections = {
   career: {
@@ -69,153 +61,68 @@ const sections = {
     description: '集中使用直接服务求职过程的智能简历、模拟面试与面试报告能力。',
     items: [
       { code: '01', title: '智能简历', description: '查看、填写、上传和分析简历，使用现有简历辅助能力。', to: '/ai-tools/resume', tone: 'blue' },
-      { code: '02', title: 'AI润色', description: '粘贴简历内容，调用简历 AI 智能体优化表达与结构，并保留真实经历。', tone: 'pink' },
-      { code: '03', title: '岗位定制简历', description: '结合目标岗位与招聘描述，调用简历 AI 智能体生成针对性简历优化稿。', tone: 'green' },
-      { code: '04', title: 'AI模拟面试', description: '进入完整模拟面试流程，包含环境检测、实时提示与面试过程。', to: '/interview', tone: 'yellow' },
-      { code: '05', title: '面试报告', description: '查看已完成面试对应的评估结果、反馈与历史报告。', to: '/interview', tone: 'purple' },
+      { code: '02', title: 'AI模拟面试与报告', description: '在独立面试工作台开始模拟面试，并查看面试表现分析、历史记录与评估报告。', to: '/interview/index', tone: 'yellow' },
     ],
   },
 }
 
 const section = computed(() => sections[route.meta.section] || sections.aiCareer)
 const isAiCareer = computed(() => route.meta.section === 'aiCareer')
-const activeAiCareer = computed(() =>
-  sections.aiCareer.items.find((item) => item.title === activeAiCareerItem.value) || sections.aiCareer.items[0],
-)
-
-watch(isAiCareer, (value) => {
-  if (value) activeAiCareerItem.value = sections.aiCareer.items[0].title
-}, { immediate: true })
-
-watch(activeAiCareerItem, () => {
-  aiResult.value = ''
-  aiError.value = ''
-})
-
-const isResumeAiTool = computed(() => ['AI润色', '岗位定制简历'].includes(activeAiCareerItem.value))
-
-async function generateResumeContent() {
-  const source = resumeDraft.value.trim()
-  if (!source) {
-    aiError.value = '请先粘贴简历内容，再开始生成。'
-    return
-  }
-  if (activeAiCareerItem.value === '岗位定制简历' && !targetPosition.value.trim()) {
-    aiError.value = '请填写目标岗位名称。'
-    return
-  }
-
-  const isTailoring = activeAiCareerItem.value === '岗位定制简历'
-  const jobInput = isTailoring
-    ? `【目标岗位】\n${targetPosition.value.trim()}\n\n【岗位描述】\n${targetJobDescription.value.trim() || '未提供'}\n\n【原简历】\n${source}`
-    : source
-  if (jobInput.length > 4000) {
-    aiError.value = '岗位描述与简历合计不能超过 4000 字，请精简后重试。'
-    return
-  }
-  const prompt = isTailoring
-    ? '你是求职简历顾问。用户输入包含目标岗位、岗位描述和原简历。请依据真实材料输出针对岗位的简历优化稿，只调整表达、排序和重点，不得编造经历、技能、数字、公司、学历或成果；缺少信息时用【待补充】标注。先给完整可复制的简历文本，再简要说明主要调整点。'
-    : '你是求职简历编辑。请润色用户提供的简历，提升清晰度、专业度和可读性。必须严格保留事实，不得编造职责、技能、数字、公司、学历或成果；信息不足时用【待补充】标注。先输出完整可复制的润色稿，再简要列出调整点。'
-
-  aiBusy.value = true
-  aiError.value = ''
-  aiResult.value = ''
-  try {
-    const response = await polishOrExpandResume({
-      prompt,
-      input: jobInput,
-    })
-    const answer = String(response?.answer || '').trim()
-    if (!answer) throw new Error('AI 暂未返回可用内容，请稍后重试。')
-    aiResult.value = answer
-  } catch (error) {
-    aiError.value = error?.message || '请求失败，请检查登录状态及 AI 服务配置后重试。'
-  } finally {
-    aiBusy.value = false
-  }
-}
-
-async function copyAiResult() {
-  if (!aiResult.value) return
-  try {
-    await navigator.clipboard.writeText(aiResult.value)
-  } catch {
-    aiError.value = '复制失败，请手动选择并复制生成内容。'
-  }
-}
+const aiCareerItems = computed(() => sections.aiCareer.items)
 </script>
 
 <template>
   <div class="section-hub">
     <AppTabBar />
-    <main class="section-hub__main">
-      <header class="section-hub__hero">
-        <p>{{ section.eyebrow }}</p>
-        <h1>{{ section.title }}</h1>
-        <span>{{ section.description }}</span>
+    <main class="section-hub__main" :class="{ 'section-hub__main--ai-career': isAiCareer }">
+      <header class="section-hub__hero" :class="{ 'section-hub__hero--ai-career': isAiCareer }">
+        <div class="section-hub__hero-copy">
+          <p>{{ section.eyebrow }}</p>
+          <h1>{{ section.title }}</h1>
+          <span>{{ section.description }}</span>
+          <div v-if="isAiCareer" class="ai-career-hero__caption">从一份更清晰的简历，到一次更从容的面试。</div>
+        </div>
+        <div v-if="isAiCareer" class="ai-career-hero__art" aria-hidden="true">
+          <div class="ai-career-hero__orbit"></div>
+          <div class="ai-career-hero__paper"><span>CURRICULUM VITAE</span><i></i><i></i><i></i><b>→</b></div>
+          <span class="ai-career-hero__stamp">YOUR NEXT<br>CHAPTER</span>
+        </div>
       </header>
 
       <template v-if="isAiCareer">
-        <nav class="ai-career-nav" aria-label="AI 求职子版块">
-          <button
-            v-for="item in section.items"
-            :key="item.title"
-            type="button"
-            class="ai-career-nav__item"
-            :class="{ 'is-active': activeAiCareerItem === item.title, 'is-pending': item.pending }"
-            :aria-current="activeAiCareerItem === item.title ? 'page' : undefined"
-            @click="activeAiCareerItem = item.title"
+        <div class="ai-career-sections">
+          <section
+            v-for="item in aiCareerItems"
+            :key="item.code"
+            class="ai-career-content"
+            :class="`ai-career-content--${item.tone}`"
           >
-            <span>{{ item.code }}</span>
-            <strong>{{ item.title }}</strong>
-          </button>
-        </nav>
-
-        <section class="ai-career-content" :class="[`ai-career-content--${activeAiCareer.tone}`, { 'is-pending': activeAiCareer.pending }]">
-          <div class="ai-career-content__index">{{ activeAiCareer.code }} <span>/ AI CAREER</span></div>
-          <div class="ai-career-content__body">
-            <div>
-              <span class="ai-career-content__eyebrow">{{ activeAiCareer.pending ? '功能状态 · 待建设' : isResumeAiTool ? '可用 · 简历 AI 工具' : 'AI 求职工具' }}</span>
-              <h2>{{ activeAiCareer.title }}</h2>
-              <p>{{ activeAiCareer.description }}</p>
+            <div class="ai-career-content__index">{{ item.code }} <span>/ AI CAREER</span></div>
+            <div class="ai-career-content__body">
+              <div>
+                <span class="ai-career-content__eyebrow">{{ item.title === '智能简历' ? '简历工具' : '面试训练 · 表现分析 · 历史报告' }}</span>
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.description }}</p>
+              </div>
+              <RouterLink v-if="item.to" class="ai-career-content__action" :to="item.to">
+                {{ item.title === 'AI模拟面试与报告' ? '打开面试工作台' : `进入${item.title}` }} <span aria-hidden="true">→</span>
+              </RouterLink>
             </div>
-            <RouterLink v-if="activeAiCareer.to && !activeAiCareer.pending && !isResumeAiTool" class="ai-career-content__action" :to="activeAiCareer.to">
-              {{ activeAiCareer.title === '面试报告' ? '查看面试与报告' : `进入${activeAiCareer.title}` }} <span aria-hidden="true">→</span>
-            </RouterLink>
-            <span v-else-if="activeAiCareer.pending" class="ai-career-content__status">该功能尚未开放</span>
-          </div>
-          <form v-if="isResumeAiTool" class="ai-career-form" @submit.prevent="generateResumeContent">
-            <label v-if="activeAiCareer.title === '岗位定制简历'" class="ai-career-field">
-              <span>目标岗位</span>
-              <input v-model="targetPosition" maxlength="80" placeholder="例如：Python 开发工程师" />
-            </label>
-            <label v-if="activeAiCareer.title === '岗位定制简历'" class="ai-career-field">
-              <span>岗位描述 <small>选填，粘贴招聘要求可获得更有针对性的优化</small></span>
-              <textarea v-model="targetJobDescription" maxlength="4000" rows="3" placeholder="粘贴岗位职责与任职要求" />
-            </label>
-            <label class="ai-career-field">
-              <span>{{ activeAiCareer.title === '岗位定制简历' ? '现有简历内容' : '需要润色的简历内容' }}</span>
-              <textarea v-model="resumeDraft" maxlength="4000" rows="6" placeholder="粘贴真实的简历文本。系统只会优化表达，不会补造经历或成果。" />
-              <small class="ai-career-field__count">{{ resumeDraft.length }} / 4000</small>
-            </label>
-            <p v-if="aiError" class="ai-career-error" role="alert">{{ aiError }}</p>
-            <button class="ai-career-content__action" type="submit" :disabled="aiBusy">
-              {{ aiBusy ? '正在生成…' : activeAiCareer.title === '岗位定制简历' ? '生成岗位定制稿' : '开始 AI 润色' }}
-              <span aria-hidden="true">→</span>
-            </button>
-            <section v-if="aiResult" class="ai-career-result" aria-live="polite">
-              <header><strong>生成结果</strong><div><button type="button" @click="copyAiResult">复制</button><button type="button" @click="resumeDraft = aiResult">替换输入</button></div></header>
-              <pre>{{ aiResult }}</pre>
-            </section>
-          </form>
-          <div class="ai-career-content__footnote">
-            <span class="ai-career-content__dot" />
-            <span v-if="activeAiCareer.title === '面试报告'">报告基于已完成的面试记录生成；尚无记录时可先开始模拟面试。</span>
-            <span v-else-if="activeAiCareer.pending">此版块暂不提供模拟结果或示例数据。</span>
-            <span v-else-if="isResumeAiTool">提交内容后将请求后端简历 AI 智能体；只优化表达，不生成虚构经历。</span>
-            <span v-else>在本页面查看版块说明，进入对应流程后继续操作。</span>
-          </div>
-        </section>
+            <div v-if="item.title === '智能简历'" class="ai-career-art ai-career-art--resume" aria-hidden="true">
+              <div class="ai-career-art__sheet"><span>PROFILE / 01</span><i></i><i></i><i></i><i></i></div>
+              <div class="ai-career-art__seal">CV<span>↗</span></div>
+            </div>
+            <div v-if="item.title === 'AI模拟面试与报告'" class="ai-career-art ai-career-art--interview" aria-hidden="true">
+              <span class="ai-career-art__letter">Q</span><span class="ai-career-art__connector">—</span><span class="ai-career-art__letter">A</span>
+              <span class="ai-career-art__note">PRACTICE · REFLECT · GROW</span>
+            </div>
+            <div class="ai-career-content__footnote">
+              <span class="ai-career-content__dot" />
+              <span v-if="item.title === 'AI模拟面试与报告'">面试工作台包含开始模拟、表现分析、面试历史及评估报告；报告根据真实面试记录生成。</span>
+              <span v-else>使用现有简历工作台创建、编辑和管理简历。</span>
+            </div>
+          </section>
+        </div>
       </template>
 
       <section v-else class="section-hub__grid" :aria-label="`${section.title}功能结构`">
@@ -253,26 +160,30 @@ async function copyAiResult() {
   padding: 108px 0 72px;
 }
 
+.section-hub__main--ai-career {
+  width: min(1320px, calc(100% - 48px));
+}
+
 .section-hub__hero {
   max-width: 760px;
   margin-bottom: 38px;
 }
 
-.section-hub__hero > p {
+.section-hub__hero-copy > p {
   margin: 0 0 14px;
   color: #5c8cb4;
   font: 700 12px/1.2 Inter, sans-serif;
   letter-spacing: .16em;
 }
 
-.section-hub__hero h1 {
+.section-hub__hero-copy h1 {
   margin: 0 0 14px;
   font-size: clamp(38px, 5vw, 64px);
   line-height: 1;
   letter-spacing: -.055em;
 }
 
-.section-hub__hero > span {
+.section-hub__hero-copy > span {
   display: block;
   max-width: 660px;
   color: #69717b;
@@ -286,85 +197,81 @@ async function copyAiResult() {
   gap: 18px;
 }
 
-.ai-career-nav {
+.section-hub__hero--ai-career {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 18px;
-  padding: 8px;
-  border: 1px solid #e3ded6;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, .72);
-}
-
-.ai-career-nav__item {
-  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  color: #525963;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  transition: background .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
-}
-
-.ai-career-nav__item:hover { transform: translateY(-1px); background: #f5f0e7; }
-.ai-career-nav__item.is-active { border-color: #dfc777; color: #29251f; background: #f4e8b9; }
-.ai-career-nav__item.is-pending:not(.is-active) { color: #777d85; }
-.ai-career-nav__item > span { color: #81868c; font: 700 11px/1 Inter, sans-serif; letter-spacing: .06em; }
-.ai-career-nav__item strong { font-size: 14px; font-weight: 680; }
-
-.ai-career-content {
-  min-height: 300px;
-  padding: 30px 34px 22px;
+  max-width: none;
+  min-height: 348px;
+  padding: 52px 64px;
   overflow: hidden;
-  border: 1px solid #e3ded6;
-  border-radius: 26px;
-  background: #e7f0f7;
-  box-shadow: 0 12px 32px rgba(35, 38, 43, .06);
-  animation: ai-career-enter .22s ease both;
+  border: 1px solid #4b3a30;
+  border-radius: 30px;
+  background: #302b27;
+  box-shadow: 0 18px 42px rgba(65, 43, 28, .13);
 }
+.section-hub__hero--ai-career .section-hub__hero-copy { position: relative; z-index: 1; max-width: 600px; }
+.section-hub__hero--ai-career .section-hub__hero-copy > p { color: #e3a36b; }
+.section-hub__hero--ai-career h1 { margin-bottom: 22px; color: #fff7e9; font-size: clamp(60px, 7vw, 96px); letter-spacing: -.08em; }
+.section-hub__hero--ai-career .section-hub__hero-copy > span { max-width: 520px; color: #e7d9c5; font-size: 17px; }
+.ai-career-hero__caption { margin-top: 30px; padding-left: 14px; border-left: 2px solid #d99b6a; color: #e2b98e; font-size: 13px; letter-spacing: .03em; }
+.ai-career-hero__art { position: absolute; inset: 0 0 0 auto; width: 43%; pointer-events: none; }
+.ai-career-hero__orbit { position: absolute; top: -170px; right: -68px; width: 590px; height: 590px; border: 1px solid rgba(255, 240, 213, .24); border-radius: 50%; background: #a96747; }
+.ai-career-hero__orbit::after { position: absolute; inset: 55px; border: 1px solid rgba(255, 240, 213, .38); border-radius: 50%; content: ''; }
+.ai-career-hero__paper { position: absolute; top: 46px; right: 22%; display: grid; align-content: start; gap: 18px; width: 225px; height: 282px; padding: 32px 26px; border: 1px solid #e4d0aa; border-radius: 12px; background: #fff8e9; box-shadow: 18px 20px 0 rgba(49, 42, 37, .18); transform: rotate(10deg); }
+.ai-career-hero__paper span { color: #89553f; font: 800 10px/1.2 Inter, sans-serif; letter-spacing: .15em; }
+.ai-career-hero__paper i { height: 8px; border-radius: 8px; background: #decfba; }
+.ai-career-hero__paper i:nth-of-type(2) { width: 75%; }
+.ai-career-hero__paper i:nth-of-type(3) { width: 88%; }
+.ai-career-hero__paper b { position: absolute; right: 22px; bottom: 20px; color: #b45e3a; font-size: 42px; font-weight: 400; }
+.ai-career-hero__stamp { position: absolute; right: 70%; bottom: 28px; color: #fff0d6; font: 800 13px/1.45 Inter, sans-serif; letter-spacing: .18em; transform: rotate(-8deg); }
 
-.ai-career-content--green { background: #e7efe1; }
-.ai-career-content--yellow { background: #f4e8b9; }
-.ai-career-content--pink { background: #f1e3e2; }
-.ai-career-content--purple { background: #ece7f4; }
-.ai-career-content.is-pending { background: #f1efeb; }
-.ai-career-content__index { color: #69717b; font: 700 12px/1.2 Inter, sans-serif; letter-spacing: .1em; }
-.ai-career-content__index span { color: #8c9095; font-weight: 500; }
-.ai-career-content__body { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-top: 48px; }
-.ai-career-content__eyebrow { color: #65717a; font-size: 12px; font-weight: 650; }
-.ai-career-content h2 { margin: 10px 0 12px; color: #23262b; font-size: clamp(28px, 4vw, 42px); line-height: 1.12; letter-spacing: -.04em; }
-.ai-career-content p { max-width: 670px; margin: 0; color: #555e67; font-size: 15px; line-height: 1.8; }
-.ai-career-content__action { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 20px; padding: 13px 18px; border: 1px solid #23262b; border-radius: 12px; color: #fff; background: #23262b; text-decoration: none; font-size: 14px; font-weight: 650; transition: background .18s ease, transform .18s ease; }
-.ai-career-content__action:hover { transform: translateY(-2px); background: #41464d; }
+.ai-career-sections { display: grid; gap: 18px; }
+.ai-career-content {
+  --section-accent: #a36343;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  column-gap: clamp(26px, 5vw, 80px);
+  min-height: 290px;
+  padding: 34px clamp(28px, 4vw, 58px) 24px;
+  overflow: hidden;
+  border: 1px solid #e4d8c8;
+  border-radius: 26px;
+  background: #f5eee3;
+  box-shadow: 0 8px 22px rgba(79, 50, 29, .045);
+  animation: ai-career-enter .38s ease both;
+}
+.ai-career-content::before { position: absolute; top: -180px; right: -90px; width: 490px; height: 490px; border: 1px solid rgba(105, 77, 54, .12); border-radius: 50%; content: ''; pointer-events: none; }
+.ai-career-content--yellow { --section-accent: #a66438; background: #f4e5d1; }
+.ai-career-content__index { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--section-accent); font: 800 13px/1.2 Inter, sans-serif; letter-spacing: .12em; }
+.ai-career-content__index::after { width: 52px; height: 1px; margin-left: 10px; background: currentColor; content: ''; opacity: .55; }
+.ai-career-content__index span { color: #75685a; font-weight: 600; }
+.ai-career-content__body { position: relative; z-index: 1; display: flex; align-items: flex-start; flex-direction: column; justify-content: center; padding: 38px 0 28px; }
+.ai-career-content__eyebrow { color: var(--section-accent); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.ai-career-content h2 { margin: 14px 0 18px; color: #2d2925; font-size: clamp(31px, 3.2vw, 46px); line-height: 1.14; letter-spacing: -.055em; }
+.ai-career-content p { max-width: 420px; margin: 0; color: #5b5149; font-size: 15px; line-height: 1.8; }
+.ai-career-content__action { display: inline-flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 46px; margin-top: 28px; padding: 10px 18px; border: 1px solid #332d29; border-radius: 10px; color: #fff8ec; background: #332d29; text-decoration: none; font-size: 14px; font-weight: 700; transition: background .2s ease, transform .2s ease, box-shadow .2s ease; }
+.ai-career-content__action:hover { transform: translateY(-2px); background: #754a34; box-shadow: 0 8px 16px rgba(87, 54, 36, .14); }
+.ai-career-content__action:focus-visible { outline: 3px solid #c2754e; outline-offset: 3px; }
 .ai-career-content__action span { font-size: 18px; }
-.ai-career-content__status { flex: 0 0 auto; padding: 10px 14px; border: 1px solid #cfcbc4; border-radius: 999px; color: #777d85; background: rgba(255,255,255,.55); font-size: 13px; }
-.ai-career-content__footnote { display: flex; align-items: center; gap: 9px; margin-top: 34px; padding-top: 16px; border-top: 1px solid rgba(35,38,43,.12); color: #68717a; font-size: 12px; line-height: 1.6; }
-.ai-career-content__dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #5c8cb4; }
-.ai-career-content.is-pending .ai-career-content__dot { background: #99938a; }
-.ai-career-form { display: grid; gap: 14px; margin-top: 28px; }
-.ai-career-field { position: relative; display: grid; gap: 8px; color: #343a40; font-size: 13px; font-weight: 680; }
-.ai-career-field > span { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
-.ai-career-field small { color: #777d85; font-size: 11px; font-weight: 450; }
-.ai-career-field input, .ai-career-field textarea { width: 100%; padding: 12px 14px; border: 1px solid rgba(35,38,43,.22); border-radius: 12px; color: #23262b; background: rgba(255,255,255,.82); font: inherit; font-weight: 450; line-height: 1.65; outline: none; }
-.ai-career-field input:focus, .ai-career-field textarea:focus { border-color: #91743f; box-shadow: 0 0 0 3px rgba(145,116,63,.12); }
-.ai-career-field textarea { min-height: 110px; resize: vertical; }
-.ai-career-field__count { justify-self: end; margin-top: -6px; color: #777d85; font-size: 11px; font-weight: 450; }
-.ai-career-form > .ai-career-content__action { justify-self: start; cursor: pointer; }
-.ai-career-form > .ai-career-content__action:disabled { cursor: wait; opacity: .65; transform: none; }
-.ai-career-error { margin: 0; color: #9a3d34; font-size: 13px; line-height: 1.6; }
-.ai-career-result { overflow: hidden; border: 1px solid rgba(35,38,43,.16); border-radius: 14px; background: rgba(255,255,255,.82); }
-.ai-career-result > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; border-bottom: 1px solid rgba(35,38,43,.12); color: #343a40; font-size: 13px; }
-.ai-career-result > header > div { display: flex; gap: 8px; }
-.ai-career-result button { padding: 6px 9px; border: 1px solid #ded9d1; border-radius: 8px; color: #343a40; background: #fff; font-size: 12px; cursor: pointer; }
-.ai-career-result pre { max-height: 420px; overflow: auto; margin: 0; padding: 16px; color: #343a40; font: inherit; font-size: 13px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ai-career-content__footnote { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding-top: 15px; border-top: 1px solid rgba(75, 54, 38, .16); color: #655a50; font-size: 12px; line-height: 1.6; }
+.ai-career-content__dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--section-accent); }
+.ai-career-art { position: relative; z-index: 1; display: grid; place-items: center; align-self: center; height: 240px; overflow: hidden; border: 1px solid rgba(81, 59, 39, .15); border-radius: 20px; background: rgba(255, 250, 240, .55); }
+.ai-career-art--resume::before { position: absolute; bottom: -110px; left: -30px; width: 340px; height: 340px; border: 1px solid rgba(125, 79, 50, .16); border-radius: 50%; content: ''; }
+.ai-career-art__sheet { display: grid; align-content: start; gap: 14px; width: 170px; height: 210px; padding: 24px; border: 1px solid #d2bca1; border-radius: 6px; background: #fffcf4; box-shadow: 13px 12px 0 #e4d1b6; transform: rotate(-8deg) translateY(24px); }
+.ai-career-art__sheet span { color: #8b5239; font: 800 9px/1.2 Inter, sans-serif; letter-spacing: .12em; }
+.ai-career-art__sheet i { height: 6px; border-radius: 8px; background: #ded3c4; }
+.ai-career-art__sheet i:nth-of-type(3) { width: 76%; }
+.ai-career-art__sheet i:nth-of-type(4) { width: 88%; }
+.ai-career-art__seal { position: absolute; right: 19%; bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 9px; width: 78px; height: 78px; border-radius: 50%; color: #fff8ec; background: #a66343; font: 800 22px Inter, sans-serif; transform: rotate(12deg); }
+.ai-career-art__seal span { font-size: 18px; }
+.ai-career-art--interview { display: flex; gap: 15px; background: #fff4e3; }
+.ai-career-art__letter { color: #794b35; font: 800 clamp(90px, 10vw, 146px)/1 Inter, sans-serif; letter-spacing: -.1em; }
+.ai-career-art__connector { color: #c67d54; font-size: 58px; font-weight: 200; }
+.ai-career-art__note { position: absolute; right: 24px; bottom: 16px; color: #875b45; font: 800 10px Inter, sans-serif; letter-spacing: .16em; }
 
-@keyframes ai-career-enter { from { opacity: .65; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ai-career-enter { from { opacity: .7; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 
 .section-hub__card {
   position: relative;
@@ -449,13 +356,30 @@ async function copyAiResult() {
 
 @media (max-width: 760px) {
   .section-hub__main { width: min(100% - 24px, 1180px); padding-top: 92px; }
+  .section-hub__main--ai-career { width: calc(100% - 24px); }
   .section-hub__grid { grid-template-columns: 1fr; }
   .section-hub__card { grid-template-columns: 34px 1fr 38px; padding: 22px; }
-  .ai-career-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ai-career-nav__item { justify-content: flex-start; padding: 0 12px; }
-  .ai-career-content { min-height: 280px; padding: 24px 22px 18px; border-radius: 20px; }
-  .ai-career-content__body { align-items: flex-start; flex-direction: column; gap: 22px; margin-top: 36px; }
-  .ai-career-content__footnote { margin-top: 26px; }
-  .ai-career-form > .ai-career-content__action { width: 100%; justify-content: space-between; }
+  .section-hub__hero--ai-career { min-height: 300px; padding: 38px 30px; border-radius: 24px; }
+  .section-hub__hero--ai-career h1 { font-size: clamp(52px, 12vw, 74px); }
+  .ai-career-hero__art { right: -90px; width: 60%; opacity: .23; }
+  .ai-career-hero__caption { max-width: 280px; }
+  .ai-career-content { grid-template-columns: 1fr; min-height: 0; padding: 26px 24px 20px; border-radius: 20px; }
+  .ai-career-content__index, .ai-career-content__footnote { grid-column: 1; }
+  .ai-career-content__body { padding: 30px 0 24px; }
+  .ai-career-content h2 { font-size: clamp(29px, 8vw, 38px); }
+  .ai-career-art { height: 190px; margin-bottom: 24px; }
+  .ai-career-art__letter { font-size: 105px; }
+}
+
+@media (max-width: 440px) {
+  .section-hub__hero--ai-career { padding: 34px 24px; }
+  .section-hub__hero--ai-career .section-hub__hero-copy > span { font-size: 14px; }
+  .ai-career-hero__art { display: none; }
+  .ai-career-content { padding-inline: 19px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-career-content { animation: none; }
+  .ai-career-content__action { transition: none; }
 }
 </style>

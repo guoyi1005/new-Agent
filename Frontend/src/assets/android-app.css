@@ -1,0 +1,13 @@
+body.zh-android-app{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+body.zh-android-app #app{min-height:100dvh}
+body.zh-android-app #app:has(.android-nav){padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+body.zh-android-app .app-site-header{height:calc(56px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top)}
+body.zh-android-app .app-site-header__inner{width:calc(100% - 32px);gap:12px}
+body.zh-android-app .app-site-header__nav{display:none}
+body.zh-android-app .app-tab-nav__profile{margin-left:auto}
+body.zh-android-app .app-tab-nav__panel{max-height:calc(100dvh - 145px);overflow-y:auto}
+body.zh-android-app :is(button,a,input,textarea,select){touch-action:manipulation}
+body.zh-android-app :is(input,textarea,select){font-size:max(16px,1em)}
+body.zh-android-app .toggle-password{white-space:nowrap;flex-shrink:0}
+body.zh-android-app .android-connection + .android-nav{display:none}
+@media(max-width:680px){body.zh-android-app :is(.feature-container,.settings-page,.message-page,.mine-page){width:calc(100% - 28px)}}

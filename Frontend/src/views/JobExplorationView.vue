@@ -278,7 +278,8 @@ watch(targetJobTitle, loadJobFit)
     <main class="feature-container">
       <section class="jobexplore-hero">
         <div class="jobexplore-hero__copy">
-          <h1>岗位探索</h1>
+          <span class="jobexplore-eyebrow">CAREER EXPLORATION <i aria-hidden="true"></i> 职业方向指南</span>
+          <h1>岗位<span>探索</span></h1>
           <p>找到方向，看清岗位要求，也看见自己的下一步</p>
         </div>
 
@@ -308,9 +309,9 @@ watch(targetJobTitle, loadJobFit)
       </section>
 
       <section class="jobexplore-top">
-        <article class="feature-card jobexplore-panel jobexplore-panel--map">
+        <article class="jobexplore-panel jobexplore-panel--map">
           <div class="feature-section__head">
-            <h2>职业路径图谱</h2>
+            <div class="jobexplore-section-title"><span>01 / PATHWAYS</span><h2>职业路径图谱</h2></div>
             <span class="jobexplore-meta">{{ starmapNodes.length }} 个开放岗位</span>
           </div>
 
@@ -379,9 +380,9 @@ watch(targetJobTitle, loadJobFit)
           </div>
         </article>
 
-        <article class="feature-card jobexplore-panel jobexplore-panel--target">
+        <article class="jobexplore-panel jobexplore-panel--target">
           <div class="feature-section__head">
-            <h2>我的目标岗位</h2>
+            <div class="jobexplore-section-title"><span>02 / MY DIRECTION</span><h2>我的目标岗位</h2></div>
             <button class="jobexplore-edit" type="button" @click="openJobPicker">更换</button>
           </div>
 
@@ -435,17 +436,19 @@ watch(targetJobTitle, loadJobFit)
 
       <section class="jobexplore-section">
         <div class="feature-section__head">
-          <h2>适合你的岗位</h2>
+          <div class="jobexplore-section-title"><span>03 / FIT FOR YOU</span><h2>适合你的岗位</h2></div>
           <button class="feature-link" type="button" @click="router.push('/employment')">查看全部 →</button>
         </div>
 
         <div v-if="fitJobCards.length" class="jobexplore-fit">
           <RouterLink
-            v-for="job in fitJobCards"
+            v-for="(job, index) in fitJobCards"
             :key="job.id"
             class="jobexplore-fitcard"
+            :class="`jobexplore-fitcard--${index + 1}`"
             :to="`/career/job/${job.id}`"
           >
+            <span class="jobexplore-fitcard__index">0{{ index + 1 }} <i aria-hidden="true"></i> 推荐方向</span>
             <div class="jobexplore-fitcard__head">
               <h3>{{ job.title }}</h3>
               <span class="jobexplore-fitcard__rate">{{ job.matchRate }}%</span>
@@ -477,9 +480,9 @@ watch(targetJobTitle, loadJobFit)
       </section>
 
       <section class="jobexplore-section">
-        <article class="feature-card jobexplore-gap">
+        <article class="jobexplore-gap">
           <div class="feature-section__head">
-            <h2>你与目标岗位的差距</h2>
+            <div class="jobexplore-section-title"><span>04 / NEXT STEP</span><h2>你与目标岗位的差距</h2></div>
           </div>
 
           <div v-if="viewProfile.gaps.length" class="jobexplore-gaps">
@@ -566,36 +569,94 @@ watch(targetJobTitle, loadJobFit)
 /* ---------- 顶部：标题 + 搜索 + 热门 ---------- */
 
 .jobexplore-hero {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 14px 32px;
-  padding: 20px 28px;
-  border: 1px solid var(--hp-line);
-  border-radius: 22px;
-  background: var(--hp-pink-soft);
+  gap: 30px 48px;
+  min-height: 282px;
+  padding: 42px clamp(28px, 4vw, 58px);
+  border: 1px solid #4e3a30;
+  border-radius: 28px 28px 88px 28px;
+  background: #3d3029;
+  color: #fff5e7;
+  isolation: isolate;
+  overflow: hidden;
+  animation: jobexplore-fade .55s ease both;
+}
+
+.jobexplore-hero::before,
+.jobexplore-hero::after {
+  position: absolute;
+  z-index: -1;
+  border: 1px solid rgba(239, 204, 158, .16);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+
+.jobexplore-hero::before {
+  top: -350px;
+  right: -120px;
+  width: 700px;
+  height: 700px;
+}
+
+.jobexplore-hero::after {
+  top: -225px;
+  right: 16px;
+  width: 480px;
+  height: 480px;
+}
+
+.jobexplore-eyebrow,
+.jobexplore-section-title > span,
+.jobexplore-fitcard__index {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .15em;
+}
+
+.jobexplore-eyebrow {
+  color: #efd1a5;
+}
+
+.jobexplore-eyebrow i,
+.jobexplore-fitcard__index i {
+  width: 23px;
+  height: 1px;
+  background: currentColor;
 }
 
 .jobexplore-hero__tools {
   flex: 1 1 420px;
-  max-width: 640px;
+  max-width: 590px;
   min-width: 0;
+  position: relative;
 }
 
 .jobexplore-hero__copy h1 {
-  margin: 0;
-  color: var(--hp-ink);
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 19px 0 0;
+  color: #fff8ed;
+  font-size: clamp(42px, 5.2vw, 76px);
+  font-weight: 850;
+  line-height: 1.04;
+  letter-spacing: -.065em;
+}
+
+.jobexplore-hero__copy h1 span {
+  color: #e5a678;
 }
 
 .jobexplore-hero__copy p {
-  margin: 6px 0 0;
-  color: #6f6154;
-  font-size: 13px;
-  line-height: 1.6;
+  margin: 20px 0 0;
+  color: #e2d4c7;
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .jobexplore-search {
@@ -604,9 +665,16 @@ watch(targetJobTitle, loadJobFit)
   gap: 12px;
   width: 100%;
   padding: 5px 5px 5px 18px;
-  border: 1px solid var(--hp-line);
+  border: 1px solid rgba(255, 248, 237, .72);
   border-radius: 999px;
-  background: var(--hp-cream);
+  background: #fffaf3;
+  box-shadow: 0 14px 32px rgba(20, 12, 8, .14);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.jobexplore-search:focus-within {
+  border-color: #f0bd85;
+  box-shadow: 0 0 0 4px rgba(235, 178, 111, .17), 0 14px 32px rgba(20, 12, 8, .14);
 }
 
 .jobexplore-search__icon {
@@ -639,10 +707,18 @@ watch(targetJobTitle, loadJobFit)
   height: 42px;
   padding: 0 28px;
   border-radius: 999px;
-  background: var(--hp-ink);
-  color: var(--hp-cream);
+  border: 0;
+  background: #df9d6b;
+  color: #2e211a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.jobexplore-search button:hover {
+  background: #edb788;
+  transform: translateY(-1px);
 }
 
 .jobexplore-hot {
@@ -650,13 +726,13 @@ watch(targetJobTitle, loadJobFit)
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   font-size: 13px;
 }
 
 .jobexplore-hot__label {
   margin-right: 4px;
-  color: #9a8a80;
+  color: #d7ad85;
   font-size: 12px;
   letter-spacing: 0.04em;
 }
@@ -665,18 +741,18 @@ watch(targetJobTitle, loadJobFit)
   padding: 0;
   border: 0;
   background: transparent;
-  color: #6f6154;
+  color: #f4e7d9;
   font-size: 13px;
   cursor: pointer;
 }
 
 .jobexplore-hot button:hover {
-  color: var(--hp-ink);
+  color: #f2bd8a;
   text-decoration: underline;
 }
 
 .jobexplore-hot i {
-  color: #c0b0aa;
+  color: #b7967e;
   font-style: normal;
 }
 
@@ -684,7 +760,7 @@ watch(targetJobTitle, loadJobFit)
 
 .jobexplore-top {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1.14fr) minmax(0, .86fr);
   gap: var(--hp-gap);
   align-items: stretch;
   margin-top: var(--hp-gap);
@@ -693,9 +769,36 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 26px;
-  border-radius: var(--hp-r-lg);
+  gap: 18px;
+  min-width: 0;
+  padding: clamp(24px, 2.5vw, 36px);
+  border: 1px solid #e7d5c2;
+  border-radius: 28px;
+  box-shadow: 0 16px 36px rgba(86, 55, 35, .06);
+  animation: jobexplore-rise .6s ease both;
+}
+
+.jobexplore-panel--map {
+  background: #f5ebdc;
+  animation-delay: .08s;
+}
+
+.jobexplore-panel--target {
+  background: #f3dcd0;
+  border-color: #eac7b9;
+  animation-delay: .16s;
+}
+
+.jobexplore-section-title > span {
+  color: #a65f44;
+  font-size: 10px;
+}
+
+.jobexplore-section-title h2 {
+  margin: 7px 0 0;
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 780;
+  letter-spacing: -.04em;
 }
 
 .jobexplore-panel__foot {
@@ -713,8 +816,12 @@ watch(targetJobTitle, loadJobFit)
 }
 
 .jobexplore-meta {
-  color: var(--hp-muted);
+  padding: 7px 11px;
+  border: 1px solid #d8bfa6;
+  border-radius: 999px;
+  color: #795b49;
   font-size: 12.5px;
+  white-space: nowrap;
 }
 
 .jobexplore-note {
@@ -732,18 +839,28 @@ watch(targetJobTitle, loadJobFit)
 
 .jobexplore-starmap {
   position: relative;
-  min-height: 390px;
-  border: 1px solid rgba(23, 23, 23, 0.16);
-  border-radius: var(--hp-r-md);
-  background: #f7f2e8;
+  min-height: 430px;
+  border: 1px solid #e4cdb3;
+  border-radius: 18px 18px 62px 18px;
+  background: #fff7e9;
   overflow: hidden;
+}
+
+.jobexplore-starmap::before {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#b99576 0.8px, transparent 0.8px);
+  background-size: 20px 20px;
+  opacity: .19;
+  content: '';
+  pointer-events: none;
 }
 
 .jobexplore-starmap__orbit {
   position: absolute;
   top: 50%;
   left: 50%;
-  border: 1px dashed rgba(23, 23, 23, 0.14);
+  border: 1px dashed rgba(128, 86, 55, .28);
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
@@ -756,7 +873,7 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-starmap__orbit--two {
   width: min(88%, 430px);
   aspect-ratio: 1;
-  border-color: rgba(23, 23, 23, 0.08);
+  border-color: rgba(128, 86, 55, .16);
 }
 
 .jobexplore-starmap__edges {
@@ -767,9 +884,9 @@ watch(targetJobTitle, loadJobFit)
 }
 
 .jobexplore-starmap__edges line {
-  stroke: rgba(23, 23, 23, 0.22);
-  stroke-dasharray: 4 4;
-  stroke-width: 1;
+  stroke: rgba(143, 94, 61, .42);
+  stroke-dasharray: 5 6;
+  stroke-width: 1.3;
 }
 
 .jobexplore-starmap__state {
@@ -803,7 +920,7 @@ watch(targetJobTitle, loadJobFit)
   display: grid;
   width: var(--node-size, 68px);
   height: var(--node-size, 68px);
-  border: 1px solid var(--hp-line);
+  border: 1px solid #cba986;
   border-radius: 50%;
   background-color: var(--hp-blue);
   background-position: center;
@@ -812,7 +929,8 @@ watch(targetJobTitle, loadJobFit)
   color: var(--hp-ink);
   font-size: 12px;
   font-weight: 700;
-  transition: transform 0.18s ease;
+  box-shadow: 0 6px 18px rgba(87, 52, 31, .13);
+  transition: transform .25s ease, box-shadow .25s ease;
 }
 
 .jobexplore-node.is-yellow .jobexplore-node__dot {
@@ -832,8 +950,11 @@ watch(targetJobTitle, loadJobFit)
 }
 
 .jobexplore-node:hover .jobexplore-node__dot {
-  transform: translateY(-2px);
+  transform: translateY(-5px) scale(1.04);
+  box-shadow: 0 12px 24px rgba(87, 52, 31, .19);
 }
+
+.jobexplore-node:focus-visible { outline: 2px solid #a65f44; outline-offset: 9px; border-radius: 18px; }
 
 .jobexplore-node--center {
   top: 50%;
@@ -844,20 +965,22 @@ watch(targetJobTitle, loadJobFit)
 
 .jobexplore-node--center .jobexplore-node__dot {
   border-width: 2px;
-  background-color: var(--hp-yellow);
-  box-shadow: 0 0 0 6px rgba(251, 248, 242, 0.9);
+  border-color: #9c5d40;
+  background-color: #eeb87a;
+  box-shadow: 0 0 0 7px rgba(255, 248, 236, .94), 0 0 0 8px rgba(156, 93, 64, .2);
+  animation: jobexplore-breathe 4s ease-in-out infinite;
 }
 
 .jobexplore-node__label {
-  max-width: 92px;
-  color: var(--hp-muted);
+  max-width: 110px;
+  color: #604d3d;
   font-size: 12px;
   line-height: 1.4;
   text-align: center;
 }
 
 .jobexplore-node__label--strong {
-  color: var(--hp-ink);
+  color: #382b25;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -871,18 +994,19 @@ watch(targetJobTitle, loadJobFit)
   flex-direction: column;
   justify-content: center;
   gap: 12px;
-  padding: 20px;
-  border: 1px solid rgba(23, 23, 23, 0.16);
-  border-radius: var(--hp-r-md);
-  background: #f7f2e8;
+  padding: clamp(22px, 2.5vw, 34px);
+  border: 1px solid #e7c0ae;
+  border-radius: 20px 20px 54px 20px;
+  background: #fff6ed;
+  box-shadow: 0 10px 24px rgba(119, 68, 47, .07);
 }
 
 .jobexplore-job {
   margin: 0;
   color: var(--hp-ink);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: clamp(25px, 2.5vw, 34px);
+  font-weight: 800;
+  letter-spacing: -.045em;
 }
 
 .jobexplore-match {
@@ -896,8 +1020,8 @@ watch(targetJobTitle, loadJobFit)
 }
 
 .jobexplore-match strong {
-  color: var(--hp-ink);
-  font-size: 24px;
+  color: #a95e43;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1;
 }
@@ -909,9 +1033,10 @@ watch(targetJobTitle, loadJobFit)
 
 .jobexplore-meter {
   display: block;
-  height: 10px;
-  border: 1px solid rgba(23, 23, 23, 0.16);
+  height: 12px;
+  border: 1px solid #e4d2c2;
   border-radius: 999px;
+  background: #f4e9df;
   overflow: hidden;
 }
 
@@ -919,7 +1044,9 @@ watch(targetJobTitle, loadJobFit)
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--hp-yellow);
+  background: linear-gradient(90deg, #e5a875, #c86f50);
+  transform-origin: left;
+  animation: jobexplore-progress .9s cubic-bezier(.2,.75,.25,1) both;
 }
 
 /* 目标岗位卡里的三条轻量信息：岗位方向 / 核心技能 / 下一步 */
@@ -933,9 +1060,15 @@ watch(targetJobTitle, loadJobFit)
 
 .jobexplore-facts__row {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 14px;
   align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid #eadbd0;
+}
+
+.jobexplore-facts__row:last-child {
+  border-bottom: 0;
 }
 
 .jobexplore-facts dt {
@@ -953,7 +1086,16 @@ watch(targetJobTitle, loadJobFit)
 /* ---------- 适合你的岗位 ---------- */
 
 .jobexplore-section {
-  margin-top: 40px;
+  margin-top: 52px;
+  animation: jobexplore-rise .65s ease both;
+}
+
+.jobexplore-section:nth-of-type(3) { animation-delay: .12s; }
+.jobexplore-section:nth-of-type(4) { animation-delay: .2s; }
+
+.jobexplore-section > .feature-section__head,
+.jobexplore-gap > .feature-section__head {
+  margin-bottom: 20px;
 }
 
 .jobexplore-fit {
@@ -965,21 +1107,35 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-fitcard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 22px;
-  border: 1px solid transparent;
-  border-radius: var(--hp-r-lg);
-  background: var(--hp-surface-2);
+  gap: 14px;
+  min-height: 300px;
+  padding: 24px;
+  border: 1px solid #e6d8c8;
+  border-radius: 22px 22px 48px 22px;
+  background: #fffaf3;
   color: var(--hp-ink);
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  box-shadow: 0 10px 26px rgba(80, 56, 39, .045);
+  transition: background .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+  animation: jobexplore-fade .55s ease both;
+}
+
+.jobexplore-fitcard--1 { background: #f5e1d5; border-color: #e9c9b6; animation-delay: .05s; }
+.jobexplore-fitcard--2 { background: #e5eaf0; border-color: #d4dfe8; animation-delay: .13s; }
+.jobexplore-fitcard--3 { background: #e7eadf; border-color: #d5ddc9; animation-delay: .21s; }
+
+.jobexplore-fitcard__index {
+  color: #93634d;
+  font-size: 10px;
+  letter-spacing: .1em;
 }
 
 .jobexplore-fitcard:hover {
-  border-color: var(--hp-line);
-  background: var(--hp-cream);
-  transform: translateY(-2px);
+  border-color: #b9805e;
+  background: #fff5e8;
+  transform: translateY(-5px) rotate(-.35deg);
+  box-shadow: 0 18px 32px rgba(80, 56, 39, .11);
 }
 
 .jobexplore-fitcard__head {
@@ -992,14 +1148,15 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-fitcard__head h3 {
   margin: 0;
   color: var(--hp-ink);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -.025em;
 }
 
 .jobexplore-fitcard__rate {
   flex: 0 0 auto;
-  color: var(--hp-ink);
-  font-size: 20px;
+  color: #a95e43;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -1030,8 +1187,9 @@ watch(targetJobTitle, loadJobFit)
   gap: 8px;
   margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--hp-blue);
+  border: 1px solid rgba(111, 80, 60, .09);
+  border-radius: 14px;
+  background: rgba(255, 250, 243, .65);
   color: var(--hp-ink);
   font-size: 13px;
   font-weight: 600;
@@ -1060,7 +1218,7 @@ watch(targetJobTitle, loadJobFit)
   padding: 6px 13px;
   border-color: var(--hp-line);
   color: var(--hp-ink);
-  background: var(--hp-yellow);
+  background: rgba(255, 250, 243, .82);
   font-weight: 600;
   cursor: default;
 }
@@ -1073,8 +1231,11 @@ watch(targetJobTitle, loadJobFit)
 /* ---------- 能力差距 ---------- */
 
 .jobexplore-gap {
-  padding: 26px;
-  border-radius: var(--hp-r-lg);
+  padding: clamp(24px, 3vw, 40px);
+  border: 1px solid #e5d4c1;
+  border-radius: 28px;
+  background: #f3e7d8;
+  box-shadow: 0 14px 34px rgba(80, 56, 39, .055);
 }
 
 /* 双层进度条：浅灰是岗位要求，彩色是我的能力，露出来的灰段就是差距 */
@@ -1087,9 +1248,10 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-gaprow {
   display: grid;
   gap: 10px;
-  padding: 14px 16px;
-  border-radius: var(--hp-r-md);
-  background: var(--hp-surface-2);
+  padding: 16px 18px;
+  border: 1px solid #ebddd0;
+  border-radius: 16px;
+  background: rgba(255, 250, 243, .8);
 }
 
 .jobexplore-gaprow__head {
@@ -1113,7 +1275,10 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-gapbar {
   position: relative;
   display: block;
-  height: 12px;
+  height: 10px;
+  border-radius: 999px;
+  background: #eee3d7;
+  overflow: hidden;
 }
 
 .jobexplore-gapbar__require,
@@ -1126,11 +1291,12 @@ watch(targetJobTitle, loadJobFit)
 }
 
 .jobexplore-gapbar__require {
-  background: var(--hp-line);
+  background: #cdbba9;
 }
 
 .jobexplore-gapbar__mine {
-  background: var(--hp-blue);
+  background: #d48b62;
+  animation: jobexplore-progress .8s ease both;
 }
 
 .jobexplore-gap__foot {
@@ -1140,7 +1306,7 @@ watch(targetJobTitle, loadJobFit)
   gap: 18px;
   margin-top: 22px;
   padding-top: 20px;
-  border-top: 1px solid rgba(23, 23, 23, 0.16);
+  border-top: 1px solid #decbbb;
 }
 
 .jobexplore-gap__foot > div {
@@ -1189,7 +1355,9 @@ watch(targetJobTitle, loadJobFit)
   display: grid;
   padding: 24px;
   place-items: center;
-  background: rgba(23, 23, 23, 0.42);
+  background: rgba(40, 29, 22, .52);
+  backdrop-filter: blur(5px);
+  animation: jobexplore-fade .18s ease both;
 }
 
 .jobexplore-modal__card {
@@ -1197,10 +1365,12 @@ watch(targetJobTitle, loadJobFit)
   flex-direction: column;
   width: min(540px, 100%);
   max-height: min(640px, calc(100vh - 48px));
-  border: 1px solid var(--hp-line);
-  border-radius: var(--hp-r-lg);
-  background: var(--hp-cream);
+  border: 1px solid #e7d5c2;
+  border-radius: 24px;
+  background: #fffaf3;
   overflow: hidden;
+  box-shadow: 0 24px 70px rgba(32, 23, 17, .24);
+  animation: jobexplore-rise .25s ease both;
 }
 
 .jobexplore-modal__head {
@@ -1289,15 +1459,16 @@ watch(targetJobTitle, loadJobFit)
   padding: 14px 16px;
   border: 1px solid rgba(23, 23, 23, 0.16);
   border-radius: var(--hp-r-md);
-  background: #f7f2e8;
+  background: #fff6ea;
   color: var(--hp-ink);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.18s ease;
+  transition: border-color .2s ease, transform .2s ease, background .2s ease;
 }
 
 .jobexplore-modal__item:hover {
-  border-color: var(--hp-line);
+  border-color: #c18a68;
+  transform: translateX(3px);
 }
 
 .jobexplore-modal__item.is-on {
@@ -1328,18 +1499,19 @@ watch(targetJobTitle, loadJobFit)
 }
 
 @media (max-width: 980px) {
-  .jobexplore-top,
-  .jobexplore-fit {
+  .jobexplore-top {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .jobexplore-fit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
   .jobexplore-hero {
     align-items: stretch;
-    padding: 20px;
+    padding: 30px;
   }
 
   .jobexplore-hero__copy h1 {
-    font-size: 24px;
+    font-size: clamp(42px, 8vw, 60px);
   }
 
   .jobexplore-hero__tools {
@@ -1349,6 +1521,44 @@ watch(targetJobTitle, loadJobFit)
 }
 
 @media (max-width: 640px) {
+  .jobexplore-hero {
+    min-height: auto;
+    gap: 25px;
+    padding: 28px 22px 30px;
+    border-radius: 22px 22px 58px 22px;
+  }
+
+  .jobexplore-hero::before { right: -430px; }
+  .jobexplore-hero::after { right: -300px; }
+
+  .jobexplore-eyebrow { font-size: 9px; letter-spacing: .1em; }
+  .jobexplore-hero__copy h1 { margin-top: 15px; font-size: 46px; }
+  .jobexplore-hero__copy p { margin-top: 12px; font-size: 13px; }
+
+  .jobexplore-top { gap: 16px; margin-top: 16px; }
+  .jobexplore-panel { gap: 15px; padding: 21px 18px; border-radius: 22px; }
+  .jobexplore-section-title h2 { font-size: 22px; }
+  .jobexplore-section-title > span { font-size: 9px; }
+  .jobexplore-meta { padding: 6px 8px; font-size: 10px; }
+  .jobexplore-starmap { min-height: 355px; border-radius: 16px 16px 46px 16px; }
+  .jobexplore-node:not(.jobexplore-node--center) .jobexplore-node__dot { width: 50px; height: 50px; }
+  .jobexplore-node__label { max-width: 78px; font-size: 10px; }
+  .jobexplore-node--center { --node-size: 70px; }
+  .jobexplore-node__label--strong { max-width: 115px; font-size: 11px; }
+  .jobexplore-panel__foot { gap: 12px; }
+  .jobexplore-panel__foot .jobexplore-cta { width: 100%; justify-content: center; }
+
+  .jobexplore-section { margin-top: 36px; }
+  .jobexplore-fit { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .jobexplore-fitcard { min-height: 0; padding: 20px; border-radius: 19px 19px 38px 19px; }
+  .jobexplore-gap { padding: 22px 18px; border-radius: 22px; }
+  .jobexplore-gap__foot { gap: 14px; }
+  .jobexplore-gap__foot .jobexplore-cta { width: 100%; justify-content: center; }
+  .jobexplore-modal { padding: 16px; }
+  .jobexplore-modal__head { padding: 17px 18px; }
+  .jobexplore-modal__body { padding: 16px 18px 20px; }
+  .jobexplore-modal__item { align-items: flex-start; flex-direction: column; gap: 5px; }
+
   .jobexplore-search {
     flex-wrap: wrap;
     padding: 10px 12px;
@@ -1379,5 +1589,35 @@ watch(targetJobTitle, loadJobFit)
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+@keyframes jobexplore-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes jobexplore-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes jobexplore-breathe {
+  0%, 100% { box-shadow: 0 0 0 7px rgba(255, 248, 236, .94), 0 0 0 8px rgba(156, 93, 64, .2); }
+  50% { box-shadow: 0 0 0 11px rgba(255, 248, 236, .62), 0 0 0 12px rgba(156, 93, 64, .12); }
+}
+
+@keyframes jobexplore-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .jobexplore-hero,
+  .jobexplore-panel,
+  .jobexplore-section,
+  .jobexplore-fitcard,
+  .jobexplore-modal,
+  .jobexplore-modal__card,
+  .jobexplore-node--center .jobexplore-node__dot,
+  .jobexplore-meter i,
+  .jobexplore-gapbar__mine { animation: none !important; }
+  .jobexplore-search button,
+  .jobexplore-fitcard,
+  .jobexplore-node__dot,
+  .jobexplore-modal__item { transition: none !important; }
 }
 </style>

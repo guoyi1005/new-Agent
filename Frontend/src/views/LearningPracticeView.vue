@@ -820,6 +820,7 @@ onMounted(async () => {
       <header class="learning-hero">
         <div class="hero-main">
           <div class="hero-info">
+            <span class="learning-eyebrow">LEARNING STUDIO <i aria-hidden="true"></i> 学习成长空间</span>
             <h1>学习实践</h1>
             <p class="hero-line">
               <template v-if="activeGoalSummary">当前目标：<strong>{{ activeGoalSummary.title }}</strong> · 总进度 {{ activeGoalSummary.progress || 0 }}%</template>
@@ -1159,15 +1160,29 @@ onMounted(async () => {
 /* ---------- Hero：紧凑横向信息区 ---------- */
 
 .learning-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 24px 28px 0;
-  border: 1px solid #e4ebf2;
-  border-radius: var(--hp-r-lg);
-  background: var(--hp-tint);
-  box-shadow: var(--hp-shadow-sm);
+  padding: 30px 34px 0;
+  border: 1px solid #4e3a30;
+  border-radius: 28px 28px 76px 28px;
+  background: #3d3029;
+  box-shadow: 0 18px 42px rgba(68, 45, 30, .12);
   overflow: hidden;
   animation: lp-fade-up 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.learning-hero::after {
+  position: absolute;
+  top: -210px;
+  right: -85px;
+  width: 400px;
+  height: 400px;
+  border: 1px solid rgba(239, 204, 158, .2);
+  border-radius: 50%;
+  box-shadow: 0 0 0 38px rgba(239, 204, 158, .035), 0 0 0 78px rgba(239, 204, 158, .025);
+  content: '';
+  pointer-events: none;
 }
 
 .hero-main {
@@ -1186,22 +1201,34 @@ onMounted(async () => {
 
 .learning-hero h1 {
   margin: 0;
-  color: var(--hp-ink);
-  font-size: 25px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  color: #fff8ed;
+  font-size: clamp(34px, 4vw, 48px);
+  font-weight: 800;
+  letter-spacing: -.05em;
   line-height: 1.2;
 }
 
+.learning-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #e9bd92;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+}
+
+.learning-eyebrow i { width: 20px; height: 1px; background: currentColor; }
+
 .hero-line {
   margin: 0;
-  color: var(--hp-ink-2);
+  color: #e4d6c8;
   font-size: 13.5px;
   line-height: 1.6;
 }
 
 .hero-line strong {
-  color: var(--hp-ink);
+  color: #f1bd87;
   font-weight: 600;
 }
 
@@ -1230,7 +1257,20 @@ onMounted(async () => {
 
 .hero-actions .link {
   padding: 0 6px;
+  color: #f0d8c1;
   font-size: 14px;
+}
+
+.learning-hero .btn--primary {
+  border-color: #e4a273;
+  color: #35251d;
+  background: #e4a273;
+  box-shadow: 0 8px 18px rgba(15, 10, 7, .16);
+}
+
+.learning-hero .btn--primary:hover {
+  background: #f0b88c;
+  box-shadow: 0 12px 22px rgba(15, 10, 7, .2);
 }
 
 /* Hero 底部真实数据条 */
@@ -1238,8 +1278,10 @@ onMounted(async () => {
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0 -28px;
-  border-top: 1px solid #e2eaf1;
+  margin: 0 -34px;
+  border-top: 1px solid rgba(255, 245, 230, .18);
+  position: relative;
+  z-index: 1;
 }
 
 .hero-stat {
@@ -1247,7 +1289,7 @@ onMounted(async () => {
   align-content: center;
   gap: 2px;
   padding: 12px 24px;
-  border-right: 1px solid #e2eaf1;
+  border-right: 1px solid rgba(255, 245, 230, .16);
   transition: background 0.18s ease;
 }
 
@@ -1256,19 +1298,19 @@ onMounted(async () => {
 }
 
 .hero-stat:hover {
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, .07);
 }
 
 .hero-stat strong {
-  color: var(--hp-ink);
-  font-size: 20px;
+  color: #fff8ed;
+  font-size: 23px;
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .hero-stat span {
-  color: var(--hp-muted);
+  color: #d5c1ae;
   font-size: 12px;
 }
 
@@ -1312,7 +1354,7 @@ onMounted(async () => {
 
 .tabs button.active {
   color: #ffffff;
-  background: var(--hp-ink);
+  background: #9c5d40;
 }
 
 /* ---------- 按钮与链接 ---------- */
@@ -1360,7 +1402,7 @@ onMounted(async () => {
 .link {
   padding: 0;
   border: 0;
-  color: var(--hp-blue-ink);
+  color: #9b6046;
   background: transparent;
   font-size: 13px;
   font-weight: 600;
@@ -1397,6 +1439,11 @@ onMounted(async () => {
 .toolbar {
   padding: 26px 28px;
 }
+
+.focus-panel { background: #f3e1d6; border-color: #e8cec0; }
+.goal-panel { background: #e8eadf; border-color: #d7dfc9; }
+.section { background: #fffaf3; border-color: #e8ddcf; }
+.toolbar { background: #f4e9db; border-color: #e7d6c4; }
 
 .content > * {
   animation: lp-fade-up 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
@@ -1454,7 +1501,7 @@ onMounted(async () => {
 .head small {
   display: block;
   margin-bottom: 6px;
-  color: var(--hp-blue-ink);
+  color: #a65f44;
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1481,8 +1528,8 @@ onMounted(async () => {
   align-items: center;
   padding: 5px 11px;
   border-radius: 999px;
-  color: var(--hp-blue-ink);
-  background: var(--hp-blue);
+  color: #8b573e;
+  background: #f0dfcf;
   font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -1683,8 +1730,19 @@ onMounted(async () => {
   box-shadow: var(--hp-shadow-md);
 }
 
+.content-card:nth-child(3n + 1),
+.quick-grid button:nth-child(3n + 1) { background: #f7e8dc; border-color: #ecd5c3; }
+.content-card:nth-child(3n + 2),
+.quick-grid button:nth-child(3n + 2) { background: #e8edf0; border-color: #d8e1e5; }
+.content-card:nth-child(3n),
+.quick-grid button:nth-child(3n) { background: #e9ecdf; border-color: #dbe1ce; }
+
+.course-grid .course-card:nth-child(3n + 1) { background: #f5e1dc; border-color: #e9cdc6; }
+.course-grid .course-card:nth-child(3n + 2) { background: #e4ebf1; border-color: #d2dfe8; }
+.course-grid .course-card:nth-child(3n) { background: #e7ebdf; border-color: #d6dfcb; }
+
 .content-card small {
-  color: var(--hp-blue-ink);
+  color: #9b6046;
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1709,7 +1767,7 @@ onMounted(async () => {
 .content-card em,
 .quick-grid em {
   align-self: end;
-  color: var(--hp-blue-ink);
+  color: #9b6046;
   font-size: 12.5px;
   font-style: normal;
   font-weight: 600;

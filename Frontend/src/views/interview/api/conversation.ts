@@ -1,4 +1,5 @@
 import { api } from "./index";
+import { resolveApiBase as resolveConfiguredApiBase } from "../../../config/androidApi";
 
 export interface ConversationItem {
   id: number;
@@ -221,14 +222,7 @@ export const conversationApi = {
     api.post<ChatResponse>("/langgraph/chat", data),
 
   chatStreamUrl: (params: { text: string; job_role?: string }) => {
-    const raw = (import.meta as any).env?.VITE_API_BASE_URL ?? (import.meta as any).env?.VITE_API_BASE
-    let baseApi = "/api"
-    if (raw !== undefined && raw !== null) {
-      const normalized = String(raw).replace(/\/$/, "")
-      baseApi = !normalized ? "/api" : normalized.endsWith("/api") ? normalized : `${normalized}/api`
-    } else {
-      baseApi = "http://localhost:8080/api"
-    }
+    const baseApi = resolveConfiguredApiBase()
     const base = `${baseApi}/conversation/chat/stream`
     const qs = new URLSearchParams()
     qs.set("text", params.text)
@@ -237,12 +231,7 @@ export const conversationApi = {
   },
 
   uploadAudio: async (audio: Blob, fileName = "recording.mp3", voice_format?: string): Promise<AsrUploadResponse> => {
-    const baseApi = (() => {
-      const raw = (import.meta as any).env?.VITE_API_BASE_URL ?? (import.meta as any).env?.VITE_API_BASE
-      if (raw === undefined || raw === null) return "http://localhost:8080/api"
-      const normalized = String(raw).replace(/\/$/, "")
-      return !normalized ? "/api" : normalized.endsWith("/api") ? normalized : `${normalized}/api`
-    })()
+    const baseApi = resolveConfiguredApiBase()
     const form = new FormData()
     form.append("audio", audio, fileName)
     if (voice_format) form.append("voice_format", voice_format)

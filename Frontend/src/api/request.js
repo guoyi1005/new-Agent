@@ -1,13 +1,8 @@
 import { clearAuth, getToken } from '../utils/auth'
+import { resolveApiOrigin } from '../config/androidApi'
 
-const trimTrailingSlash = (value) => String(value || '').replace(/\/+$/, '')
-
-// Empty string means same-origin (Docker/nginx proxies /api). Unset falls back to local backend.
-const rawApiBase = import.meta.env.VITE_API_BASE_URL
-export const API_BASE_URL =
-  rawApiBase === undefined || rawApiBase === null
-    ? 'http://localhost:8080'
-    : trimTrailingSlash(rawApiBase)
+// Empty string means same-origin on the web; Android asks for a server before rendering pages.
+export const API_BASE_URL = resolveApiOrigin()
 
 const getErrorMessage = (data, fallback = '请求失败') => {
   if (typeof data === 'string') return data

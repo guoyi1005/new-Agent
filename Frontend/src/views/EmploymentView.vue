@@ -366,6 +366,7 @@ function runSearch() {
     <main class="feature-container employment">
       <section class="employment-hero">
         <div class="employment-hero__copy">
+          <span class="employment-eyebrow">CAREER OPPORTUNITIES <i aria-hidden="true"></i> 校园招聘与实习</span>
           <h1>实习就业</h1>
           <p>把你的能力，连接到真实的实习与就业机会</p>
         </div>
@@ -702,25 +703,63 @@ function runSearch() {
 /* ---------- 顶部：标题 + 搜索 + 页签 ---------- */
 
 .employment-hero {
+  position: relative;
   display: grid;
-  gap: 18px;
-  padding: 26px 30px;
-  border: 1px solid var(--hp-line);
-  border-radius: var(--hp-r-lg);
-  background: var(--hp-pink-soft);
+  gap: 22px;
+  padding: 34px clamp(24px, 4vw, 52px);
+  border: 1px solid #4e3a30;
+  border-radius: 28px 28px 76px 28px;
+  background: #3d3029;
+  color: #fff8ed;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: 0 18px 42px rgba(68, 45, 30, .12);
+  animation: employment-enter .55s ease both;
+}
+
+.employment-hero::after {
+  position: absolute;
+  z-index: -1;
+  top: -300px;
+  right: -60px;
+  width: 580px;
+  height: 580px;
+  border: 1px solid rgba(239, 204, 158, .2);
+  border-radius: 50%;
+  box-shadow: 0 0 0 45px rgba(239, 204, 158, .035), 0 0 0 90px rgba(239, 204, 158, .025);
+  content: '';
+  pointer-events: none;
+}
+
+.employment-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #e9bd92;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+}
+
+.employment-eyebrow i { width: 20px; height: 1px; background: currentColor; }
+
+@keyframes employment-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .employment-hero__copy h1 {
   margin: 0;
-  color: var(--hp-ink);
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  color: #fff8ed;
+  font-size: clamp(35px, 4vw, 50px);
+  font-weight: 800;
+  letter-spacing: -.05em;
 }
 
 .employment-hero__copy p {
   margin: 8px 0 0;
-  color: #6f6154;
+  color: #e4d6c8;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -730,9 +769,16 @@ function runSearch() {
   align-items: center;
   gap: 12px;
   padding: 5px 5px 5px 18px;
-  border: 1px solid var(--hp-line);
+  border: 1px solid rgba(255, 248, 237, .72);
   border-radius: 999px;
-  background: var(--hp-cream);
+  background: #fffaf3;
+  box-shadow: 0 14px 32px rgba(20, 12, 8, .14);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.employment-search:focus-within {
+  border-color: #f0bd85;
+  box-shadow: 0 0 0 4px rgba(235, 178, 111, .17), 0 14px 32px rgba(20, 12, 8, .14);
 }
 
 .employment-search__icon {
@@ -765,10 +811,18 @@ function runSearch() {
   height: 42px;
   padding: 0 28px;
   border-radius: 999px;
-  background: var(--hp-ink);
-  color: var(--hp-cream);
+  border: 0;
+  background: #df9d6b;
+  color: #30231b;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.employment-search button:hover {
+  background: #edb788;
+  transform: translateY(-1px);
 }
 
 .employment-tabs {
@@ -780,23 +834,25 @@ function runSearch() {
 .employment-tab {
   min-height: 32px;
   padding: 0 16px;
-  border: 1px solid var(--hp-line);
+  border: 1px solid rgba(255, 248, 237, .2);
   border-radius: 999px;
   background: transparent;
-  color: var(--hp-ink-2);
+  color: #f1e2d2;
   font-size: 13px;
   cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .employment-tab:hover {
-  border-color: var(--hp-line-strong);
+  border-color: rgba(255, 248, 237, .55);
+  background: rgba(255, 255, 255, .07);
 }
 
 .employment-tab.is-on {
-  border-color: var(--hp-ink);
-  background: var(--hp-ink);
-  color: var(--hp-cream);
+  border-color: #e4a273;
+  background: #e4a273;
+  color: #34251d;
+  box-shadow: 0 5px 14px rgba(13, 9, 7, .14);
 }
 
 /* ---------- 通用卡片 ---------- */
@@ -817,7 +873,20 @@ function runSearch() {
 }
 
 .employment-section {
-  margin-top: 40px;
+  margin-top: 52px;
+  animation: employment-enter .55s ease both;
+}
+
+.employment-section .feature-section__head {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e4d6c8;
+}
+
+.employment-section .feature-section__head h2 {
+  font-size: clamp(22px, 2vw, 29px);
+  font-weight: 780;
+  letter-spacing: -.04em;
 }
 
 /* ---------- 实习雷达 + 成都本地 ---------- */
@@ -838,8 +907,21 @@ function runSearch() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 26px;
-  border-radius: var(--hp-r-lg);
+  padding: 30px;
+  border-radius: 26px;
+  box-shadow: 0 14px 34px rgba(80, 56, 39, .07);
+}
+
+.employment-radar {
+  border-color: #ead2bd !important;
+  background: #f4e5d7 !important;
+  animation: employment-enter .55s ease .08s both;
+}
+
+.employment-local {
+  border-color: #e8d6b6 !important;
+  background: #f3ead7 !important;
+  animation: employment-enter .55s ease .16s both;
 }
 
 .employment-radar__desc {
@@ -889,7 +971,7 @@ function runSearch() {
   position: absolute;
   inset: 4%;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(92, 140, 180, 0.22), rgba(92, 140, 180, 0) 30%);
+  background: conic-gradient(from 0deg, rgba(190, 111, 74, .2), rgba(190, 111, 74, 0) 30%);
   animation: employment-radar-sweep 7s linear infinite;
 }
 
@@ -916,8 +998,8 @@ function runSearch() {
   z-index: 1;
   padding: 8px 14px;
   border-radius: 999px;
-  background: var(--hp-ink);
-  color: var(--hp-cream);
+  background: #8d5238;
+  color: #fff7ec;
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -942,7 +1024,7 @@ function runSearch() {
   height: 10px;
   border: 1px solid var(--hp-ink);
   border-radius: 50%;
-  background: var(--hp-yellow);
+  background: #e2a36d;
 }
 
 .employment-radar__dot em {
@@ -963,7 +1045,7 @@ function runSearch() {
   margin: 0;
   padding: 16px;
   border-radius: var(--hp-r-md);
-  background: var(--hp-surface-2);
+  background: rgba(255, 250, 243, .7);
 }
 
 .employment-radar__facts > div {
@@ -1103,7 +1185,13 @@ function runSearch() {
   display: flex;
   gap: 14px;
   padding: 18px;
+  border-radius: 18px 18px 38px 18px !important;
+  background: #f4e7d9 !important;
+  animation: employment-enter .45s ease both;
 }
+
+.employment-hot-list li:nth-child(3n + 2) { background: #e7ebee !important; }
+.employment-hot-list li:nth-child(3n) { background: #e9ebdf !important; }
 
 .employment-hot-list__rank {
   color: var(--hp-muted);
@@ -1150,6 +1238,10 @@ function runSearch() {
   gap: var(--hp-gap);
 }
 
+.employment-jobs__featured .employment-job--featured:nth-child(3n + 1) { background: #f4e3d8 !important; border-color: #e9d0c0 !important; }
+.employment-jobs__featured .employment-job--featured:nth-child(3n + 2) { background: #e6ebef !important; border-color: #d5e0e7 !important; }
+.employment-jobs__featured .employment-job--featured:nth-child(3n) { background: #e9ebdf !important; border-color: #d8dfce !important; }
+
 .employment-jobs__more {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
@@ -1161,7 +1253,14 @@ function runSearch() {
   flex-direction: column;
   gap: 12px;
   padding: 22px;
-  border-radius: var(--hp-r-lg);
+  border-radius: 22px 22px 48px 22px;
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+.employment-job--featured:hover,
+.employment-localjob:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 32px rgba(80, 56, 39, .1);
 }
 
 .employment-job__head {
@@ -1221,8 +1320,8 @@ function runSearch() {
 
 .employment-job__rate {
   flex: 0 0 auto;
-  color: var(--hp-ink);
-  font-size: 20px;
+  color: #a65f44;
+  font-size: 23px;
   font-weight: 700;
   line-height: 1;
 }
@@ -1262,7 +1361,7 @@ function runSearch() {
   gap: 6px;
   padding: 12px 14px;
   border-radius: var(--hp-r-sm);
-  background: var(--hp-yellow);
+  background: rgba(255, 250, 243, .72);
 }
 
 .employment-job__reason span {
@@ -1343,10 +1442,14 @@ function runSearch() {
   display: grid;
   gap: 6px;
   padding: 16px 18px;
-  border: 1px solid var(--hp-line);
-  border-radius: var(--hp-r-md);
-  background: var(--hp-surface-2);
+  border: 1px solid #e7d8c7;
+  border-radius: 17px 17px 34px 17px;
+  background: #fffaf3;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
 }
+
+.employment-localjob:nth-child(3n + 2) { background: #f5eee2; }
+.employment-localjob:nth-child(3n) { background: #edf0e7; }
 
 .employment-localjob__head {
   display: flex;
@@ -1403,6 +1506,22 @@ function runSearch() {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.55fr) minmax(0, 0.8fr);
   gap: 24px;
   align-items: center;
+  border-color: #d5e0e1 !important;
+  background: #e5eceb !important;
+}
+
+.employment-bottom .employment-campus { background: #f4ead5 !important; border-color: #e9dbbb !important; }
+.employment-bottom .employment-alumni { background: #f3e2d9 !important; border-color: #e9d0c3 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .employment-hero,
+  .employment-section,
+  .employment-radar,
+  .employment-local,
+  .employment-hot-list li { animation: none !important; }
+  .employment-search button,
+  .employment-job,
+  .employment-localjob { transition: none !important; }
 }
 
 .employment-aggregate__info {
@@ -1675,12 +1794,19 @@ function runSearch() {
 
 @media (max-width: 640px) {
   .employment-hero {
-    padding: 22px 20px;
+    gap: 18px;
+    padding: 25px 20px;
+    border-radius: 22px 22px 54px 22px;
   }
 
   .employment-hero__copy h1 {
-    font-size: 26px;
+    font-size: 38px;
   }
+
+  .employment-eyebrow { font-size: 9px; letter-spacing: .1em; }
+  .employment-section { margin-top: 38px; }
+  .employment-radar, .employment-local, .employment-campus, .employment-alumni, .employment-aggregate { padding: 22px 18px; border-radius: 22px; }
+  .employment-radar__visual { width: 210px; height: 210px; }
 
   .employment-aggregate__facts {
     grid-template-columns: minmax(0, 1fr);

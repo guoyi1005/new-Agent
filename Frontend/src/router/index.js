@@ -6,6 +6,7 @@ import CampusActivitiesView from '../views/CampusActivitiesView.vue'
 import HomeView from '../views/HomeView.vue'
 import GrowthCenterView from '../views/GrowthCenterView.vue'
 import LoginView from '../views/LoginView.vue'
+import AndroidConnectionView from '../views/AndroidConnectionView.vue'
 import MapView from '../views/MapView.vue'
 import MessageCenterView from '../views/MessageCenterView.vue'
 import PythonLearningView from '../views/PythonLearningView.vue'
@@ -83,6 +84,7 @@ import { getToken } from '../utils/auth'
 const routes = [
   { path: '/', redirect: '/home' },
   { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
+  { path: '/mobile-connection', name: 'mobile-connection', component: AndroidConnectionView, meta: { public: true } },
   { path: '/home', name: 'home', component: HomeView },
   { path: '/growth', name: 'growth-center', component: GrowthCenterView },
   { path: '/career', name: 'career-exploration', component: JobExplorationView },

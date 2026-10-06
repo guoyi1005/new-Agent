@@ -451,6 +451,7 @@ onMounted(loadFeed)
     <main class="community-shell">
       <header class="community-hero">
         <div class="hero-info">
+          <span class="community-eyebrow">CAMPUS VOICES <i aria-hidden="true"></i> 校友经验交流</span>
           <h1>校友社区</h1>
           <p class="hero-line">经验分享、就业案例与问答交流都在这里，向学长学姐提问，也把你的经历分享给学弟学妹。</p>
         </div>
@@ -709,4 +710,86 @@ onMounted(loadFeed)
 .detail-actions .report-action:hover{color:#b4544c;border-color:#b4544c}
 .report-dialog .report-target{margin:0;color:var(--hp-muted);font-size:12.5px}
 .report-dialog .report-done{margin:0;padding:12px 14px;border-left:3px solid var(--hp-blue-ink);border-radius:0 8px 8px 0;color:var(--hp-ink-2);background:var(--hp-tint);font-size:13px;line-height:1.7}
+
+/* 社区采用与岗位探索一致的暖色编辑式层级，保留原有发帖与互动结构。 */
+.community-page .community-hero {
+  position: relative;
+  min-height: 208px;
+  padding: 34px clamp(22px, 3.5vw, 46px);
+  border-color: #4e3a30;
+  border-radius: 28px 28px 72px 28px;
+  background: #3d3029;
+  box-shadow: 0 18px 42px rgba(68, 45, 30, .12);
+}
+.community-page .community-hero::after {
+  position: absolute;
+  top: -250px;
+  right: -36px;
+  width: 500px;
+  height: 500px;
+  border: 1px solid rgba(239,204,158,.2);
+  border-radius: 50%;
+  box-shadow: 0 0 0 42px rgba(239,204,158,.035),0 0 0 84px rgba(239,204,158,.025);
+  content: '';
+  pointer-events: none;
+}
+.community-page .hero-info,.community-page .hero-actions { position: relative; z-index: 1; }
+.community-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #e9bd92;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+}
+.community-eyebrow i { width: 20px; height: 1px; background: currentColor; }
+.community-page .community-hero h1 { margin-top: 8px; color: #fff8ed; font-size: clamp(34px,4vw,48px); font-weight: 800; letter-spacing: -.05em; }
+.community-page .community-hero .hero-line { max-width: 620px; color: #e4d6c8; font-size: 14px; line-height: 1.75; }
+.community-page .hero-actions { justify-content: flex-end; }
+.community-page .community-search { border-color: rgba(255,248,237,.72); background: #fffaf3; box-shadow: 0 14px 32px rgba(20,12,8,.14); }
+.community-page .community-search:focus-within { border-color: #f0bd85; box-shadow: 0 0 0 4px rgba(235,178,111,.17),0 14px 32px rgba(20,12,8,.14); }
+.community-page .community-search button { color: #8d5238; }
+.community-page .community-btn--primary { border-color: #e4a273; color: #34251d; background: #e4a273; box-shadow: 0 8px 18px rgba(15,10,7,.16); transition: background .2s ease,transform .2s ease; }
+.community-page .community-btn--primary:hover { border-color: #f0b88c; background: #f0b88c; transform: translateY(-2px); }
+.community-page .community-tabs { border-color: #e7d9c9; background: rgba(255,250,243,.96); }
+.community-page .community-tabs button.active { color: #fff8ed; background: #8d5238; }
+.community-page .sort-tabs button.active { color: #8d5238; border-bottom-color: #bd7756; }
+.community-page .post-card { border-color: #e7dccf; border-radius: 20px 20px 42px 20px; background: #fffaf3; transition: transform .22s ease,border-color .22s ease,box-shadow .22s ease; }
+.community-page .post-list .post-card:nth-child(4n+2) { background: #f5eee3; }
+.community-page .post-list .post-card:nth-child(4n+3) { background: #edf0e8; }
+.community-page .post-list .post-card:hover { transform: translateY(-3px); border-color: #d3b69b; box-shadow: 0 16px 30px rgba(68,45,30,.09); }
+.community-page .post-card h2 { letter-spacing: -.03em; }
+.community-page .avatar { color: #80543d; background: #ead5c4; }
+.community-page .soft-tag { color: #735343; background: #eaded1; }
+.community-page .soft-tag--gold { color: #81582f; background: #f1dfbb; }
+.community-page .topic-tag { color: #77543e; border-color: #e7d7c5; background: #fbf4ea; }
+.community-page .sidebar-panel { border-color: #e7dccf; border-radius: 20px 20px 40px 20px; background: #fffaf3; }
+.community-page .sidebar-panel:nth-of-type(2) { background: #f4eadc; }
+.community-page .hot-topics .rank { color: #ac684d; }
+.community-page .hot-topics button:hover,.community-page .my-content-links button:hover,.community-page .empty-links button:hover { color: #a85f44; }
+.community-page .board-card { border-color: #e7d8c7; border-radius: 16px 16px 32px 16px; background: #f7eadb; }
+.community-page .board-card:nth-child(4n+2) { background: #e8edf0; }
+.community-page .board-card:nth-child(4n+3) { background: #e9ecdf; }
+.community-page .board-card:nth-child(4n) { background: #f2e2df; }
+.community-page .board-card:hover { transform: translateY(-3px); border-color: #c79673; box-shadow: 0 10px 22px rgba(68,45,30,.08); }
+.community-page .board-card em,.community-page .search-result button { color: #a85f44; }
+.community-page .community-mask { background: rgba(40,29,22,.52); backdrop-filter: blur(5px); }
+.community-page .post-detail,.community-page .publish-dialog { border-color: #e7d5c2; border-radius: 24px; background: #fffaf3; box-shadow: 0 24px 70px rgba(32,23,17,.24); }
+.community-page .publish-hint { border-color: #bd7756; border-radius: 0 10px 10px 0; background: #f4e8dc; }
+
+@media (max-width: 760px) {
+  .community-page .community-shell { width: calc(100% - 28px); padding-top: 80px; }
+  .community-page .community-hero { min-height: 0; gap: 20px; padding: 25px 20px 27px; border-radius: 22px 22px 54px 22px; }
+  .community-page .community-hero::after { right: -330px; }
+  .community-page .community-hero h1 { font-size: 38px; }
+  .community-eyebrow { font-size: 9px; letter-spacing: .1em; }
+  .community-page .hero-actions { display: grid; }
+  .community-page .community-search { width: 100%; }
+  .community-page .community-tabs { top: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-page *,.community-page *::before,.community-page *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
 </style>

@@ -1,4 +1,5 @@
 // 轻量级 fetch 封装，避免依赖第三方库
+import { resolveApiBase as resolveConfiguredApiBase } from '../../../config/androidApi'
 export interface RequestOptions extends RequestInit {
   query?: Record<string, string | number | boolean | undefined | null>;
 }
@@ -43,11 +44,7 @@ export function redirectToLoginOnSessionExpired(status: number, payload?: any): 
 }
 
 export function resolveApiBase(): string {
-  const raw = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_BASE
-  if (raw === undefined || raw === null) return "http://localhost:8080/api"
-  const origin = String(raw).replace(/\/$/, "")
-  if (!origin) return "/api"
-  return origin.endsWith("/api") ? origin : `${origin}/api`
+  return resolveConfiguredApiBase()
 }
 
 const API_BASE = resolveApiBase()
