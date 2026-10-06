@@ -1468,7 +1468,7 @@ function runSearch() {
 }
 
 .employment-aggregate__arrow {
-  color: var(--hp-line-strong);
+  color: var(--hp-muted);
   font-size: 16px;
   font-weight: 700;
 }

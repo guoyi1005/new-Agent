@@ -20,6 +20,12 @@ server:
 spring:
   application:
     name: AppBackend
+  task:
+    scheduling:
+      # 岗位雷达一轮抓取要几分钟，单独给调度线程池留出余量，
+      # 避免和成都本地就业抓取互相排队
+      pool:
+        size: ${SPRING_TASK_SCHEDULING_POOL_SIZE:2}
   sql:
     init:
       mode: ${SPRING_SQL_INIT_MODE:never}
@@ -230,3 +236,29 @@ local-job:
     sc91:       # 四川公共招聘网（成都岗位）
       enabled: ${LOCAL_JOB_CRAWL_SC91_ENABLED:true}
       pages: ${LOCAL_JOB_CRAWL_SC91_PAGES:2}
+
+# 岗位雷达：每天定时抓取实习岗位（实习僧公开列表页与职位详情页），
+# 供就业页「为你推荐的岗位」与「热门岗位」使用。
+# 只抓公开展示的岗位字段，不登录、不带 Cookie、不研究字体混淆；
+# 数据量不足或想临时补数据时，可用管理端 POST /api/admin/jobs/radar/refresh 手动跑一次。
+market-job:
+  radar:
+    enabled: ${MARKET_JOB_RADAR_ENABLED:true}
+    cron: ${MARKET_JOB_RADAR_CRON:0 40 5 * * ?}
+    keywords: ${MARKET_JOB_RADAR_KEYWORDS:Python,Java,前端,数据分析,产品经理,大模型}
+    # 每个关键词最多取多少条详情；单轮总请求上限见 max-detail-requests
+    per-keyword-limit: ${MARKET_JOB_RADAR_PER_KEYWORD_LIMIT:12}
+    max-detail-requests: ${MARKET_JOB_RADAR_MAX_DETAIL_REQUESTS:120}
+    # 请求间隔：站点对连续请求敏感，默认 1.5-3 秒随机等待
+    min-delay-millis: ${MARKET_JOB_RADAR_MIN_DELAY_MILLIS:1500}
+    max-delay-millis: ${MARKET_JOB_RADAR_MAX_DELAY_MILLIS:3000}
+    # 只保留最近这个天数内刷新的岗位，与人工抓取时的口径一致
+    max-age-days: ${MARKET_JOB_RADAR_MAX_AGE_DAYS:90}
+    # 站点搜索是模糊匹配，会带出餐饮/行政等无关实习；开启后要求岗位命中方向关键词或两项以上技术栈
+    require-direction-match: ${MARKET_JOB_RADAR_REQUIRE_DIRECTION_MATCH:true}
+    timeout-seconds: ${MARKET_JOB_RADAR_TIMEOUT_SECONDS:25}
+    user-agent: ${MARKET_JOB_RADAR_USER_AGENT:CampusJobResearch/1.0}
+    # 最近一次抓取超过这个小时数就补抓一次（服务启动后也会检查）
+    stale-hours: ${MARKET_JOB_RADAR_STALE_HOURS:24}
+    bootstrap-delay-ms: ${MARKET_JOB_RADAR_BOOTSTRAP_DELAY_MS:120000}
+    bootstrap-interval-ms: ${MARKET_JOB_RADAR_BOOTSTRAP_INTERVAL_MS:3600000}

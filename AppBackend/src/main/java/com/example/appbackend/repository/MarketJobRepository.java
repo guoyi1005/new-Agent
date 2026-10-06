@@ -11,4 +11,6 @@ public interface MarketJobRepository extends JpaRepository<MarketJob, Long> {
     List<MarketJob> findByStatusAndJobTypeIgnoreCaseOrderByPublishTimeDesc(String status, String jobType);
     List<MarketJob> findByStatusOrderByPublishTimeDesc(String status);
     List<MarketJob> findByStatusAndCityIgnoreCaseOrderByPublishTimeDesc(String status, String city);
+    java.util.Optional<MarketJob> findFirstByOrderByCrawlTimeDesc();
+    long countByStatusAndJobTypeIgnoreCase(String status, String jobType);
 }

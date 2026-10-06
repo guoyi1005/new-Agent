@@ -2,6 +2,24 @@
 
 Small, manual, low-rate collection of public internship listings. The first release implements one source: the publicly accessible HTML list/detail pages on Shixiseng (`s.shixiseng.com` / `www.shixiseng.com`). HTTP is used first; this source is server-rendered, so Playwright is not launched. There is no BOSS source, login, cookie, proxy, hidden API, CAPTCHA handling, or homepage-triggered crawl.
 
+## Status: the backend now crawls daily by itself
+
+The same source is implemented in the backend as `ShixisengJobRadarCrawler` plus
+`MarketJobRadarScheduler` (`market-job.radar.*` in `AppBackend/src/main/resources/application.yml`),
+so 「为你推荐的岗位」 and 「热门岗位」 no longer depend on someone running this script by hand.
+The scheduled crawler keeps these rules: public list/detail pages only, 1.5-3s between
+requests, a bounded number of requests per run, the same quality score gate, and it stops
+the whole run on 403/429 or a verification page without trying to bypass anything.
+
+This Python tool stays useful for two things: a manual re-crawl when the backend source is
+blocked, and a review-then-import path where a human reads `output/jobs.json` before pushing it.
+Admins can also trigger the backend crawler without any Python environment:
+
+```text
+GET  /api/admin/jobs/radar/status
+POST /api/admin/jobs/radar/refresh            # 可用 ?keywords=Python&limit=3 做小范围验证
+```
+
 ## Setup and run
 
 ```powershell

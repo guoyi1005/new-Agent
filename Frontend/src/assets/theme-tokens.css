@@ -1,34 +1,37 @@
 /**
  * 当前全站视觉变量。
- * 数值与首页一致，所有非首页功能页面只从这里读取主题值。
+ * 数值与首页一致（首页改版后是暖色木材/奶油/赤陶配色），
+ * 所有非首页功能页面只从这里读取主题值，因此改这里就能让全站跟随首页。
  */
 :root {
   color-scheme: light;
-  --hp-bg: #f7f5f1;
-  --hp-cream: #ffffff;
-  --hp-surface: #ffffff;
-  --hp-surface-2: #fbf9f5;
-  --hp-ink: #23262b;
-  --hp-ink-2: #5a6069;
-  --hp-muted: #8a9099;
-  --hp-line: #eae4da;
-  --hp-line-strong: #ded7cb;
-  --hp-pink: #f2d9de;
-  --hp-pink-soft: #f8ecee;
-  --hp-pink-ink: #b4707f;
-  --hp-yellow: #f7e9c6;
-  --hp-yellow-ink: #a8822b;
-  --hp-green: #dee9d8;
-  --hp-green-ink: #6f9463;
-  --hp-blue: #dce8f3;
-  --hp-blue-ink: #5c8cb4;
-  --hp-tint: #eff4f9;
-  --hp-track: #efeae1;
+  --hp-bg: #f7f1e6;
+  --hp-cream: #fff6e6;
+  --hp-surface: #fffaf3;
+  --hp-surface-2: #f8eeda;
+  --hp-ink: #2a2825;
+  --hp-ink-2: #5c5348;
+  /* 比首页的 #82796f 稍深一档：首页那段灰字只用在少量大字号说明里，
+     这里要保证各功能页大量 11-12px 次要文字在奶油底上仍然清楚 */
+  --hp-muted: #6f6558;
+  --hp-line: #e6dccb;
+  --hp-line-strong: #d0ae78;
+  --hp-pink: #f0dcc6;
+  --hp-pink-soft: #f9efdc;
+  --hp-pink-ink: #94492f;
+  --hp-yellow: #efd3a0;
+  --hp-yellow-ink: #8a5a2b;
+  --hp-green: #dfe3cd;
+  --hp-green-ink: #5f885c;
+  --hp-blue: #ecdcc4;
+  --hp-blue-ink: #a4602f;
+  --hp-tint: #fff6e6;
+  --hp-track: #e8dcc9;
   --hp-r-lg: 24px;
   --hp-r-md: 20px;
   --hp-r-sm: 12px;
   --hp-gap: 24px;
-  --hp-shadow-sm: 0 1px 2px rgba(35, 38, 43, 0.04), 0 4px 12px rgba(35, 38, 43, 0.04);
-  --hp-shadow-md: 0 2px 4px rgba(35, 38, 43, 0.04), 0 12px 28px rgba(35, 38, 43, 0.06);
-  --hp-shadow-lg: 0 4px 8px rgba(35, 38, 43, 0.04), 0 20px 44px rgba(35, 38, 43, 0.08);
+  --hp-shadow-sm: 0 1px 2px rgba(70, 42, 28, 0.05), 0 4px 12px rgba(70, 42, 28, 0.05);
+  --hp-shadow-md: 0 2px 4px rgba(70, 42, 28, 0.05), 0 12px 28px rgba(70, 42, 28, 0.07);
+  --hp-shadow-lg: 0 4px 8px rgba(70, 42, 28, 0.05), 0 20px 44px rgba(70, 42, 28, 0.09);
 }
