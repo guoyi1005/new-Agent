@@ -485,15 +485,22 @@ watch(targetJobTitle, loadJobFit)
             <div class="jobexplore-section-title"><span>04 / NEXT STEP</span><h2>你与目标岗位的差距</h2></div>
           </div>
 
+          <p v-if="viewProfile.gaps.length" class="jobexplore-gapbar__legend">
+            <i aria-hidden="true"></i>我的能力
+            <span aria-hidden="true"></span>岗位要求（满分 100）
+          </p>
           <div v-if="viewProfile.gaps.length" class="jobexplore-gaps">
             <div v-for="gap in viewProfile.gaps" :key="gap.name" class="jobexplore-gaprow">
               <div class="jobexplore-gaprow__head">
                 <strong>{{ gap.name }}</strong>
-                <span>我的 {{ gap.current }} · 岗位 {{ gap.required }}</span>
+                <span>
+                  我的 {{ gap.current }} · 岗位 {{ gap.required }}
+                  <template v-if="gap.required > gap.current"> · 差 {{ gap.required - gap.current }}</template>
+                </span>
               </div>
               <span class="jobexplore-gapbar" aria-hidden="true">
-                <i class="jobexplore-gapbar__require" :style="{ width: `${barWidth(gap.required)}%` }"></i>
                 <i class="jobexplore-gapbar__mine" :style="{ width: `${barWidth(gap.current)}%` }"></i>
+                <i class="jobexplore-gapbar__target" :style="{ left: `${barWidth(gap.required)}%` }"></i>
               </span>
             </div>
           </div>
@@ -1275,13 +1282,12 @@ watch(targetJobTitle, loadJobFit)
 .jobexplore-gapbar {
   position: relative;
   display: block;
-  height: 10px;
+  height: 12px;
   border-radius: 999px;
-  background: #eee3d7;
+  background: #f2ebe1;
   overflow: hidden;
 }
 
-.jobexplore-gapbar__require,
 .jobexplore-gapbar__mine {
   position: absolute;
   top: 0;
@@ -1290,13 +1296,45 @@ watch(targetJobTitle, loadJobFit)
   border-radius: 999px;
 }
 
-.jobexplore-gapbar__require {
-  background: #cdbba9;
-}
-
 .jobexplore-gapbar__mine {
   background: #d48b62;
   animation: jobexplore-progress .8s ease both;
+}
+
+/* 竖线 = 岗位要求分数线，彩色 = 我的能力；两者之间空出来的部分就是差距 */
+.jobexplore-gapbar__target {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: #5f4b3a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .65);
+}
+
+.jobexplore-gapbar__legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--hp-muted);
+  font-size: 11px;
+}
+
+.jobexplore-gapbar__legend i {
+  width: 16px;
+  height: 8px;
+  border-radius: 999px;
+  background: #d48b62;
+}
+
+.jobexplore-gapbar__legend span {
+  width: 2px;
+  height: 13px;
+  margin-left: 6px;
+  border-radius: 2px;
+  background: #5f4b3a;
 }
 
 .jobexplore-gap__foot {

@@ -200,7 +200,9 @@ async function loadLocalSummary() {
 
 async function loadLocalJobs() {
   try {
-    const result = await listLocalJobs({ page: 1, size: 60 })
+    // direction 让后端只返回与目标岗位相关的岗位，并按相关度排序；
+    // 站点上大量是服务员/普工这类岗位，不过滤的话最新几条会把技术岗挤掉
+    const result = await listLocalJobs({ page: 1, size: 60, direction: targetJobTitle.value })
     localJobs.value = Array.isArray(result?.data) ? result.data : []
   } catch {
     localJobs.value = []
@@ -569,7 +571,7 @@ function runSearch() {
           </button>
         </div>
         <p class="employment-jobs__hint">
-          每天自动抓取 · 数据来自 {{ localJobPlatforms.join(' / ') }} · 点「查看岗位」打开招聘网站上的原始页面
+          已按目标岗位「{{ targetJobTitle }}」筛选 · 每天自动抓取 · 数据来自 {{ localJobPlatforms.join(' / ') }} · 点「查看岗位」打开招聘网站上的原始页面
         </p>
 
         <div class="employment-locals">

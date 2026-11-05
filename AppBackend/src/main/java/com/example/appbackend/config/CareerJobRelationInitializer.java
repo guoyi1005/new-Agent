@@ -11,10 +11,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 岗位关系初始数据。
@@ -43,26 +43,41 @@ public class CareerJobRelationInitializer implements ApplicationRunner {
         if (repository.count() > 0) {
             return;
         }
-        Set<String> jobIds = nebulaJobIds();
-        List<CareerJobRelation> seeds = List.of(
-                relation("java", "ai", CareerJobRelation.TYPE_TRANSFER, "横向转岗",
-                        "后端开发能力可以向 AI 应用方向复用，重点补大模型调用、检索与向量库相关技能。",
-                        82, "DASHED", 1),
-                relation("testing", "java", CareerJobRelation.TYPE_TRANSFER, "横向转岗",
-                        "测试岗位熟悉业务流程与接口，转后端开发需要补强编程与框架能力。",
-                        68, "DASHED", 2),
-                relation("frontend", "java", CareerJobRelation.TYPE_RELATED, "相近岗位",
-                        "前端与后端属于同一条研发链路，工程化与接口协作经验可以复用。",
-                        61, "THIN", 3)
-        );
-        List<CareerJobRelation> valid = seeds.stream()
-                .filter((item) -> jobIds.contains(item.getSourceJobId()) && jobIds.contains(item.getTargetJobId()))
-                .toList();
-        if (valid.isEmpty()) {
+        // 按岗位名称解析星图 id：管理端换过节点 id 也不会失效
+        Map<String, String> jobIdsByName = nebulaJobIdsByName();
+        List<CareerJobRelation> seeds = new ArrayList<>();
+        addSeed(seeds, jobIdsByName, "Java 开发工程师", "AI 应用工程师",
+                CareerJobRelation.TYPE_BRANCH, "发展分支",
+                "后端开发能力可以向 AI 应用方向延伸，重点补大模型调用、检索与向量库相关技能。",
+                82, "GLOW", 1);
+        addSeed(seeds, jobIdsByName, "数据分析师", "AI 应用工程师",
+                CareerJobRelation.TYPE_BRANCH, "发展分支",
+                "数据分析能力可以向 AI 应用延伸，补上大模型调用、RAG 与向量数据库后，可以承担数据驱动的 AI 应用开发。",
+                74, "GLOW", 2);
+        addSeed(seeds, jobIdsByName, "前端开发工程师", "Java 开发工程师",
+                CareerJobRelation.TYPE_TRANSFER, "横向转岗",
+                "前端转后端需要补服务端语言、数据库与接口设计能力，前端工程与联调经验可以复用。",
+                72, "DASHED", 3);
+        addSeed(seeds, jobIdsByName, "软件测试工程师", "Java 开发工程师",
+                CareerJobRelation.TYPE_TRANSFER, "横向转岗",
+                "测试岗位熟悉业务流程与接口，转后端开发需要补强编程与框架能力。",
+                68, "DASHED", 4);
+        if (seeds.isEmpty()) {
             return;
         }
-        repository.saveAll(valid);
-        log.info("已写入岗位关系初始数据 {} 条", valid.size());
+        repository.saveAll(seeds);
+        log.info("已写入岗位关系初始数据 {} 条", seeds.size());
+    }
+
+    private void addSeed(List<CareerJobRelation> seeds, Map<String, String> jobIdsByName,
+                         String sourceName, String targetName, String type, String name,
+                         String description, int recommendation, String lineType, int sortOrder) {
+        String source = jobIdsByName.get(sourceName);
+        String target = jobIdsByName.get(targetName);
+        if (source == null || target == null) {
+            return;
+        }
+        seeds.add(relation(source, target, type, name, description, recommendation, lineType, sortOrder));
     }
 
     private CareerJobRelation relation(String source, String target, String type, String name,
@@ -80,14 +95,18 @@ public class CareerJobRelationInitializer implements ApplicationRunner {
         return entity;
     }
 
-    private Set<String> nebulaJobIds() {
-        Set<String> ids = new HashSet<>();
+    private Map<String, String> nebulaJobIdsByName() {
+        Map<String, String> ids = new HashMap<>();
         Map<String, Object> map = nebulaService.getMap();
         Object raw = map == null ? null : map.get("careers");
         if (raw instanceof List<?> list) {
             for (Object item : list) {
-                if (item instanceof Map<?, ?> row && row.get("id") != null) {
-                    ids.add(String.valueOf(row.get("id")).trim());
+                if (item instanceof Map<?, ?> row && row.get("id") != null && row.get("name") != null) {
+                    String id = String.valueOf(row.get("id")).trim();
+                    String name = String.valueOf(row.get("name")).trim();
+                    if (!id.isEmpty() && !name.isEmpty()) {
+                        ids.putIfAbsent(name, id);
+                    }
                 }
             }
         }

@@ -42,8 +42,10 @@ public class AppLocalJobController {
     public Result<List<LocalJobPostingDTO>> list(
             @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
-            @RequestParam(name = "keyword", required = false) String keyword) {
-        return Result.success(localJobQueryService.list(page, size, keyword));
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "direction", required = false) String direction) {
+        // direction 传目标岗位名（如「Python 开发工程师」）：只返回相关岗位并按相关度排序
+        return Result.success(localJobQueryService.list(page, size, keyword, direction));
     }
 
     /** 手动触发一次抓取，用于数据为空或临时想刷新时。 */

@@ -55,7 +55,7 @@ const LINE_LEGENDS = [
   { id: 'SOLID', label: '职业进阶', sample: 'solid' },
   { id: 'DASHED', label: '横向转岗', sample: 'dashed' },
   { id: 'THIN', label: '相近岗位', sample: 'thin' },
-  { id: 'GLOW', label: '系统推荐方向', sample: 'glow' },
+  { id: 'GLOW', label: '发展分支', sample: 'glow' },
 ]
 
 const isLearningGalaxy = computed(() => Boolean(route.params.careerId))
@@ -89,6 +89,30 @@ const enabledSkillsForCareer = (careerId) => skills.value.filter(
 const pathJobs = computed(() => pathOverview.value.jobs || [])
 const pathJobMap = computed(() => new Map(pathJobs.value.map((job) => [job.jobId, job])))
 const pathRelations = computed(() => pathOverview.value.relations || [])
+// 只展示当前真的配置了的关系类型，避免点「职业进阶」这类空分类什么也看不到
+const relationTypeOptions = computed(() => {
+  const counts = new Map()
+  pathRelations.value.forEach((relation) => {
+    const key = relation.relationType || 'RELATED'
+    counts.set(key, (counts.get(key) || 0) + 1)
+  })
+  return RELATION_TYPES
+    .filter((type) => type.id === 'ALL' || counts.get(type.id))
+    .map((type) => ({
+      ...type,
+      count: type.id === 'ALL' ? pathRelations.value.length : (counts.get(type.id) || 0),
+    }))
+})
+const effectiveRelationType = computed(() => (
+  relationTypeOptions.value.some((type) => type.id === relationTypeFilter.value)
+    ? relationTypeFilter.value
+    : 'ALL'
+))
+// 图例同样只列出当前用到的连线类型
+const lineLegends = computed(() => {
+  const used = new Set(pathRelations.value.map((relation) => String(relation.lineType || 'DASHED').toUpperCase()))
+  return LINE_LEGENDS.filter((legend) => used.has(legend.id))
+})
 const userDataReady = computed(() => Boolean(pathOverview.value.userData?.ready))
 const userDataText = computed(() => pathOverview.value.userData?.text || '')
 
@@ -101,10 +125,11 @@ const relationTo = (careerId) => currentRelations.value
 
 // 岗位关系模式看全部连线，职业路径/我的可转方向模式只看当前岗位的连线
 const focusRelations = computed(() => {
-  const list = pathMode.value === 'relations' ? pathRelations.value : currentRelations.value
-  return relationTypeFilter.value === 'ALL'
+  // 「职业路径」跟随当前岗位；「岗位关系」和「我的可转方向」是全局视图
+  const list = pathMode.value === 'path' ? currentRelations.value : pathRelations.value
+  return effectiveRelationType.value === 'ALL'
     ? list
-    : list.filter((relation) => relation.relationType === relationTypeFilter.value)
+    : list.filter((relation) => relation.relationType === effectiveRelationType.value)
 })
 const highlightedJobIds = computed(() => {
   const ids = new Set()
@@ -125,6 +150,16 @@ const recommendedPaths = computed(() => [...currentRelations.value].sort((left, 
 const transferDirections = computed(() => pathJobs.value
   .filter((job) => job.hasMatch)
   .sort((left, right) => (right.matchRate || 0) - (left.matchRate || 0)))
+const isTransferMode = computed(() => pathMode.value === 'transfer')
+
+/** 「我的可转方向」列表项：有已配置关系的直接打开迁移分析，否则设为当前岗位。 */
+function openDirection(jobId) {
+  if (relationTo(jobId)) {
+    analysisTargetId.value = jobId
+    return
+  }
+  setCurrentJob(jobId)
+}
 
 const relationLine = (relation) => {
   const source = careers.value.find((career) => career.id === relation.sourceJobId)
@@ -520,40 +555,68 @@ onBeforeUnmount(() => {
               <small class="control-label">路径类型</small>
               <div class="type-filter">
                 <button
-                  v-for="type in RELATION_TYPES"
+                  v-for="type in relationTypeOptions"
                   :key="type.id"
                   type="button"
-                  :class="{ active: relationTypeFilter === type.id }"
+                  :class="{ active: effectiveRelationType === type.id }"
                   @click="relationTypeFilter = type.id"
                 >
                   <i aria-hidden="true"></i>{{ type.label }}
+                  <em v-if="type.count">{{ type.count }}</em>
                 </button>
               </div>
             </div>
 
             <div class="control-block control-block--list">
-              <small class="control-label">推荐路径</small>
-              <ol v-if="recommendedPaths.length" class="path-list">
-                <li v-for="(item, index) in recommendedPaths" :key="item.id">
-                  <button
-                    type="button"
-                    :class="{ active: analysisTargetId === item.targetJobId }"
-                    @click="analysisTargetId = item.targetJobId"
-                  >
-                    <span class="path-index">{{ String(index + 1).padStart(2, '0') }}</span>
-                    <span class="path-copy">
-                      <strong>{{ item.sourceName }} → {{ item.targetName }}</strong>
-                      <small>
-                        {{ item.relationName }}
-                        <template v-if="item.hasMatch"> · 匹配 {{ item.matchRate }}%</template>
-                      </small>
-                    </span>
-                  </button>
-                </li>
-              </ol>
-              <p v-else class="control-hint">
-                {{ selectedCareer ? '当前岗位还没有配置职业路径，可在管理端补充岗位关系。' : '选择岗位后，这里会列出可以发展到的方向。' }}
-              </p>
+              <small class="control-label">{{ isTransferMode ? '我的可转方向' : '推荐路径' }}</small>
+              <template v-if="isTransferMode">
+                <ol v-if="transferDirections.length" class="path-list">
+                  <li v-for="(job, index) in transferDirections" :key="job.jobId">
+                    <button
+                      type="button"
+                      :class="{ active: analysisTargetId === job.jobId }"
+                      @click="openDirection(job.jobId)"
+                    >
+                      <span class="path-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                      <span class="path-copy">
+                        <strong>{{ job.name }}</strong>
+                        <small>
+                          技能匹配 {{ job.matchRate }}%
+                          <template v-if="job.missingCount"> · 待补齐 {{ job.missingCount }} 项</template>
+                        </small>
+                      </span>
+                    </button>
+                  </li>
+                </ol>
+                <p v-else class="control-hint">
+                  {{ userDataReady
+                    ? '当前还没有可推荐转向的岗位，继续积累学习记录后再看。'
+                    : '当前成长画像还不完整，完善成长档案后可以看到适合转向的岗位。' }}
+                </p>
+              </template>
+              <template v-else>
+                <ol v-if="recommendedPaths.length" class="path-list">
+                  <li v-for="(item, index) in recommendedPaths" :key="item.id">
+                    <button
+                      type="button"
+                      :class="{ active: analysisTargetId === item.targetJobId }"
+                      @click="analysisTargetId = item.targetJobId"
+                    >
+                      <span class="path-index">{{ String(index + 1).padStart(2, '0') }}</span>
+                      <span class="path-copy">
+                        <strong>{{ item.sourceName }} → {{ item.targetName }}</strong>
+                        <small>
+                          {{ item.relationName }}
+                          <template v-if="item.hasMatch"> · 匹配 {{ item.matchRate }}%</template>
+                        </small>
+                      </span>
+                    </button>
+                  </li>
+                </ol>
+                <p v-else class="control-hint">
+                  {{ selectedCareer ? '当前岗位还没有配置职业路径，可在管理端补充岗位关系。' : '选择岗位后，这里会列出可以发展到的方向。' }}
+                </p>
+              </template>
             </div>
 
             <div v-if="!userDataReady" class="control-block control-block--hint">
@@ -570,10 +633,13 @@ onBeforeUnmount(() => {
 
             <div class="path-legend" aria-label="连线说明">
               <small>连线说明</small>
-              <span v-for="legend in LINE_LEGENDS" :key="legend.id">
+              <span v-for="legend in lineLegends" :key="legend.id">
                 <i :class="`line-sample line-sample--${legend.sample}`" aria-hidden="true"></i>{{ legend.label }}
               </span>
             </div>
+            <p v-if="isTransferMode" class="mode-hint">
+              已按技能匹配度排序 · 匹配度只影响高亮，不改变星球大小和位置
+            </p>
 
             <svg class="edge-layer" preserveAspectRatio="none" aria-hidden="true">
               <template v-for="relation in focusRelations" :key="`path-${relation.id}`">
@@ -645,7 +711,7 @@ onBeforeUnmount(() => {
               </span>
             </div>
 
-            <div v-if="!selectedCareer && pathMode !== 'relations'" class="map-empty">
+            <div v-if="!selectedCareer && pathMode === 'path'" class="map-empty">
               <p>请选择一个岗位开始探索，<br />我们将为你展示它的发展方向与相关岗位。</p>
               <button type="button" @click="showJobPicker = true">选择岗位</button>
             </div>
@@ -2009,6 +2075,14 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 .type-filter i { width: 8px; height: 8px; flex: 0 0 auto; border: 1px solid rgba(148, 163, 184, .6); border-radius: 50%; }
+.type-filter em {
+  margin-left: auto;
+  color: #8b96b0;
+  font-size: 10px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.type-filter button.active em { color: #cfd6ff; }
 .type-filter button.active {
   border-color: rgba(124, 137, 255, .42);
   color: #f2f5ff;
@@ -2061,6 +2135,19 @@ onBeforeUnmount(() => {
 }
 .path-legend small { color: #8b96b0; font-size: 9px; letter-spacing: .16em; }
 .path-legend span { display: flex; align-items: center; gap: 8px; color: #9aa5bd; font-size: 10px; }
+.mode-hint {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 14px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid rgba(148, 163, 184, .16);
+  border-radius: 999px;
+  background: rgba(7, 10, 18, .8);
+  color: #9aa5bd;
+  font-size: 10px;
+}
 .line-sample { display: inline-block; width: 26px; height: 2px; background: #7ddcff; }
 .line-sample--dashed { background: repeating-linear-gradient(90deg, #9db3ff 0 5px, transparent 5px 9px); }
 .line-sample--thin { height: 1px; background: rgba(154, 165, 189, .85); }
