@@ -7,7 +7,7 @@ import {
   getCareerExploration,
   getCareerNebulaMap,
 } from '../api/careerNebula'
-import { JOB_DETAILS, getJobDetailId } from '../data_tmp/jobCatalog'
+import { JOB_DETAILS, getJobDetailId, readStoredTargetJob } from '../data_tmp/jobCatalog'
 import AppTabBar from '../components/AppTabBar.vue'
 import CareerPlanetView from './CareerPlanetView.vue'
 
@@ -36,6 +36,9 @@ const hoveredJobId = ref('')
 const showJobPicker = ref(false)
 // 后端算出来的岗位关系与匹配结果
 const pathOverview = ref({ jobs: [], relations: [], userData: {} })
+// 首次进入星图时，用 /career 保存的目标岗位自动选中对应星球
+const targetPreselectApplied = ref(false)
+const unmatchedTargetJob = ref('')
 let latestLoadRequest = 0
 let lastAutomaticRefreshAt = 0
 
@@ -61,6 +64,42 @@ const LINE_LEGENDS = [
 const isLearningGalaxy = computed(() => Boolean(route.params.careerId))
 const enabledCareers = computed(() => careers.value.filter((career) => career.status === 'enabled'))
 const enabledSkills = computed(() => skills.value.filter((skill) => skill.status === 'enabled'))
+
+/* ---------- 目标岗位 → 星图岗位 ---------- */
+const normalizeCareerName = (value) => String(value || '')
+  .toLowerCase()
+  .replace(/[\s·、/／（）()\-—_]/g, '')
+// 去掉「高级/后端/开发/工程师」这类修饰词，只留岗位的核心方向
+const careerNameCore = (value) => normalizeCareerName(value)
+  .replace(/高级|资深|初级|中级|后端|服务端|开发|工程师|应用|实习/g, '')
+
+/** 把 /career 保存的目标岗位匹配到星图里的岗位（如 Java 后端开发工程师 → Java 开发工程师）。 */
+function resolveCareerByTargetJob(title) {
+  const target = careerNameCore(title)
+  if (!target) return null
+  const exact = enabledCareers.value.find((career) => careerNameCore(career.name) === target)
+  if (exact) return exact
+  const partial = enabledCareers.value.filter((career) => {
+    const core = careerNameCore(career.name)
+    return core.length >= 2 && (core.includes(target) || target.includes(core))
+  })
+  return partial.length === 1 ? partial[0] : null
+}
+
+/** 只在首次进入星图时执行一次，避免用户手动换岗位后又被覆盖。 */
+function applyStoredTargetJob() {
+  if (targetPreselectApplied.value || route.params.careerId) return
+  targetPreselectApplied.value = true
+  const title = readStoredTargetJob()
+  if (!title) return
+  const matched = resolveCareerByTargetJob(title)
+  if (matched) {
+    selectedCareerId.value = matched.id
+    unmatchedTargetJob.value = ''
+    return
+  }
+  unmatchedTargetJob.value = title
+}
 const visibleCareers = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   if (!query) return enabledCareers.value
@@ -296,6 +335,7 @@ function selectCareer(career) {
 
 function setCurrentJob(careerId) {
   selectedCareerId.value = careerId
+  unmatchedTargetJob.value = ''
   analysisTargetId.value = ''
   showFullCareerDescription.value = false
   showJobPicker.value = false
@@ -415,6 +455,7 @@ async function loadMap({ silent = false } = {}) {
     skills.value = nextSkills
     edges.value = nextEdges
     if (nextPath) pathOverview.value = nextPath
+    applyStoredTargetJob()
     if (selectedSkill.value) {
       selectedSkill.value = nextSkills.find((skill) => skill.id === selectedSkill.value.id) || null
     }
@@ -549,6 +590,9 @@ onBeforeUnmount(() => {
                   </button>
                 </div>
               </div>
+              <p v-if="unmatchedTargetJob" class="control-hint">
+                目标岗位「{{ unmatchedTargetJob }}」还没有加入岗位星图，请选择一个已有岗位，或在管理端添加对应星球。
+              </p>
             </div>
 
             <div class="control-block">
