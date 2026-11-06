@@ -36,14 +36,12 @@ public class JwtInterceptor implements HandlerInterceptor {
 
         String requestUri = request.getRequestURI();
         if (isOptionalInterviewAuthPath(requestUri)) {
-            if (token != null && token.startsWith("Bearer ")) {
-                String raw = token.substring(7);
-                if (jwtUtil.validateToken(raw)) {
-                    request.setAttribute("username", jwtUtil.getUsernameFromToken(raw));
-                    request.setAttribute("role", jwtUtil.getRoleFromToken(raw));
-                    request.setAttribute("userId", jwtUtil.getUserIdFromToken(raw));
-                }
-            }
+            attachIdentityIfValid(request, token);
+            return true;
+        }
+
+        if ("GET".equalsIgnoreCase(request.getMethod()) && isPublicForumReadPath(requestUri)) {
+            attachIdentityIfValid(request, token);
             return true;
         }
 
@@ -71,6 +69,41 @@ public class JwtInterceptor implements HandlerInterceptor {
         request.setAttribute("userId", userId);
 
         return true;
+    }
+
+
+    private void attachIdentityIfValid(HttpServletRequest request, String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return;
+        }
+        String raw = token.substring(7);
+        if (jwtUtil.validateToken(raw)) {
+            request.setAttribute("username", jwtUtil.getUsernameFromToken(raw));
+            request.setAttribute("role", jwtUtil.getRoleFromToken(raw));
+            request.setAttribute("userId", jwtUtil.getUserIdFromToken(raw));
+        }
+    }
+
+    private boolean isPublicForumReadPath(String requestUri) {
+        if (requestUri == null || requestUri.isBlank()) return false;
+        String path = requestUri;
+        int queryIndex = path.indexOf('?');
+        if (queryIndex >= 0) path = path.substring(0, queryIndex);
+        if ("/api/forum/posts".equals(path)
+                || "/api/forum/posts/hot".equals(path)
+                || "/api/forum/posts/recommended".equals(path)
+                || "/api/forum/topics".equals(path)
+                || "/api/forum/topics/hot".equals(path)
+                || "/api/forum/comments".equals(path)
+                || "/api/forum/likes/status".equals(path)
+                || "/api/forum/statistics/rules".equals(path)) {
+            return true;
+        }
+        return path.matches("^/api/forum/posts/\\d+$")
+                || path.matches("^/api/forum/topics/\\d+$")
+                || path.matches("^/api/forum/topics/\\d+/posts$")
+                || path.matches("^/api/forum/comments/\\d+$")
+                || path.matches("^/api/forum/favorites/status/\\d+$");
     }
 
     private boolean isOptionalInterviewAuthPath(String requestUri) {

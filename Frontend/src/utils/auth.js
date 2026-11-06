@@ -27,5 +27,11 @@ export function setUserInfo(userInfo) {
 export function clearAuth() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
+  localStorage.removeItem('home_target_job')
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('py_online_code_') || key.startsWith('py_online_solved')) {
+      localStorage.removeItem(key)
+    }
+  })
 }
 

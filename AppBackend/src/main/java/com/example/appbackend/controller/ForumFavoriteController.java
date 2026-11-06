@@ -5,9 +5,12 @@ import com.example.appbackend.dto.PageResponse;
 import com.example.appbackend.dto.PostListItem;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.service.ForumFavoriteService;
+import com.example.appbackend.service.SimpleRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/forum/favorites")
@@ -15,6 +18,9 @@ public class ForumFavoriteController {
 
     @Autowired
     private ForumFavoriteService favoriteService;
+
+    @Autowired
+    private SimpleRateLimiter rateLimiter;
 
     private Long getCurrentUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
@@ -27,6 +33,8 @@ public class ForumFavoriteController {
         if (userId == null) {
             return Result.unauthorized("请先登录");
         }
+        rateLimiter.check("forum-favorite:" + userId, 30, Duration.ofMinutes(1),
+                "收藏操作过于频繁，请稍后再试");
         FavoriteStatusResponse response = favoriteService.toggleFavorite(postId, userId);
         return Result.success(Boolean.TRUE.equals(response.getFavorited()) ? "收藏成功" : "取消收藏成功", response);
     }

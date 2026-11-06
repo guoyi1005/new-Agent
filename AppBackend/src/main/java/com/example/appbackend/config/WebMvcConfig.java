@@ -30,7 +30,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/ai/write/models",
                         "/api/realtime/messages",
                         "/api/meetings/*/asr/stream",
-                        "/api/code/execute",
                         "/api/python-problem/list",
                         "/api/python-problem/detail",
                         "/uploads/**",

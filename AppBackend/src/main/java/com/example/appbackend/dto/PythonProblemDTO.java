@@ -44,8 +44,6 @@ public class PythonProblemDTO {
         private String defaultCode;
         @Schema(description = "判题入口函数名，为空表示暂不支持在线判题")
         private String funcName;
-        @Schema(description = "测试用例（透传给 /api/code/execute）")
-        private List<Map<String, Object>> testcases;
         private List<Long> similarIds;
     }
 

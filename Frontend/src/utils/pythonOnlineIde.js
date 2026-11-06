@@ -1,10 +1,22 @@
 import { request } from '../api/request'
+import { getUserInfo } from './auth'
 
-/** 本地存储 key：已解决题目 id 数组（进度持久化） */
+/** 兼容旧版本清理逻辑使用的 key 前缀。 */
 export const PROGRESS_STORAGE_KEY = 'py_online_solved'
-
-/** 本地存储 key 前缀：每道题的代码草稿，完整 key 为 CODE_DRAFT_PREFIX + 题目 id */
 export const CODE_DRAFT_PREFIX = 'py_online_code_'
+
+export function getLearningStorageScope() {
+  const user = getUserInfo()
+  return String(user?.id || user?.userId || user?.username || 'guest')
+}
+
+export function getProgressStorageKey() {
+  return `${PROGRESS_STORAGE_KEY}:${getLearningStorageScope()}`
+}
+
+export function getCodeDraftStorageKey(problemId) {
+  return `${CODE_DRAFT_PREFIX}:${getLearningStorageScope()}:${problemId}`
+}
 
 export const DIFFICULTY_LABELS = { easy: '简单', medium: '中等', hard: '困难' }
 
@@ -33,18 +45,14 @@ export function makeResult(status, runtime, memory, testcases) {
   }
 }
 
-export async function executeCodeOnServer(code, problem, testcases) {
-  const cases = (testcases && testcases.length) ? testcases : (problem.testcases || [])
-  const funcName = problem.funcName || ''
-
-  if (!funcName || !cases.length) {
+export async function executeCodeOnServer(code, problem) {
+  if (!problem?.id || !problem?.judgeable || !problem?.funcName) {
     return makeResult('unsupported', 0, 0, [])
   }
 
   const requestBody = {
+    problemId: problem.id,
     code,
-    funcName,
-    testcases: cases,
   }
 
   try {

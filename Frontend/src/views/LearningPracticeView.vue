@@ -16,7 +16,6 @@ import {
   updateStudyGoalSubtaskCompletion,
   updateStudyGoalTaskCompletion,
 } from '../api/studyGoal'
-import { getSolvedIds } from '../composables/usePythonProblemBank'
 
 const route = useRoute()
 const router = useRouter()
@@ -171,8 +170,9 @@ const nextPathItem = computed(() => pathItems.value.find((item) => item.status =
 const activeGoalSummary = computed(() => studyGoals.value.find((item) => item.id === selectedGoalId.value) || studyGoals.value.find((item) => item.status === 'in_progress') || studyGoals.value.find((item) => item.status === 'pending') || studyGoals.value[0] || null)
 const activeGoalTasks = computed(() => Array.isArray(selectedGoalDetail.value?.tasks) ? selectedGoalDetail.value.tasks : [])
 const remainingGoalTasks = computed(() => activeGoalTasks.value.filter((task) => !task.isCompleted))
-const solvedIds = ref(getSolvedIds().map((id) => String(id)))
-const solvedSet = computed(() => new Set(solvedIds.value))
+const solvedSet = computed(() => new Set(
+  (practiceSummary.value?.problems?.solvedProblemIds || []).map((id) => String(id)),
+))
 const solvedProblemCount = computed(() => problems.value.filter((item) => solvedSet.value.has(String(item.id))).length)
 const pathDoneCount = computed(() => pathItems.value.filter((item) => item.status === 'completed').length)
 const hasLearningPath = computed(() => pathItems.value.length > 0)
@@ -783,14 +783,14 @@ function openRecommendation(item) {
   }
   router.push({ path: '/career/nebula/python/resources', query: topic ? { topic } : {} })
 }
-/** 岗位实战任务标记完成：写入统一学习记录，技能进度与趋势随之更新。 */
+/** 岗位实战任务标记完成：自报记录完成事实，不直接增加技能等级。 */
 async function completeJobProject(item) {
   if (!item?.sourceId || item.completed || busyAction.value) return
   busyAction.value = `project-${item.sourceId}`
   try {
-    await completeProjectTask(item.sourceId)
+    await completeProjectTask(item.sourceId, `完成岗位实战任务：${item.title || item.sourceId}`)
     await loadUnifiedRecommendations()
-    pageMessage.value = '已记录完成，技能进度与增长趋势已更新'
+    pageMessage.value = '已记录完成；技能等级仅在可验证学习事件中更新'
   } catch (error) {
     pageMessage.value = friendlyError(error.message || '任务完成上报失败')
   } finally {

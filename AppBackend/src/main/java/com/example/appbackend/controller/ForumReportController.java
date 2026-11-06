@@ -4,6 +4,7 @@ import com.example.appbackend.dto.*;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.exception.BusinessException;
 import com.example.appbackend.service.ForumReportService;
+import com.example.appbackend.service.SimpleRateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 
 @RestController
@@ -25,6 +27,9 @@ public class ForumReportController {
 
     @Autowired
     private ForumReportService forumReportService;
+
+    @Autowired
+    private SimpleRateLimiter rateLimiter;
 
     private void checkAdminRole(HttpServletRequest request) {
         String role = (String) request.getAttribute("role");
@@ -47,6 +52,8 @@ public class ForumReportController {
         if (reporterId == null) {
             return Result.unauthorized("请先登录");
         }
+        rateLimiter.check("forum-report:" + reporterId, 5, Duration.ofMinutes(10),
+                "举报提交过于频繁，请稍后再试");
         return Result.success("举报已提交", forumReportService.createReport(createRequest, reporterId));
     }
 

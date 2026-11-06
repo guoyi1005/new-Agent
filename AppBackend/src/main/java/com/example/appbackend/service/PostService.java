@@ -17,9 +17,9 @@ public interface PostService {
 
     void batchDeletePosts(List<Long> ids);
 
-    PostResponse getPostDetail(Long id, Long currentUserId);
+    PostResponse getPostDetail(Long id, Long currentUserId, boolean recordView);
 
-    PageResponse<PostListItem> getPostList(Integer pageNum, Integer pageSize, Long topicId, String keyword, String sortBy, Long userId, String status, Long currentUserId);
+    PageResponse<PostListItem> getPostList(Integer pageNum, Integer pageSize, Long topicId, String keyword, String sortBy, Long userId, String status, Boolean highlighted, Long currentUserId);
 
     PageResponse<HotPostItem> getHotPosts(Integer pageNum, Integer pageSize);
 

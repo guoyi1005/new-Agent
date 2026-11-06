@@ -52,8 +52,10 @@ class LearningRecordServiceTest {
 
         List<LearningRecord> written = service.recordProblemSolved(7L, problem);
 
-        assertEquals(2, written.size());
-        assertTrue(written.stream().allMatch(record -> record.getProgress() == 10));
+        assertEquals(3, written.size());
+        assertTrue(written.stream().anyMatch(record -> record.getSkillId() == null && record.getProgress() == 0));
+        assertTrue(written.stream().filter(record -> record.getSkillId() != null)
+                .allMatch(record -> record.getProgress() == 10));
         assertTrue(written.stream().allMatch(record -> LearningRecordService.SOURCE_PROBLEM.equals(record.getSourceType())));
         assertTrue(written.stream().allMatch(record -> LearningRecordService.ACTION_PROBLEM_SOLVED.equals(record.getActionType())));
     }
@@ -70,19 +72,23 @@ class LearningRecordServiceTest {
 
         List<LearningRecord> written = service.recordProblemSolved(7L, problem);
 
-        assertEquals(2, written.size());
-        assertTrue(written.stream().allMatch(record -> record.getProgress() == 100));
+        assertEquals(3, written.size());
+        assertTrue(written.stream().filter(record -> record.getSkillId() != null)
+                .allMatch(record -> record.getProgress() == 100));
     }
 
     @Test
-    void problemWithoutKnownTagsWritesNothing() {
+    void problemWithoutKnownTagsStillRecordsCompletion() {
         PythonProblem problem = new PythonProblem();
         problem.setId(3L);
         problem.setTitle("陌生题");
         problem.setDifficulty("easy");
         problem.setTags("[\"未知标签\"]");
 
-        assertTrue(service.recordProblemSolved(7L, problem).isEmpty());
+        List<LearningRecord> written = service.recordProblemSolved(7L, problem);
+        assertEquals(1, written.size());
+        assertEquals(null, written.get(0).getSkillId());
+        assertEquals(0, written.get(0).getProgress());
     }
 
     @Test

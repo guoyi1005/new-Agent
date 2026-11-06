@@ -8,6 +8,7 @@ import com.example.appbackend.repository.PythonPaperRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +44,7 @@ public class AppPythonPaperController {
 
     /** 保存一份试卷。 */
     @PostMapping
-    public Result<PythonPaperDTO.PaperView> save(@RequestBody PythonPaperDTO.CreateRequest request,
+    public Result<PythonPaperDTO.PaperView> save(@Valid @RequestBody PythonPaperDTO.CreateRequest request,
                                                  HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         if (request == null || request.getQuestionIds() == null || request.getQuestionIds().isEmpty()) {

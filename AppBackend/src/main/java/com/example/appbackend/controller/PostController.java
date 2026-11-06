@@ -4,11 +4,13 @@ import com.example.appbackend.dto.*;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.exception.BusinessException;
 import com.example.appbackend.service.PostService;
+import com.example.appbackend.service.SimpleRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 
 @RestController
@@ -17,6 +19,9 @@ public class PostController {
 
     @Autowired
     private PostService postService;
+
+    @Autowired
+    private SimpleRateLimiter rateLimiter;
 
     private Long getCurrentUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
@@ -39,6 +44,8 @@ public class PostController {
         if (userId == null) {
             return Result.unauthorized("请先登录");
         }
+        rateLimiter.check("forum-post:" + userId, 5, Duration.ofMinutes(10),
+                "发帖过于频繁，请稍后再试");
         return Result.success("发布成功", postService.createPost(postRequest, userId));
     }
 
@@ -82,7 +89,11 @@ public class PostController {
 
     @GetMapping("/{id}")
     public Result<PostResponse> getPostDetail(@PathVariable Long id, HttpServletRequest request) {
-        return Result.success("操作成功", postService.getPostDetail(id, getCurrentUserId(request)));
+        Long userId = getCurrentUserId(request);
+        String viewer = userId != null ? "user:" + userId : "ip:" + request.getRemoteAddr();
+        boolean recordView = rateLimiter.tryAcquire(
+                "forum-view:" + viewer + ":" + id, 1, Duration.ofMinutes(30));
+        return Result.success("操作成功", postService.getPostDetail(id, userId, recordView));
     }
 
     @GetMapping
@@ -94,12 +105,14 @@ public class PostController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean highlighted,
             HttpServletRequest request) {
         if (status != null && !"PUBLISHED".equalsIgnoreCase(status) && !isAdmin(request)) {
             throw new BusinessException(Result.FORBIDDEN_CODE, "仅管理员可查看非公开帖子");
         }
         PageResponse<PostListItem> page = postService.getPostList(
-                pageNum, pageSize, topicId, keyword, sortBy, userId, status, getCurrentUserId(request));
+                pageNum, pageSize, topicId, keyword, sortBy, userId, status, highlighted,
+                getCurrentUserId(request));
         return Result.success(page);
     }
 

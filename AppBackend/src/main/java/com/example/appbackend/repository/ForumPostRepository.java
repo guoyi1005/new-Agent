@@ -19,12 +19,14 @@ public interface ForumPostRepository extends JpaRepository<ForumPost, Long> {
            "(:topicId IS NULL OR p.topicId = :topicId) " +
            "AND (:userId IS NULL OR p.userId = :userId) " +
            "AND (:status IS NULL OR p.status = :status) " +
+           "AND (:highlighted IS NULL OR p.highlighted = :highlighted) " +
            "AND (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%) " +
-           "AND p.topicId IN (SELECT t.id FROM ForumTopic t WHERE t.status = 'ACTIVE')")
+           "AND (p.topicId IS NULL OR p.topicId IN (SELECT t.id FROM ForumTopic t WHERE t.status = 'ACTIVE'))")
     Page<ForumPost> findPosts(
             @Param("topicId") Long topicId,
             @Param("userId") Long userId,
             @Param("status") String status,
+            @Param("highlighted") Boolean highlighted,
             @Param("keyword") String keyword,
             Pageable pageable);
 

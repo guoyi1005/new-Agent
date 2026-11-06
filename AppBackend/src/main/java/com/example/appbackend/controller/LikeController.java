@@ -4,6 +4,7 @@ import com.example.appbackend.dto.LikeRequest;
 import com.example.appbackend.dto.LikeStatusResponse;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.service.LikeService;
+import com.example.appbackend.service.SimpleRateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +23,9 @@ public class LikeController {
 
     @Autowired
     private LikeService likeService;
+
+    @Autowired
+    private SimpleRateLimiter rateLimiter;
 
     private Long getCurrentUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
@@ -41,6 +46,8 @@ public class LikeController {
         if (userId == null) {
             return Result.unauthorized("请先登录");
         }
+        rateLimiter.check("forum-like:" + userId, 60, Duration.ofMinutes(1),
+                "点赞操作过于频繁，请稍后再试");
         LikeStatusResponse response = likeService.toggleLike(likeRequest, userId);
         boolean liked = Boolean.TRUE.equals(response.getLiked());
         String message = liked ? "点赞成功" : "取消点赞成功";

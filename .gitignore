@@ -64,3 +64,7 @@ ai-servers/data/ppt-quality-qa/
 
 # Workspace outputs (agent scratch)
 output/
+# Codex artifact build caches
+.codex-doc-build/
+.codex-ppt-build/
+.codex-finalizer/

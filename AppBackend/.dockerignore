@@ -5,3 +5,4 @@ target
 .redis-data
 uploads
 *.log
+.mysql-data

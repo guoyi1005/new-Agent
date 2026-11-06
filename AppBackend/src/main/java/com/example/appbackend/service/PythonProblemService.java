@@ -10,10 +10,13 @@ public interface PythonProblemService {
     /** 上架题目摘要列表（题库页） */
     List<PythonProblemDTO.SummaryVO> listPublic();
 
-    /** 题目详情（含测试用例，编程页判题用） */
+    /** 题目详情（公开接口，不返回测试用例）。 */
     PythonProblemDTO.DetailVO getDetail(Long id);
 
-    /** 题目标准答案（JSON 字符串，仅供 AI 辅助编程注入，不返回公开接口） */
+    /** 服务端判题规格：函数名和测试用例只从数据库读取。 */
+    com.example.appbackend.service.CodeJudgeService.JudgeSpec getJudgeSpec(Long id);
+
+    /** 题目标准答案（JSON 字符串，仅供 AI 辅助编程注入，不返回公开接口）。 */
     String getSolutionJson(Long id);
 
     /** AI 生成题目（草案，未入库）：对话式需求解析 + 自动匹配参考题 + 题号分配 */

@@ -67,6 +67,38 @@ public class PythonProblemServiceImpl implements PythonProblemService {
 
     @Override
     @Transactional(readOnly = true)
+    public com.example.appbackend.service.CodeJudgeService.JudgeSpec getJudgeSpec(Long id) {
+        PythonProblem problem = repository.findById(id)
+                .orElseThrow(() -> new BusinessException(Result.NOT_FOUND_CODE, "题目不存在"));
+        if (!Boolean.TRUE.equals(problem.getEnabled()) || !isJudgeable(problem)) {
+            throw new BusinessException(Result.BAD_REQUEST_CODE, "该题暂不支持在线判题");
+        }
+        String funcName = problem.getFuncName() == null ? "" : problem.getFuncName().trim();
+        if (!funcName.matches("[A-Za-z_][A-Za-z0-9_]{0,63}")) {
+            throw new BusinessException(Result.BAD_REQUEST_CODE, "题目判题函数名配置无效");
+        }
+        List<com.example.appbackend.service.CodeJudgeService.JudgeCase> cases = new ArrayList<>();
+        for (Map<String, Object> tc : readJsonMaps(problem.getTestcases())) {
+            com.example.appbackend.service.CodeJudgeService.JudgeCase jc =
+                    new com.example.appbackend.service.CodeJudgeService.JudgeCase();
+            jc.input = nullableText(tc.get("input"));
+            jc.expected = nullableText(tc.get("expected"));
+            jc.mode = nullableText(tc.get("mode"));
+            Object accepts = tc.get("accepts");
+            if (accepts instanceof List<?> acceptList) {
+                List<String> values = new ArrayList<>();
+                for (Object item : acceptList) {
+                    if (item != null) values.add(String.valueOf(item));
+                }
+                jc.accepts = values;
+            }
+            cases.add(jc);
+        }
+        return new com.example.appbackend.service.CodeJudgeService.JudgeSpec(funcName, cases);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public String getSolutionJson(Long id) {
         return repository.findById(id)
                 .map(PythonProblem::getSolution)
@@ -458,7 +490,6 @@ public class PythonProblemServiceImpl implements PythonProblemService {
         vo.setExamples(readJsonMaps(p.getExamples()));
         vo.setDefaultCode(p.getDefaultCode() == null ? "" : p.getDefaultCode());
         vo.setFuncName(p.getFuncName() == null ? "" : p.getFuncName());
-        vo.setTestcases(readJsonMaps(p.getTestcases()));
         vo.setSimilarIds(readJsonLongs(p.getSimilarIds()));
         return vo;
     }

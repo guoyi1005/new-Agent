@@ -9,6 +9,7 @@ import com.example.appbackend.exception.BusinessException;
 import com.example.appbackend.repository.ForumPostRepository;
 import com.example.appbackend.repository.ForumTopicRepository;
 import com.example.appbackend.service.TopicService;
+import com.example.appbackend.util.PageBounds;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -92,7 +93,9 @@ public class TopicServiceImpl implements TopicService {
 
     @Override
     public PageResponse<TopicResponse> getTopicList(Integer pageNum, Integer pageSize, Integer isHot, String status) {
-        PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize);
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 20);
+        PageRequest pageRequest = PageRequest.of(safePage - 1, safeSize);
         Page<ForumTopic> topicPage;
 
         if (isHot != null && status != null) {
@@ -123,12 +126,12 @@ public class TopicServiceImpl implements TopicService {
                 })
                 .collect(Collectors.toList());
 
-        return new PageResponse<>(topics, topicPage.getTotalElements(), pageNum, pageSize);
+        return new PageResponse<>(topics, topicPage.getTotalElements(), safePage, safeSize);
     }
 
     @Override
     public List<TopicResponse> getHotTopics(Integer limit) {
-        int size = (limit != null && limit > 0) ? limit : 5;
+        int size = limit != null && limit > 0 ? Math.min(limit, 50) : 5;
         Pageable pageable = PageRequest.of(0, size);
         List<ForumTopic> hotTopics = topicRepository.findByStatusOrderByPostCountDesc("ACTIVE", pageable);
         return hotTopics.stream()

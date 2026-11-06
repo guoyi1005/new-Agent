@@ -38,3 +38,4 @@ target/
 Thumbs.db
 
 uploads/
+.mysql-data/

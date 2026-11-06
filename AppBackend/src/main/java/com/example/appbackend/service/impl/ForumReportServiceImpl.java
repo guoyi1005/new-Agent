@@ -87,7 +87,7 @@ public class ForumReportServiceImpl implements ForumReportService {
             throw new BusinessException(401, "请先登录");
         }
         validateTargetType(request.getTargetType());
-        validateTargetAvailable(request.getTargetType(), request.getTargetId());
+        validateTargetAvailable(request.getTargetType(), request.getTargetId(), reporterId);
 
         ForumReport report = new ForumReport();
         report.setReporterId(reporterId);
@@ -190,7 +190,7 @@ public class ForumReportServiceImpl implements ForumReportService {
         reportRepository.deleteByIds(ids);
     }
 
-    private void validateTargetAvailable(Integer targetType, Long targetId) {
+    private void validateTargetAvailable(Integer targetType, Long targetId, Long reporterId) {
         if (targetId == null) {
             throw new BusinessException(400, "举报目标ID不能为空");
         }
@@ -200,6 +200,9 @@ public class ForumReportServiceImpl implements ForumReportService {
             if (!POST_STATUS_PUBLISHED.equals(post.getStatus())) {
                 throw new BusinessException(400, "帖子已不可举报");
             }
+            if (reporterId.equals(post.getUserId())) {
+                throw new BusinessException(400, "不能举报自己的帖子");
+            }
             return;
         }
         if (targetType == TARGET_COMMENT) {
@@ -207,6 +210,9 @@ public class ForumReportServiceImpl implements ForumReportService {
                     .orElseThrow(() -> new BusinessException(404, "评论不存在或已删除"));
             if (!COMMENT_STATUS_NORMAL.equals(comment.getStatus())) {
                 throw new BusinessException(400, "评论已不可举报");
+            }
+            if (reporterId.equals(comment.getUserId())) {
+                throw new BusinessException(400, "不能举报自己的评论");
             }
         }
     }

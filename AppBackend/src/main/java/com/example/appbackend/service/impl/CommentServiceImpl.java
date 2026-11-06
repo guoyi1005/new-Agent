@@ -14,6 +14,7 @@ import com.example.appbackend.repository.ForumLikeRepository;
 import com.example.appbackend.repository.ForumPostRepository;
 import com.example.appbackend.repository.UserRepository;
 import com.example.appbackend.service.CommentService;
+import com.example.appbackend.util.PageBounds;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -143,8 +144,8 @@ public class CommentServiceImpl implements CommentService {
             throw new BusinessException(404, "帖子不存在或已删除");
         }
 
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 20 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 20);
         Page<ForumComment> page = commentRepository.findByPostIdAndParentIdIsNullAndStatus(
                 postId, STATUS_NORMAL, PageRequest.of(safePage - 1, safeSize, Sort.by(Sort.Direction.DESC, "createTime")));
         List<ForumComment> parentComments = page.getContent();
@@ -190,8 +191,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<CommentResponse> getAdminCommentList(Long postId, String keyword, String status, Integer pageNum, Integer pageSize) {
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         Page<ForumComment> page = commentRepository.findComments(
                 postId,
                 status != null && !status.isBlank() ? status : null,
@@ -279,11 +280,10 @@ public class CommentServiceImpl implements CommentService {
                 .orElse("匿名用户");
     }
 
+    /** 公共评论只暴露用户名，不展示真实姓名。 */
     private String displayName(User user) {
-        if (user.getRealName() != null && !user.getRealName().isBlank()) {
-            return user.getRealName();
-        }
-        return user.getUsername();
+        String username = user.getUsername();
+        return username == null || username.isBlank() ? "匿名用户" : username;
     }
 
     @Override

@@ -65,8 +65,12 @@ const detailOpen = ref(false)
 const detailLoading = ref(false)
 const selectedPost = ref(null)
 const comments = ref([])
+const commentTotal = ref(0)
+const commentPageNum = ref(1)
+const commentPageSize = 20
 const commentDraft = ref('')
 const commentSaving = ref(false)
+let feedRequestSequence = 0
 const actionBusy = ref('')
 
 const publishOpen = ref(false)
@@ -98,6 +102,7 @@ const selectedTopicId = computed(() => {
   return matched?.id || null
 })
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
+const commentPageCount = computed(() => Math.max(1, Math.ceil(commentTotal.value / commentPageSize)))
 // 成长路径板块的帖子用时间线样式呈现，与普通讨论区分开
 const isPathBoard = computed(() => category.value === 'paths')
 // 板块没有对应话题时（话题表为空很常见），退化成用板块关键词检索，
@@ -120,7 +125,7 @@ const publishHint = computed(() => {
 })
 
 async function loadTopics() {
-  const [allResult, hotResult] = await Promise.allSettled([getTopicList(), getHotTopics({ limit: 8 })])
+  const [allResult, hotResult] = await Promise.allSettled([getTopicList({ status: 'ACTIVE' }), getHotTopics({ limit: 8 })])
   if (allResult.status === 'fulfilled') topics.value = normalizeList(allResult.value)
   if (hotResult.status === 'fulfilled') hotTopics.value = normalizeList(hotResult.value)
 }
@@ -139,10 +144,12 @@ function friendlyError(message) {
 }
 
 async function loadFeed() {
+  const requestSequence = ++feedRequestSequence
   loading.value = true
   loadError.value = ''
   try {
     if (!topics.value.length) await loadTopics()
+    if (requestSequence !== feedRequestSequence) return
     let pageData
     if (feedScope.value === 'myPosts') {
       pageData = await getMyForumPosts({ pageNum: pageNum.value, pageSize })
@@ -151,24 +158,24 @@ async function loadFeed() {
     } else {
       pageData = await getPostList({
         pageNum: pageNum.value,
-        pageSize: sort.value === 'featured' ? 50 : pageSize,
+        pageSize,
         topicId: routeTopicId.value || selectedTopicId.value || undefined,
         keyword: boardKeyword.value || undefined,
         sortBy: sort.value === 'hot' ? 'likeCount' : undefined,
+        highlighted: sort.value === 'featured' ? true : undefined,
       })
     }
-    let rows = normalizeList(pageData)
-    if (sort.value === 'featured' && feedScope.value === 'category') {
-      rows = rows.filter((item) => item.highlighted)
-    }
+    if (requestSequence !== feedRequestSequence) return
+    const rows = normalizeList(pageData)
     posts.value = rows
     total.value = Number(pageData?.total ?? rows.length)
   } catch (error) {
+    if (requestSequence !== feedRequestSequence) return
     posts.value = []
     total.value = 0
     loadError.value = friendlyError(error.message || '社区内容加载失败')
   } finally {
-    loading.value = false
+    if (requestSequence === feedRequestSequence) loading.value = false
   }
 }
 
@@ -269,9 +276,11 @@ async function openPostDetail(post) {
   try {
     const [detail, commentPage] = await Promise.all([
       getPostDetail(post.id),
-      getCommentList({ postId: post.id, pageNum: 1, pageSize: 50 }),
+      getCommentList({ postId: post.id, pageNum: 1, pageSize: commentPageSize }),
     ])
     selectedPost.value = detail || post
+    commentPageNum.value = 1
+    commentTotal.value = Number(commentPage?.total ?? 0)
     comments.value = normalizeList(commentPage)
   } catch (error) {
     loadError.value = friendlyError(error.message || '帖子详情加载失败')
@@ -284,6 +293,8 @@ function closePostDetail() {
   detailOpen.value = false
   selectedPost.value = null
   comments.value = []
+  commentTotal.value = 0
+  commentPageNum.value = 1
   commentDraft.value = ''
 }
 
@@ -321,13 +332,35 @@ async function submitComment() {
   try {
     await createComment({ postId: selectedPost.value.id, content: commentDraft.value.trim() })
     commentDraft.value = ''
-    const commentPage = await getCommentList({ postId: selectedPost.value.id, pageNum: 1, pageSize: 50 })
+    const commentPage = await getCommentList({
+      postId: selectedPost.value.id,
+      pageNum: 1,
+      pageSize: commentPageSize,
+    })
+    commentPageNum.value = 1
+    commentTotal.value = Number(commentPage?.total ?? 0)
     comments.value = normalizeList(commentPage)
     selectedPost.value.commentCount = Number(selectedPost.value.commentCount || 0) + 1
   } catch (error) {
     loadError.value = friendlyError(error.message || '评论发布失败')
   } finally {
     commentSaving.value = false
+  }
+}
+
+async function changeCommentPage(nextPage) {
+  if (!selectedPost.value?.id || nextPage < 1 || nextPage > commentPageCount.value) return
+  commentPageNum.value = nextPage
+  try {
+    const commentPage = await getCommentList({
+      postId: selectedPost.value.id,
+      pageNum: nextPage,
+      pageSize: commentPageSize,
+    })
+    commentTotal.value = Number(commentPage?.total ?? 0)
+    comments.value = normalizeList(commentPage)
+  } catch (error) {
+    loadError.value = friendlyError(error.message || '评论加载失败')
   }
 }
 
@@ -457,7 +490,7 @@ onMounted(loadFeed)
         </div>
         <div class="hero-actions">
           <form class="community-search" @submit.prevent="submitSearch">
-            <input v-model="searchDraft" type="search" placeholder="搜索帖子、话题或经验" />
+            <input v-model="searchDraft" maxlength="100" type="search" placeholder="搜索帖子、话题或经验" />
             <button type="submit">搜索</button>
           </form>
           <button type="button" class="community-btn community-btn--primary" @click="openPublish">发布帖子</button>
@@ -617,7 +650,7 @@ onMounted(loadFeed)
             <section class="comment-section">
               <div class="sidebar-head"><h2>评论</h2><span>{{ comments.length }}</span></div>
               <form class="comment-editor" @submit.prevent="submitComment">
-                <textarea v-model="commentDraft" rows="3" placeholder="写下你的想法或经验补充" />
+                <textarea v-model="commentDraft" rows="3" maxlength="5000" placeholder="写下你的想法或经验补充" />
                 <button type="submit" class="community-btn community-btn--primary" :disabled="commentSaving || !commentDraft.trim()">{{ commentSaving ? '发布中…' : '发表评论' }}</button>
               </form>
               <div v-if="comments.length" class="comment-list">
@@ -627,6 +660,11 @@ onMounted(loadFeed)
                 </article>
               </div>
               <p v-else class="sidebar-empty">暂无评论，欢迎补充经验。</p>
+              <div v-if="commentTotal && commentPageCount > 1" class="pagination comment-pagination">
+                <button type="button" :disabled="commentPageNum <= 1" @click="changeCommentPage(commentPageNum - 1)">上一页</button>
+                <span>{{ commentPageNum }} / {{ commentPageCount }}</span>
+                <button type="button" :disabled="commentPageNum >= commentPageCount" @click="changeCommentPage(commentPageNum + 1)">下一页</button>
+              </div>
             </section>
           </template>
         </article>
@@ -643,7 +681,7 @@ onMounted(loadFeed)
           <label><span>标题 <em>*</em></span><input v-model="publishForm.title" maxlength="200" type="text" placeholder="用一句话概括你的分享" /></label>
           <label><span>话题</span><select v-model="publishForm.topicId"><option value="">不选择话题</option><option v-for="topic in topics" :key="topic.id" :value="topic.id">{{ topic.topicName }}</option></select></label>
           <p class="publish-hint">{{ publishHint }}</p>
-          <label><span>正文 <em>*</em></span><textarea v-model="publishForm.content" rows="9" placeholder="分享你的学习、求职、面试或就业经历" /></label>
+          <label><span>正文 <em>*</em></span><textarea v-model="publishForm.content" rows="9" maxlength="20000" placeholder="分享你的学习、求职、面试或就业经历" /></label>
           <p v-if="publishError" class="community-error">{{ publishError }}</p>
           <footer><button type="button" class="community-btn" :disabled="publishSaving" @click="closePublish">取消</button><button type="submit" class="community-btn community-btn--primary" :disabled="publishSaving">{{ publishSaving ? '发布中…' : '确认发布' }}</button></footer>
         </form>
@@ -694,6 +732,7 @@ onMounted(loadFeed)
 .publish-hint{margin:0;padding:10px 12px;border-left:3px solid var(--hp-blue-ink);border-radius:0 8px 8px 0;color:var(--hp-ink-2);background:var(--hp-tint);font-size:12.5px;line-height:1.7}
 
 @media(max-width:760px){.board-guide{grid-template-columns:1fr}.post-list--paths{padding-left:18px}.post-list--paths .post-card::before{left:-16px}}
+.comment-pagination{margin-top:12px}
 /* ---------- 当前视图提示条（我的帖子等） ---------- */
 .scope-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;padding:11px 16px;border:1px solid var(--hp-line);border-radius:var(--hp-r-md);color:var(--hp-ink-2);background:var(--hp-tint);font-size:13px}
 .scope-bar strong{color:var(--hp-ink)}

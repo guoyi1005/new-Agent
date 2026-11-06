@@ -53,8 +53,6 @@ public class LearningRecordService {
     private static final int PROBLEM_INCREMENT_HARD = 20;
     /** 完成一个学习路径 / 项目节点带来的技能增量。 */
     private static final int PROJECT_INCREMENT = 15;
-    /** 完成一个岗位实战任务带来的技能增量。 */
-    private static final int PROJECT_TASK_INCREMENT = 25;
 
     private final LearningRecordRepository recordRepository;
     private final LearningContentSkillRepository contentSkillRepository;
@@ -100,17 +98,29 @@ public class LearningRecordService {
         return created;
     }
 
-    /** 算法题通过时按题目标签写回技能进度；同一题同一技能只计一次。 */
+    /**
+     * 算法题通过后先记录一条可验证的完成事件，再按题目标签更新技能等级。
+     * 完成事件与技能标签解耦，确保无技能标签的题目也能进入“已解决”统计。
+     */
     @Transactional
     public List<LearningRecord> recordProblemSolved(Long userId, PythonProblem problem) {
         if (userId == null || problem == null || problem.getId() == null) return List.of();
-        List<String> codes = SkillTextMatcher.skillsForProblemTags(readTags(problem.getTags()));
-        if (codes.isEmpty()) return List.of();
         String evidence = "通过题目《" + problem.getTitle() + "》";
         String metadata = "{\"problemId\":" + problem.getId() + ",\"difficulty\":"
                 + (problem.getDifficulty() == null ? "null" : "\"" + problem.getDifficulty() + "\"") + "}";
-        return writeIncremental(userId, SOURCE_PROBLEM, problem.getId(), ACTION_PROBLEM_SOLVED,
-                evidence, metadata, codes, problemIncrement(problem.getDifficulty()));
+        String completionEventId = ongoingEventId(SOURCE_PROBLEM, problem.getId(), userId, null,
+                ACTION_PROBLEM_SOLVED);
+        List<LearningRecord> written = new ArrayList<>();
+        if (!recordRepository.existsByEventId(completionEventId)) {
+            written.add(saveRecord(userId, null, SOURCE_PROBLEM, problem.getId(),
+                    ACTION_PROBLEM_SOLVED, 0, evidence, metadata, completionEventId));
+        }
+        List<String> codes = SkillTextMatcher.skillsForProblemTags(readTags(problem.getTags()));
+        if (!codes.isEmpty()) {
+            written.addAll(writeIncremental(userId, SOURCE_PROBLEM, problem.getId(), ACTION_PROBLEM_SOLVED,
+                    evidence, metadata, codes, problemIncrement(problem.getDifficulty())));
+        }
+        return written;
     }
 
     /** 学习路径 / 项目节点完成时按节点文本写回技能进度；同一节点同一技能只计一次。 */
@@ -125,23 +135,25 @@ public class LearningRecordService {
                 evidence, metadata, codes, PROJECT_INCREMENT);
     }
 
-    /** 岗位实战任务完成时按任务关联的技能写回进度；同一任务同一技能只计一次。 */
+    /**
+     * 岗位实战任务属于用户自报完成，只记录完成事实，不直接增加技能等级。
+     * 技能等级应来自判题、课程章节等可验证的学习事件。
+     */
     @Transactional
-    public List<LearningRecord> recordProjectTaskCompleted(Long userId, LearningProject project) {
-        if (userId == null || project == null || project.getId() == null) return List.of();
-        List<String> codes = new ArrayList<>();
-        for (LearningContentSkill link
-                : contentSkillRepository.findBySourceTypeAndSourceId(SOURCE_PROJECT, project.getId())) {
-            if (link.getSkillId() == null) continue;
-            LearningSkill skill = skillRepository.findById(link.getSkillId()).orElse(null);
-            if (skill != null && !codes.contains(skill.getCode())) codes.add(skill.getCode());
+    public List<LearningRecord> recordProjectTaskCompleted(Long userId, LearningProject project, String evidence) {
+        if (userId == null || project == null || project.getId() == null
+                || evidence == null || evidence.isBlank()) {
+            return List.of();
         }
-        if (codes.isEmpty()) return List.of();
-        String evidence = "完成岗位实战任务：" + project.getTitle();
+        String eventId = ongoingEventId(SOURCE_PROJECT_TASK, project.getId(), userId, null,
+                ACTION_PROJECT_TASK_COMPLETED);
+        if (recordRepository.existsByEventId(eventId)) {
+            return List.of();
+        }
         String metadata = "{\"projectId\":" + project.getId() + ",\"title\":\""
                 + (project.getTitle() == null ? "" : project.getTitle().replace("\"", "")) + "\"}";
-        return writeIncremental(userId, SOURCE_PROJECT_TASK, project.getId(),
-                ACTION_PROJECT_TASK_COMPLETED, evidence, metadata, codes, PROJECT_TASK_INCREMENT);
+        return List.of(saveRecord(userId, null, SOURCE_PROJECT_TASK, project.getId(),
+                ACTION_PROJECT_TASK_COMPLETED, 0, evidence.trim(), metadata, eventId));
     }
 
     /** 已完成岗位实战任务的主键集合，供推荐结果标记「已完成」。 */
@@ -239,7 +251,8 @@ public class LearningRecordService {
     }
 
     private String ongoingEventId(String sourceType, Long sourceId, Long userId, Long skillId, String actionType) {
-        return sourceType.toLowerCase() + "-" + sourceId + "-user-" + userId + "-skill-" + skillId
+        return sourceType.toLowerCase() + "-" + sourceId + "-user-" + userId
+                + (skillId == null ? "" : "-skill-" + skillId)
                 + "-" + actionType.toLowerCase();
     }
 }

@@ -197,6 +197,7 @@ public class LearningPracticeSummaryService {
         stats.setTotalCount(problems.size());
         stats.setJudgeableCount(judgeable);
         stats.setSolvedCount(solved.size());
+        stats.setSolvedProblemIds(new java.util.ArrayList<>(solved));
         stats.setSolveRate(judgeable == 0 ? 0 : (int) Math.round(solved.size() * 100.0 / judgeable));
         return stats;
     }

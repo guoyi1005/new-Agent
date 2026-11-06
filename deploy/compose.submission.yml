@@ -9,11 +9,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN:?AI_INTERNAL_TOKEN must be set}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set}
+      CODE_JUDGE_INTERNAL_TOKEN: ${CODE_JUDGE_INTERNAL_TOKEN:?CODE_JUDGE_INTERNAL_TOKEN must be set}
     command:
       - /bin/sh
       - -ec
       - |
-        for value in "$$MYSQL_ROOT_PASSWORD" "$$JWT_SECRET" "$$AI_INTERNAL_TOKEN" "$$NEO4J_PASSWORD"; do
+        for value in "$$MYSQL_ROOT_PASSWORD" "$$JWT_SECRET" "$$AI_INTERNAL_TOKEN" "$$NEO4J_PASSWORD" "$$CODE_JUDGE_INTERNAL_TOKEN"; do
           normalized="$$(printf '%s' "$$value" | tr '[:upper:]' '[:lower:]')"
           case "$$normalized" in
             *change-me*|*change_me*|*changeme*)
@@ -25,6 +26,7 @@ services:
         [ "$${#JWT_SECRET}" -ge 32 ] || { echo "[FAIL] JWT_SECRET must contain at least 32 characters" >&2; exit 1; }
         [ "$${#AI_INTERNAL_TOKEN}" -ge 32 ] || { echo "[FAIL] AI_INTERNAL_TOKEN must contain at least 32 characters" >&2; exit 1; }
         [ "$${#NEO4J_PASSWORD}" -ge 8 ] || { echo "[FAIL] NEO4J_PASSWORD must contain at least 8 characters" >&2; exit 1; }
+        [ "$${#CODE_JUDGE_INTERNAL_TOKEN}" -ge 32 ] || { echo "[FAIL] CODE_JUDGE_INTERNAL_TOKEN must contain at least 32 characters" >&2; exit 1; }
 
   mysql:
     image: ${MYSQL_IMAGE:-mysql:8.4.5}
@@ -63,6 +65,34 @@ services:
       timeout: 3s
       retries: 12
 
+  code-judge:
+    build:
+      context: ../AppBackend/code-runner
+    restart: unless-stopped
+    depends_on:
+      config-guard:
+        condition: service_completed_successfully
+    environment:
+      CODE_JUDGE_INTERNAL_TOKEN: ${CODE_JUDGE_INTERNAL_TOKEN:?CODE_JUDGE_INTERNAL_TOKEN must be set}
+    networks:
+      - judge
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
   neo4j:
     image: ${NEO4J_IMAGE:-neo4j:5.26-community}
     restart: unless-stopped
@@ -95,6 +125,8 @@ services:
       redis:
         condition: service_healthy
       neo4j:
+        condition: service_healthy
+      code-judge:
         condition: service_healthy
     environment:
       TZ: Asia/Shanghai
@@ -132,6 +164,9 @@ services:
       AMAP_WEB_KEY: ${AMAP_WEB_KEY:-}
       ALIYUN_OSS_ACCESS_KEY_ID: ${ALIYUN_OSS_ACCESS_KEY_ID:-}
       ALIYUN_OSS_ACCESS_KEY_SECRET: ${ALIYUN_OSS_ACCESS_KEY_SECRET:-}
+      CODE_JUDGE_BASE_URL: http://code-judge:8099
+      CODE_JUDGE_INTERNAL_TOKEN: ${CODE_JUDGE_INTERNAL_TOKEN:?CODE_JUDGE_INTERNAL_TOKEN must be set}
+      CODE_JUDGE_LOCAL_FALLBACK: "false"
     ports:
       - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-18080}:8080"
     volumes:
@@ -144,6 +179,7 @@ services:
           # AppWeb/nginx.conf keeps this legacy upstream name. The alias makes
           # the submission network work without changing existing deployments.
           - smart-campus-backend
+      judge:
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/actuator/health"]
       interval: 10s
@@ -238,3 +274,7 @@ volumes:
   backend-uploads:
   ai-exports:
   ppt-sources:
+
+networks:
+  judge:
+    internal: true

@@ -48,7 +48,7 @@ public class PythonProblemController {
     }
 
     @GetMapping("/detail")
-    @Operation(summary = "题目详情", description = "公开接口，含测试用例（编程页判题使用）")
+    @Operation(summary = "题目详情", description = "公开接口，不返回测试用例；判题用例由服务端读取")
     public Result<PythonProblemDTO.DetailVO> detail(@RequestParam Long id) {
         return Result.success(pythonProblemService.getDetail(id));
     }

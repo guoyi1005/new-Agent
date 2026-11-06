@@ -3,14 +3,13 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppTabBar from '../../components/AppTabBar.vue'
 import ChatMarkdown from '../../components/ChatMarkdown.vue'
-import { reportProblemSolved } from '../../api/learning'
 import { getPythonProblemDetail, streamPythonAssist } from '../../api/pythonProblem'
 import { usePythonProblemBank } from '../../composables/usePythonProblemBank'
 import {
-  CODE_DRAFT_PREFIX,
   DIFFICULTY_LABELS,
-  PROGRESS_STORAGE_KEY,
   executeCodeOnServer,
+  getCodeDraftStorageKey,
+  getProgressStorageKey,
   makeResult,
 } from '../../utils/pythonOnlineIde'
 
@@ -58,7 +57,7 @@ const descParagraphs = computed(() => {
 })
 
 const judgeable = computed(() =>
-  !!(problem.value?.funcName && problem.value?.testcases?.length),
+  !!(problem.value?.judgeable && problem.value?.funcName),
 )
 
 const currentSkills = computed(() =>
@@ -124,7 +123,7 @@ async function loadProblem() {
       return
     }
     problem.value = res.data
-    const draft = localStorage.getItem(CODE_DRAFT_PREFIX + problemId.value)
+    const draft = localStorage.getItem(getCodeDraftStorageKey(problemId.value))
     code.value = draft || problem.value.defaultCode || '# 你的代码\n'
     aiMessages.value = []
   } catch (e) {
@@ -153,15 +152,6 @@ function resetCode() {
   }
 }
 
-function buildRunTestcases() {
-  const fromExamples = (problem.value.examples || []).map((ex) => {
-    if (!ex?.input?.length || !ex?.output?.length) return null
-    return { input: ex.input.join(', '), expected: ex.output.join('\n') }
-  }).filter(Boolean)
-  if (fromExamples.length) return fromExamples
-  return (problem.value.testcases || []).slice(0, 2)
-}
-
 function showResult(result) {
   judgeResult.value = result
   lastJudgeResult.value = result
@@ -181,17 +171,15 @@ function markSolved(id) {
   if (!id) return
   let solved = []
   try {
-    solved = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || '[]')
+    solved = JSON.parse(localStorage.getItem(getProgressStorageKey()) || '[]')
   } catch {
     solved = []
   }
   if (!solved.includes(id)) {
     solved.push(id)
-    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(solved))
+    localStorage.setItem(getProgressStorageKey(), JSON.stringify(solved))
     const item = bank.questions.value.find((q) => q.id === id)
     if (item) item.done = true
-    // 回写统一学习记录：失败不影响本地做题状态。
-    reportProblemSolved(id).catch(() => {})
   }
 }
 
@@ -209,7 +197,7 @@ async function runCode() {
   isExecuting.value = true
   executingLabel.value = '运行中…'
   try {
-    showResult(await executeCodeOnServer(code.value, problem.value, buildRunTestcases()))
+    showResult(await executeCodeOnServer(code.value, problem.value))
   } catch (e) {
     console.error('运行出错:', e)
     showResult(makeResult('err', 0, 0, []))
@@ -354,7 +342,7 @@ function pushAiMessage(role, content) {
 }
 
 watch(code, (val) => {
-  if (problemId.value) localStorage.setItem(CODE_DRAFT_PREFIX + problemId.value, val)
+  if (problemId.value) localStorage.setItem(getCodeDraftStorageKey(problemId.value), val)
 }, { flush: 'sync' })
 
 watch(() => route.params.id, (id) => {
@@ -371,7 +359,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (problemId.value && code.value) {
-    localStorage.setItem(CODE_DRAFT_PREFIX + problemId.value, code.value)
+    localStorage.setItem(getCodeDraftStorageKey(problemId.value), code.value)
   }
 })
 </script>

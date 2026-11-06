@@ -247,7 +247,7 @@ onMounted(async () => {
 
           <label class="paper-field">
             <span>试卷标题</span>
-            <input v-model="paperTitle" class="paper-input" type="text" placeholder="给这份卷子起个名字" />
+            <input v-model="paperTitle" class="paper-input" maxlength="160" type="text" placeholder="给这份卷子起个名字" />
           </label>
 
           <div class="paper-field">

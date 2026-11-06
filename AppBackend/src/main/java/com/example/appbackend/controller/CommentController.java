@@ -7,11 +7,13 @@ import com.example.appbackend.dto.ReceivedCommentResponse;
 import com.example.appbackend.entity.Result;
 import com.example.appbackend.exception.BusinessException;
 import com.example.appbackend.service.CommentService;
+import com.example.appbackend.service.SimpleRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 
 @RestController
@@ -20,6 +22,9 @@ public class CommentController {
 
     @Autowired
     private CommentService commentService;
+
+    @Autowired
+    private SimpleRateLimiter rateLimiter;
 
     private Long getCurrentUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
@@ -40,6 +45,8 @@ public class CommentController {
         if (userId == null) {
             return Result.unauthorized("请先登录");
         }
+        rateLimiter.check("forum-comment:" + userId, 20, Duration.ofMinutes(10),
+                "评论过于频繁，请稍后再试");
         return Result.success("评论成功", commentService.createComment(commentRequest, userId));
     }
 

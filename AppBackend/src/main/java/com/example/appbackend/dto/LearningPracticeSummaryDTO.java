@@ -37,6 +37,7 @@ public class LearningPracticeSummaryDTO {
         private int mediumTotal;
         private int hardSolved;
         private int hardTotal;
+        private List<Long> solvedProblemIds = new ArrayList<>();
     }
 
     @Data

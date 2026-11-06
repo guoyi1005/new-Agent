@@ -16,6 +16,7 @@ import com.example.appbackend.repository.ForumTopicRepository;
 import com.example.appbackend.repository.AppMessageRepository;
 import com.example.appbackend.repository.UserRepository;
 import com.example.appbackend.service.PostService;
+import com.example.appbackend.util.PageBounds;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,22 +141,26 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponse getPostDetail(Long id, Long currentUserId) {
+    public PostResponse getPostDetail(Long id, Long currentUserId, boolean recordView) {
         ForumPost post = getVisiblePost(id);
-        postRepository.incrementViewCount(id);
-        post.setViewCount(post.getViewCount() + 1);
+        if (recordView) {
+            postRepository.incrementViewCount(id);
+            post.setViewCount(post.getViewCount() + 1);
+        }
         return toPostResponse(post, currentUserId);
     }
 
     @Override
     public PageResponse<PostListItem> getPostList(Integer pageNum, Integer pageSize, Long topicId,
-                                                   String keyword, String sortBy, Long userId, String status, Long currentUserId) {
+                                                   String keyword, String sortBy, Long userId, String status,
+                                                   Boolean highlighted, Long currentUserId) {
         Sort sort = resolveSort(sortBy);
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         PageRequest pageRequest = PageRequest.of(safePage - 1, safeSize, sort);
         String queryStatus = status != null && !status.isBlank() ? status : STATUS_PUBLISHED;
-        Page<ForumPost> postPage = postRepository.findPosts(topicId, userId, queryStatus, keyword, pageRequest);
+        Page<ForumPost> postPage = postRepository.findPosts(
+                topicId, userId, queryStatus, highlighted, keyword, pageRequest);
         List<PostListItem> items = postPage.getContent().stream()
                 .map(post -> toPostListItem(post, currentUserId))
                 .collect(Collectors.toList());
@@ -164,8 +169,8 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PageResponse<HotPostItem> getHotPosts(Integer pageNum, Integer pageSize) {
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         Page<ForumPost> postPage = postRepository.findHotPosts(PageRequest.of(safePage - 1, safeSize));
         List<HotPostItem> items = postPage.getContent().stream()
                 .map(this::toHotPostItem)
@@ -175,8 +180,8 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PageResponse<UserPostResponse> getUserPost(Long userId, Integer pageNum, Integer pageSize) {
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         Page<ForumPost> postPage = postRepository.findByUserIdAndStatus(
                 userId, STATUS_PUBLISHED, PageRequest.of(safePage - 1, safeSize, Sort.by(Sort.Direction.DESC, "createTime")));
         List<UserPostResponse> items = postPage.getContent().stream()
@@ -198,8 +203,8 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PageResponse<UserLikeResponse> getUserLikes(Long userId, Integer pageNum, Integer pageSize) {
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         Page<ForumLike> likePage = likeRepository.findByUserIdAndTargetType(
                 userId, ForumLike.TARGET_TYPE_POST,
                 PageRequest.of(safePage - 1, safeSize, Sort.by(Sort.Direction.DESC, "createTime")));
@@ -299,8 +304,8 @@ public class PostServiceImpl implements PostService {
     @Override
     public PageResponse<PostListItem> getAdminPostList(Integer pageNum, Integer pageSize, String keyword, String status, String sortBy, Long topicId) {
         Sort sort = resolveSort(sortBy);
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         PageRequest pageRequest = PageRequest.of(safePage - 1, safeSize, sort);
         Page<ForumPost> postPage = postRepository.findAdminPosts(topicId, status, keyword, pageRequest);
         List<PostListItem> items = postPage.getContent().stream()
@@ -327,8 +332,8 @@ public class PostServiceImpl implements PostService {
             ordered = recent;
         }
 
-        int safePage = pageNum == null || pageNum < 1 ? 1 : pageNum;
-        int safeSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        int safePage = PageBounds.page(pageNum);
+        int safeSize = PageBounds.size(pageSize, 10);
         int from = (safePage - 1) * safeSize;
         List<PostListItem> items = ordered.stream()
                 .skip(Math.max(from, 0)).limit(safeSize)
@@ -487,9 +492,11 @@ public class PostServiceImpl implements PostService {
         }
     }
 
+    /** 公共社区只暴露用户名，不展示真实姓名。 */
     private String resolveUserName(Long userId) {
         return userRepository.findById(userId)
-                .map(user -> user.getRealName() != null && !user.getRealName().isBlank() ? user.getRealName() : user.getUsername())
+                .map(User::getUsername)
+                .filter(name -> name != null && !name.isBlank())
                 .orElse("匿名用户");
     }
 

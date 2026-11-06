@@ -8,6 +8,36 @@ services:
     ports:
       - "${ADMINER_PORT:-7070}:8080"
 
+
+  code-judge:
+    container_name: smart-campus-code-judge
+    build:
+      context: ./code-runner
+    restart: always
+    environment:
+      CODE_JUDGE_INTERNAL_TOKEN: "${CODE_JUDGE_INTERNAL_TOKEN:-dev-code-judge-token-change-me}"
+      CODE_JUDGE_TIMEOUT_SECONDS: "${CODE_JUDGE_TIMEOUT_SECONDS:-5}"
+    ports:
+      - "127.0.0.1:${CODE_JUDGE_PORT:-8099}:8099"
+    networks:
+      - judge
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,size=32m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
   mysql:
     container_name: smart-campus-mysql
     image: docker.m.daocloud.io/library/mysql:8
@@ -21,7 +51,7 @@ services:
     ports:
       - "${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
-      - ./.data:/var/lib/mysql
+      - ./.mysql-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-123456}"]
       interval: 10s
@@ -76,6 +106,8 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      code-judge:
+        condition: service_healthy
     environment:
       TZ: Asia/Shanghai
       SERVER_PORT: 8080
@@ -87,6 +119,9 @@ services:
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j-dev-password}
       AI_PYTHON_BASE_URL: ${AI_PYTHON_BASE_URL:-http://host.docker.internal:8081}
+      CODE_JUDGE_BASE_URL: ${CODE_JUDGE_BASE_URL:-http://code-judge:8099}
+      CODE_JUDGE_INTERNAL_TOKEN: ${CODE_JUDGE_INTERNAL_TOKEN:-dev-code-judge-token-change-me}
+      CODE_JUDGE_LOCAL_FALLBACK: "false"
       # AI 面试官所用的 DeepSeek 凭据只从 .env / 环境变量读取，仓库内不保存密钥。
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
@@ -95,6 +130,9 @@ services:
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - judge
     volumes:
       - ./uploads:/app/uploads
 
@@ -107,3 +145,7 @@ services:
       - backend
     ports:
       - "${WEB_PORT:-80}:80"
+
+networks:
+  judge:
+    internal: true

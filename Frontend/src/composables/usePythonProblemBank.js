@@ -1,11 +1,11 @@
 import { computed, ref } from 'vue'
 import { getContentTags } from '../api/learning'
 import { getPythonProblemList } from '../api/pythonProblem'
-import { DIFFICULTY_LABELS, PROGRESS_STORAGE_KEY } from '../utils/pythonOnlineIde'
+import { DIFFICULTY_LABELS, getProgressStorageKey } from '../utils/pythonOnlineIde'
 
 export function getSolvedIds() {
   try {
-    return JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || '[]')
+    return JSON.parse(localStorage.getItem(getProgressStorageKey()) || '[]')
   } catch {
     return []
   }

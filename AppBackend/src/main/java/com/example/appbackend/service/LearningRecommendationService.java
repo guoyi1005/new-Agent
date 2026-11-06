@@ -160,7 +160,7 @@ public class LearningRecommendationService {
         }
         scored.sort(Comparator.comparingDouble(
                 (LearningRecommendationDTO item) -> item.getPriority() == null ? 0d : item.getPriority()).reversed());
-        int size = limit <= 0 ? DEFAULT_LIMIT : limit;
+        int size = limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, 50);
         return scored.size() <= size ? scored : new ArrayList<>(scored.subList(0, size));
     }
 

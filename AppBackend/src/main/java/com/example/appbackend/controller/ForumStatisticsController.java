@@ -2,6 +2,7 @@ package com.example.appbackend.controller;
 
 import com.example.appbackend.dto.ForumReportStatisticsResponse;
 import com.example.appbackend.entity.Result;
+import com.example.appbackend.exception.BusinessException;
 import com.example.appbackend.service.CommentService;
 import com.example.appbackend.service.ForumReportService;
 import com.example.appbackend.service.PostService;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,7 +32,11 @@ public class ForumStatisticsController {
      * 返回论坛全局统计数据
      */
     @GetMapping("/overview")
-    public Result<Map<String, Object>> getOverview() {
+    public Result<Map<String, Object>> getOverview(HttpServletRequest request) {
+        Object role = request.getAttribute("role");
+        if (!"ADMIN".equals(role) && !"TEACHER".equals(role)) {
+            throw new BusinessException(Result.FORBIDDEN_CODE, "仅教师和管理员可查看论坛统计");
+        }
         Map<String, Object> data = new LinkedHashMap<>();
 
         // 帖子统计

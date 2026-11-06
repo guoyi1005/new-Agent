@@ -44,6 +44,11 @@ public class TopicController {
         return userId != null ? (Long) userId : null;
     }
 
+    private boolean canManageTopics(HttpServletRequest request) {
+        String role = (String) request.getAttribute("role");
+        return "TEACHER".equals(role) || "ADMIN".equals(role);
+    }
+
     @Operation(summary = "获取话题列表", description = "分页获取话题列表，支持筛选")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "操作成功"),
@@ -58,8 +63,17 @@ public class TopicController {
             @Parameter(description = "筛选热门")
             @RequestParam(required = false) Integer isHot,
             @Parameter(description = "状态筛选")
-            @RequestParam(required = false) String status) {
-        PageResponse<TopicResponse> page = topicService.getTopicList(pageNum, pageSize, isHot, status);
+            @RequestParam(required = false) String status,
+            HttpServletRequest request) {
+        String effectiveStatus = status;
+        if (!canManageTopics(request)) {
+            if (status != null && !"ACTIVE".equalsIgnoreCase(status)) {
+                throw new BusinessException(Result.FORBIDDEN_CODE, "仅教师和管理员可查看非公开话题");
+            }
+            effectiveStatus = "ACTIVE";
+        }
+        PageResponse<TopicResponse> page = topicService.getTopicList(
+                pageNum, pageSize, isHot, effectiveStatus);
         return Result.success("操作成功", page);
     }
 
@@ -83,8 +97,12 @@ public class TopicController {
     @GetMapping("/{id}")
     public Result<TopicResponse> getTopicDetail(
             @Parameter(description = "话题ID", required = true, example = "1")
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            HttpServletRequest request) {
         TopicResponse topic = topicService.getTopicById(id);
+        if (!canManageTopics(request) && !"ACTIVE".equals(topic.getStatus())) {
+            throw new BusinessException(Result.NOT_FOUND_CODE, "话题不存在");
+        }
         return Result.success("操作成功", topic);
     }
 
@@ -105,9 +123,13 @@ public class TopicController {
             @Parameter(description = "排序方式")
             @RequestParam(required = false) String sortBy,
             HttpServletRequest request) {
+        TopicResponse topic = topicService.getTopicById(topicId);
+        if (!canManageTopics(request) && !"ACTIVE".equals(topic.getStatus())) {
+            throw new BusinessException(Result.NOT_FOUND_CODE, "话题不存在");
+        }
         Long currentUserId = getCurrentUserId(request);
         PageResponse<PostListItem> page = postService.getPostList(
-                pageNum, pageSize, topicId, keyword, sortBy, null, null, currentUserId);
+                pageNum, pageSize, topicId, keyword, sortBy, null, null, null, currentUserId);
         return Result.success(page);
     }
 

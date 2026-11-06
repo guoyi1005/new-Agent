@@ -66,6 +66,12 @@ spring:
       username: ${NEO4J_USERNAME:neo4j}
       password: ${NEO4J_PASSWORD:neo4j-dev-password}
 
+# Python 判题服务：默认使用独立容器，禁用本地回退。
+code-judge:
+  remote-url: ${CODE_JUDGE_BASE_URL:http://127.0.0.1:8099}
+  internal-token: ${CODE_JUDGE_INTERNAL_TOKEN:dev-code-judge-token-change-me}
+  local-fallback-enabled: ${CODE_JUDGE_LOCAL_FALLBACK:false}
+
 # JWT 认证配置
 # JWT_SECRET: JWT 签名密钥，生产环境务必修改
 # JWT_EXPIRATION_MS: Token 过期时间（毫秒）

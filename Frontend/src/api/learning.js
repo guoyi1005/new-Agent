@@ -45,14 +45,10 @@ export const getContentTags = (sourceType, sourceId) => unwrap(request({
   params: { sourceType, sourceId },
 }))
 
-export const reportProblemSolved = (problemId) => unwrap(request({
-  url: `/api/app/learning/problems/${encode(problemId)}/solved`,
-  method: 'POST',
-}))
-
-export const completeProjectTask = (projectId) => unwrap(request({
+export const completeProjectTask = (projectId, evidence) => unwrap(request({
   url: `/api/app/learning/project-tasks/${encode(projectId)}/completed`,
   method: 'POST',
+  data: { evidence },
 }))
 
 export const getLearningWorkflow = (workflowId) => unwrap(request({
