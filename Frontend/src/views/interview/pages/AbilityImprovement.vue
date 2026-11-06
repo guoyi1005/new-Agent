@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-wrapper">
     <Sidebar />
     <main class="main-content">
@@ -351,7 +351,7 @@ onMounted(() => {
 .page-wrapper {
   display: flex;
   min-height: 100vh;
-  background-color: #121820;
+  background-color: var(--hp-surface);
 }
 
 .main-content {
@@ -455,8 +455,8 @@ onMounted(() => {
 }
 
 .doc-card {
-  background-color: #19212e;
-  border: 1px solid #141a22;
+  background-color: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -537,8 +537,8 @@ onMounted(() => {
 }
 
 .featured-card {
-  background-color: #19212e;
-  border: 1px solid #141a22;
+  background-color: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -591,7 +591,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   padding-top: 16px;
-  border-top: 1px solid #141a22;
+  border-top: 1px solid var(--hp-line);
 }
 
 .stat-item {
@@ -624,8 +624,8 @@ onMounted(() => {
 }
 
 .mini-card {
-  background-color: #19212e;
-  border: 1px solid #141a22;
+  background-color: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 10px;
   padding: 16px;
   display: flex;
@@ -687,8 +687,8 @@ onMounted(() => {
 }
 
 .course-card {
-  background-color: #19212e;
-  border: 1px solid #141a22;
+  background-color: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 12px;
   overflow: hidden;
   display: flex;
@@ -766,9 +766,9 @@ onMounted(() => {
 .course-info {
   height: 30%;
   min-height: 30%;
-  background-color: #19212e;
+  background-color: var(--hp-surface);
   padding: 16px;
-  border-top: 1px solid #141a22;
+  border-top: 1px solid var(--hp-line);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -856,8 +856,8 @@ onMounted(() => {
 }
 
 .modal-content {
-  background-color: #19212e;
-  border: 1px solid #141a22;
+  background-color: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 12px;
   width: 100%;
   max-width: 600px;
@@ -872,7 +872,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #141a22;
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .modal-tags {

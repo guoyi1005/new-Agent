@@ -61,8 +61,11 @@
                   <div class="face-preview">
                     <video ref="cameraVideoRef" class="camera-video" autoplay playsinline muted v-show="cameraEnabled && !showCenterCameraPreview"></video>
                     <div class="camera-placeholder" v-show="!cameraEnabled || showCenterCameraPreview">
-                      <button type="button" class="camera-logo" @click="handleCameraToggle" title="点击开启摄像头">
-                        <img src="@/assets/interview/16.png" alt="摄像头" style="width:100%;height:100%;object-fit:contain;border-radius:10px;" />
+                      <button type="button" class="camera-logo" @click="handleCameraToggle" title="点击开启摄像头" aria-label="开启摄像头">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <rect x="3" y="6" width="12" height="12" rx="2" />
+                          <path d="m15 10 6-3v10l-6-3" />
+                        </svg>
                       </button>
                       <div v-if="showCenterCameraPreview" class="camera-wait-tip">等待接通中，画面已切换到主屏</div>
                       <div class="camera-error" v-if="cameraError">{{ cameraError }}</div>

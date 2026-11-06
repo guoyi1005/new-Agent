@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-layout">
     <Sidebar />
     <main class="main-content">
@@ -892,7 +892,7 @@ onBeforeUnmount(() => {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: #121820;
+  background: var(--hp-surface);
 }
 
 .main-content {
@@ -900,7 +900,7 @@ onBeforeUnmount(() => {
   margin-left: clamp(200px, 25vw, 320px);
   overflow-y: auto;
   height: 100vh;
-  background: #121820;
+  background: var(--hp-surface);
 }
 
 .page-container {
@@ -913,8 +913,8 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: #121820;
-  border-bottom: 1px solid #22324a;
+  background: var(--hp-surface);
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .top-sticky-inner {
@@ -944,9 +944,9 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 12px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .top-search-bar .search-icon {
@@ -1019,11 +1019,11 @@ onBeforeUnmount(() => {
 }
 
 .stat-card {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 12px;
   padding: 20px;
   position: relative;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .stat-card .stat-label {
@@ -1093,10 +1093,10 @@ onBeforeUnmount(() => {
 
 /* ==================== 通用卡片样式 ==================== */
 .section-card {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .question-list-card {
@@ -1107,9 +1107,9 @@ onBeforeUnmount(() => {
   text-align: center;
   color: #8ea0b8;
   padding: 42px 12px;
-  border: 1px dashed #30445d;
+  border: 1px dashed var(--hp-line);
   border-radius: 10px;
-  background: #1b2431;
+  background: var(--hp-surface);
 }
 
 .empty-result--error {
@@ -1125,12 +1125,12 @@ onBeforeUnmount(() => {
   padding: 0 14px;
   border: 1px solid #466486;
   border-radius: 8px;
-  color: #d7e6f8;
-  background: #20344a;
+  color: var(--hp-ink);
+  background: var(--hp-surface);
   cursor: pointer;
 }
 
-.retry-button:hover { background: #29445f; }
+.retry-button:hover { background: var(--hp-surface); }
 
 .pagination {
   display: flex;
@@ -1141,8 +1141,8 @@ onBeforeUnmount(() => {
 }
 
 .page-btn {
-  border: 1px solid #32465f;
-  background: #1a2a3d;
+  border: 1px solid var(--hp-line);
+  background: var(--hp-surface);
   color: #c9d8eb;
   border-radius: 8px;
   padding: 6px 12px;
@@ -1194,8 +1194,8 @@ onBeforeUnmount(() => {
 }
 
 .filter-tabs .tab.active {
-  background: #2a3441;
-  color: #fff;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 /* ==================== 专项练习 ==================== */
@@ -1206,13 +1206,13 @@ onBeforeUnmount(() => {
 }
 
 .practice-card {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 10px;
   padding: 16px;
   display: flex;
   gap: 12px;
   cursor: pointer;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .practice-card:hover {
@@ -1254,7 +1254,7 @@ onBeforeUnmount(() => {
 
 .progress-bar {
   height: 4px;
-  background: #2a3441;
+  background: var(--hp-surface);
   border-radius: 2px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -1289,10 +1289,10 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 10px;
   cursor: pointer;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .exam-item:hover {
@@ -1455,12 +1455,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   padding: 12px;
   border-radius: 8px;
-  background: #1b2431;
-  border: 1px solid #2a3441;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
 }
 
 .favorite-item:hover {
-  background: #1b2431;
+  background: var(--hp-surface);
 }
 
 .favorite-item .star {
@@ -1509,7 +1509,7 @@ onBeforeUnmount(() => {
 }
 
 .modal-content {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 16px;
   width: 100%;
   max-width: 800px;
@@ -1517,7 +1517,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .modal-header {
@@ -1525,7 +1525,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #2a3441;
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .modal-header h2 {
@@ -1611,9 +1611,9 @@ onBeforeUnmount(() => {
   line-height: 1.8;
   margin-bottom: 24px;
   padding: 16px;
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 8px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 /* 答题区 */
@@ -1634,15 +1634,15 @@ onBeforeUnmount(() => {
 .answer-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   font-size: 14px;
   line-height: 1.6;
   resize: vertical;
   min-height: 120px;
   box-sizing: border-box;
-  background: #1b2431;
-  color: #fff;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .answer-input::placeholder {
@@ -1680,7 +1680,7 @@ onBeforeUnmount(() => {
   padding: 10px 24px;
   background: transparent;
   color: #8b9aae;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -1758,7 +1758,7 @@ onBeforeUnmount(() => {
 /* 笔记区 */
 .notes-section {
   padding-top: 20px;
-  border-top: 1px solid #2a3441;
+  border-top: 1px solid var(--hp-line);
 }
 
 .note-input-area {
@@ -1768,15 +1768,15 @@ onBeforeUnmount(() => {
 .note-input-area textarea {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   font-size: 14px;
   line-height: 1.6;
   resize: vertical;
   margin-bottom: 12px;
   box-sizing: border-box;
-  background: #1b2431;
-  color: #fff;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .note-input-area textarea::placeholder {
@@ -1796,9 +1796,9 @@ onBeforeUnmount(() => {
 
 .note-item {
   padding: 12px 16px;
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 8px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .note-item p {
@@ -1824,20 +1824,20 @@ onBeforeUnmount(() => {
   gap: 12px;
   margin-bottom: 20px;
   padding: 16px;
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 8px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
 }
 
 .count-input {
   width: 80px;
   padding: 8px 12px;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
   border-radius: 6px;
   font-size: 14px;
   text-align: center;
-  background: #1b2431;
-  color: #fff;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .batch-preview h4 {
@@ -1850,10 +1850,10 @@ onBeforeUnmount(() => {
 .batch-questions-list {
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid #2a3441;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   margin-bottom: 20px;
-  background: #1b2431;
+  background: var(--hp-surface);
 }
 
 .batch-question-item {
@@ -1861,7 +1861,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #2a3441;
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .batch-question-item:last-child {

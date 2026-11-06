@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-layout">
     <Sidebar />
     <main class="main-content">
@@ -315,8 +315,8 @@ onMounted(() => {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: #121820;
-  color: #d8e2f0;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .main-content {
@@ -355,9 +355,9 @@ onMounted(() => {
 .header-stat {
   min-width: 112px;
   padding: 14px 18px;
-  border: 1px solid #24344d;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
-  background: #182233;
+  background: var(--hp-surface);
   text-align: right;
 }
 
@@ -377,9 +377,9 @@ onMounted(() => {
 
 .filter-panel,
 .result-panel {
-  border: 1px solid #24344d;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
-  background: #182233;
+  background: var(--hp-surface);
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
 }
 
@@ -409,10 +409,10 @@ input,
 select {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #2f415f;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
-  background: #101725;
-  color: #e4edf9;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
   font-size: 14px;
   outline: none;
 }
@@ -526,7 +526,7 @@ select:focus {
   justify-content: center;
   gap: 10px;
   min-height: 180px;
-  border: 1px dashed #31435f;
+  border: 1px dashed var(--hp-line);
   border-radius: 8px;
   color: #a9b8cc;
 }
@@ -555,9 +555,9 @@ select:focus {
   grid-template-columns: 42px 1fr;
   gap: 14px;
   padding: 16px;
-  border: 1px solid #263853;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
-  background: #142033;
+  background: var(--hp-surface);
 }
 
 .result-rank {
@@ -566,7 +566,7 @@ select:focus {
   height: 34px;
   place-items: center;
   border-radius: 8px;
-  background: #203553;
+  background: var(--hp-surface);
   color: #93c5fd;
   font-weight: 700;
 }
@@ -602,38 +602,38 @@ select:focus {
   min-height: 24px;
   padding: 0 9px;
   border-radius: 6px;
-  background: #22314a;
+  background: var(--hp-surface);
   color: #b8c6da;
   font-size: 12px;
 }
 
 .tag-position {
-  background: #17345a;
+  background: var(--hp-surface);
   color: #93c5fd;
 }
 
 .tag-type {
-  background: #123b35;
+  background: var(--hp-surface);
   color: #6ee7b7;
 }
 
 .tag-difficulty {
-  background: #42361a;
-  color: #fde68a;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .tag-on {
-  background: #123b35;
+  background: var(--hp-surface);
   color: #6ee7b7;
 }
 
 .tag-off {
-  background: #42202a;
-  color: #fda4af;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .tag-distance {
-  background: #2b2945;
+  background: var(--hp-surface);
   color: #c4b5fd;
 }
 
@@ -655,7 +655,7 @@ select:focus {
   margin-top: 14px;
   padding: 12px;
   border-radius: 8px;
-  background: #101827;
+  background: var(--hp-surface);
 }
 
 .doc-block p {
@@ -684,9 +684,9 @@ select:focus {
   width: min(820px, 96vw);
   max-height: 86vh;
   overflow: hidden;
-  border: 1px solid #2b3d59;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
-  background: #182233;
+  background: var(--hp-surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
 }
 
@@ -695,7 +695,7 @@ select:focus {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 1px solid #263853;
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .modal-header h2 {
@@ -708,7 +708,7 @@ select:focus {
   height: 34px;
   border: none;
   border-radius: 8px;
-  background: #24344d;
+  background: var(--hp-surface);
   color: #cbd7e8;
   cursor: pointer;
 }
@@ -731,8 +731,8 @@ select:focus {
   gap: 6px;
   padding: 12px;
   border-radius: 8px;
-  background: #101827;
-  color: #e4edf9;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .detail-label {
@@ -744,7 +744,7 @@ select:focus {
   margin-top: 14px;
   padding: 14px;
   border-radius: 8px;
-  background: #101827;
+  background: var(--hp-surface);
 }
 
 .detail-section h3 {

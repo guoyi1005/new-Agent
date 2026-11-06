@@ -450,7 +450,7 @@ onMounted(() => {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: #0a0c12;
+  background: var(--hp-surface);
 }
 
 .main-content {
@@ -458,7 +458,7 @@ onMounted(() => {
   margin-left: clamp(200px, 25vw, 320px);
   margin-right: 48px; /* 为抽屉按钮预留空间 */
   height: 100vh;
-  background: #0a0c12;
+  background: var(--hp-surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -515,8 +515,8 @@ onMounted(() => {
 }
 
 .status-card {
-  background: #111726;
-  border: 1px solid #232a39;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 20px;
   padding: 16px 20px;
   display: flex;
@@ -549,8 +549,8 @@ onMounted(() => {
 /* ========== 对话区域 ========== */
 .chat-section {
   flex: 1;
-  background: #1b1e28;
-  border: 1px solid #171a25;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -563,7 +563,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 14px 20px;
-  border-bottom: 1px solid #171a25;
+  border-bottom: 1px solid var(--hp-line);
   flex-shrink: 0;
 }
 
@@ -594,7 +594,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 16px;
   min-height: 0;
-  background: #0f121d;
+  background: var(--hp-surface);
 }
 
 /* 欢迎语 */
@@ -608,14 +608,14 @@ onMounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #1a2332;
+  background: var(--hp-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
   overflow: hidden;
-  border: 1px solid #2d3a4f;
+  border: 1px solid var(--hp-line);
 }
 
 .robot-img {
@@ -633,11 +633,11 @@ onMounted(() => {
 
 .welcome-text {
   padding: 12px 16px;
-  background: #1a2332;
+  background: var(--hp-surface);
   border-radius: 12px;
   font-size: 13px;
   line-height: 1.7;
-  color: #e5e7eb;
+  color: var(--hp-ink);
   width: fit-content;
   max-width: min(70%, 760px);
   word-break: break-word;
@@ -658,13 +658,13 @@ onMounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #1a2332;
+  background: var(--hp-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   flex-shrink: 0;
-  border: 1px solid #2d3a4f;
+  border: 1px solid var(--hp-line);
 }
 
 .message.user .message-avatar {
@@ -688,8 +688,8 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 13px;
   line-height: 1.7;
-  color: #e5e7eb;
-  background: #1a2332;
+  color: var(--hp-ink);
+  background: var(--hp-surface);
   word-break: break-word;
   max-width: 100%;
 }
@@ -707,7 +707,7 @@ onMounted(() => {
 }
 
 .thinking-avatar {
-  background: #1a2332;
+  background: var(--hp-surface);
 }
 
 .thinking-bubble {
@@ -718,7 +718,7 @@ onMounted(() => {
   border-radius: 14px;
   color: #c5d4ee;
   font-size: 13px;
-  background: linear-gradient(135deg, rgba(34, 53, 84, 0.92), rgba(24, 37, 58, 0.96));
+  background: var(--hp-surface-2);
   border: 1px solid rgba(76, 125, 199, 0.18);
   box-shadow: 0 10px 24px rgba(6, 13, 28, 0.16);
 }
@@ -788,15 +788,15 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   padding: 12px 20px;
-  border-top: 1px solid #171a25;
+  border-top: 1px solid var(--hp-line);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
 
 .quick-btn {
   padding: 8px 14px;
-  background: #1a2332;
-  border: 1px solid #2d3a4f;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 16px;
   color: #9ca3af;
   font-size: 12px;
@@ -805,8 +805,8 @@ onMounted(() => {
 }
 
 .quick-btn:hover:not(:disabled) {
-  background: #2d3a4f;
-  color: #ffffff;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
   border-color: #3a7bc8;
 }
 
@@ -818,7 +818,7 @@ onMounted(() => {
 /* 输入区域 */
 .chat-input-area {
   padding: 12px 20px 16px;
-  border-top: 1px solid #171a25;
+  border-top: 1px solid var(--hp-line);
   flex-shrink: 0;
 }
 
@@ -826,8 +826,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #1a2332;
-  border: 1px solid #2d3a4f;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 24px;
   padding: 4px 4px 4px 12px;
 }
@@ -930,8 +930,8 @@ onMounted(() => {
 .drawer-trigger {
   width: 48px;
   height: 100vh;
-  background: #0f121d;
-  border-left: 1px solid #171a25;
+  background: var(--hp-surface);
+  border-left: 1px solid var(--hp-line);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -942,7 +942,7 @@ onMounted(() => {
 }
 
 .drawer-trigger:hover {
-  background: #131825;
+  background: var(--hp-surface);
 }
 
 .trigger-icon {
@@ -973,8 +973,8 @@ onMounted(() => {
   width: 70vw;
   max-width: 1200px;
   height: 100vh;
-  background: #0f121d;
-  border-left: 1px solid #171a25;
+  background: var(--hp-surface);
+  border-left: 1px solid var(--hp-line);
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -992,7 +992,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #171a25;
+  border-bottom: 1px solid var(--hp-line);
   flex-shrink: 0;
 }
 
@@ -1007,7 +1007,7 @@ onMounted(() => {
   width: 28px;
   height: 28px;
   border: none;
-  background: #1a2332;
+  background: var(--hp-surface);
   border-radius: 6px;
   color: #6b7280;
   font-size: 12px;
@@ -1019,15 +1019,15 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  background: #2d3a4f;
-  color: #ffffff;
+  background: var(--hp-surface);
+  color: var(--hp-ink);
 }
 
 .drawer-body {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  background: #0a0c12;
+  background: var(--hp-surface);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -1035,8 +1035,8 @@ onMounted(() => {
 
 /* 简历预览卡片 */
 .resume-preview-card {
-  background: #111726;
-  border: 1px solid #1e2535;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   overflow: hidden;
   width: 100%;
   max-width: 1100px;
@@ -1051,8 +1051,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   padding: 24px;
-  background: linear-gradient(135deg, #161c23 0%, #1a2332 100%);
-  border-bottom: 1px solid #1e2535;
+  background: var(--hp-surface-2);
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .header-main {
@@ -1100,13 +1100,13 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 8px;
-  background: #1e2535;
+  background: var(--hp-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 36px;
   color: #6b7280;
-  border: 2px solid #2d3a4f;
+  border: 2px solid var(--hp-line);
 }
 
 .avatar-img {
@@ -1114,7 +1114,7 @@ onMounted(() => {
   height: 80px;
   border-radius: 8px;
   object-fit: cover;
-  border: 2px solid #2d3a4f;
+  border: 2px solid var(--hp-line);
 }
 
 /* 空状态占位符 */
@@ -1224,8 +1224,8 @@ onMounted(() => {
   width: 20%;
   min-width: 180px;
   padding: 24px 20px;
-  border-right: 1px solid #1e2535;
-  background: #0d1117;
+  border-right: 1px solid var(--hp-line);
+  background: var(--hp-surface);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -1234,7 +1234,7 @@ onMounted(() => {
 .resume-right {
   flex: 1;
   padding: 24px;
-  background: #0d1117;
+  background: var(--hp-surface);
 }
 
 /* 左侧头像区域 */
@@ -1249,20 +1249,20 @@ onMounted(() => {
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #2d3a4f;
+  border: 1px solid var(--hp-line);
 }
 
 .avatar-placeholder-large {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: #1e2535;
+  background: var(--hp-surface);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 48px;
   color: #6b7280;
-  border: 3px solid #2d3a4f;
+  border: 1px solid var(--hp-line);
 }
 
 /* 左侧个人信息 */
@@ -1313,7 +1313,7 @@ onMounted(() => {
 
 .skill-bar-compact {
   height: 3px;
-  background: #1e2535;
+  background: var(--hp-surface);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -1354,7 +1354,7 @@ onMounted(() => {
   color: #ffffff;
   margin: 0 0 16px 0;
   padding-bottom: 10px;
-  border-bottom: 1px solid #1e2535;
+  border-bottom: 1px solid var(--hp-line);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1381,7 +1381,7 @@ onMounted(() => {
   top: 8px;
   bottom: 0;
   width: 1px;
-  background: #2d3a4f;
+  background: var(--hp-surface);
 }
 
 .timeline-item:last-child::before {
@@ -1396,7 +1396,7 @@ onMounted(() => {
   height: 10px;
   border-radius: 50%;
   background: #3a7bc8;
-  border: 2px solid #111726;
+  border: 2px solid var(--hp-line);
 }
 
 .timeline-content {
@@ -1479,7 +1479,7 @@ onMounted(() => {
 
 .education-item {
   padding-bottom: 16px;
-  border-bottom: 1px solid #1e2535;
+  border-bottom: 1px solid var(--hp-line);
 }
 
 .education-item:last-child {
@@ -1501,8 +1501,8 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #111726;
-  border: 1px solid #1e2535;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   flex: 1;
   min-width: 280px;
@@ -1539,7 +1539,7 @@ onMounted(() => {
 .education-item-horizontal .edu-date {
   margin-left: auto;
   padding-left: 12px;
-  border-left: 1px solid #2d3a4f;
+  border-left: 1px solid var(--hp-line);
   white-space: nowrap;
 }
 
@@ -1576,7 +1576,7 @@ onMounted(() => {
 
 .skill-bar {
   height: 4px;
-  background: #1e2535;
+  background: var(--hp-surface);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -1605,12 +1605,12 @@ onMounted(() => {
 
 .drawer-footer {
   padding: 16px 24px;
-  border-top: 1px solid #171a25;
+  border-top: 1px solid var(--hp-line);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #0f121d;
+  background: var(--hp-surface);
 }
 
 .sync-status {
@@ -1634,10 +1634,10 @@ onMounted(() => {
 
 .edit-resume-btn {
   padding: 10px 24px;
-  background: #1a2332;
-  border: 1px solid #2d3a4f;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 20px;
-  color: #e5e7eb;
+  color: var(--hp-ink);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -1649,9 +1649,9 @@ onMounted(() => {
 }
 
 .edit-resume-btn:hover {
-  background: #2d3a4f;
+  background: var(--hp-surface);
   border-color: #3a7bc8;
-  color: #ffffff;
+  color: var(--hp-ink);
 }
 
 .export-pdf-btn {

@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="page-layout">
+  <div class="page-layout interview-workspace">
     <Sidebar />
     <main class="main-content">
       <EditorialToolbar
@@ -2105,15 +2105,15 @@ onMounted(async () => {
 }
 /* Editorial SaaS / retro pastel dashboard refresh */
 .page-layout {
-  --ink: #24231f;
-  --muted: #716d65;
-  --paper: #f3efe6;
-  --surface: #fffdf7;
-  --pink: #ead5d8;
-  --mustard: #e6cf8d;
-  --olive: #bac6a6;
-  --blue: #bdcbd2;
-  --lilac: #d9cbdc;
+  --ink: var(--hp-ink);
+  --muted: var(--hp-muted);
+  --paper: var(--hp-bg);
+  --surface: var(--hp-surface);
+  --pink: var(--hp-pink);
+  --mustard: var(--hp-surface-2);
+  --olive: var(--hp-green);
+  --blue: var(--hp-blue);
+  --lilac: var(--hp-pink-soft);
   height: calc(100vh - 60px);
   color: var(--ink);
   background: var(--paper);
@@ -2200,8 +2200,8 @@ onMounted(async () => {
   text-align: left;
   transition: transform .18s ease, box-shadow .18s ease;
 }
-.hero-action:hover { border-color: var(--ink); transform: translateY(-2px); box-shadow: 4px 5px 0 rgba(36,35,31,.16); }
-.hero-action--primary { color: #fff; background: var(--ink); }
+.hero-action:hover { border-color: var(--hp-line-strong); transform: translateY(-2px); box-shadow: var(--hp-shadow-sm); }
+.hero-action--primary { color: var(--hp-pink-ink); background: var(--hp-yellow); }
 .hero-action--resume { background: var(--pink); }
 .hero-action small { font-size: 9px; font-weight: 800; letter-spacing: .14em; }
 .hero-action span { font-size: 15px; font-weight: 750; line-height: 1.3; }
@@ -2225,7 +2225,7 @@ onMounted(async () => {
 .selector-btn,
 .tech-tag-item { border-color: #c7c0b4; border-radius: 999px; color: #56524b; background: #f1ece3; }
 .selector-btn:hover { border-color: var(--ink); color: var(--ink); background: #fffdf7; }
-.selector-btn.active { border-color: var(--ink); color: #fff; background: var(--ink); }
+.selector-btn.active { border-color: var(--hp-line-strong); color: var(--hp-pink-ink); background: var(--hp-yellow); }
 .tech-tag { border: 1px solid var(--ink); border-radius: 999px; }
 .tech-tag.mastered { color: var(--ink); background: var(--olive); }
 .tech-tag-item.active { border-color: #898278; color: var(--ink); background: #fffdf7; }
@@ -2243,11 +2243,11 @@ onMounted(async () => {
 .stat-big { color: var(--ink); font-size: 38px; letter-spacing: -.045em; }
 .stat-trend.up { color: #46553e; font-weight: 700; }
 .progress-bar { background: rgba(36,35,31,.14); }
-.progress-fill { background: var(--ink); }
+.progress-fill { background: var(--hp-pink-ink); }
 
 .charts-row { gap: 14px; margin-bottom: 0; }
 .chart-card { margin-bottom: 0; padding: 20px; background: var(--surface); }
-.radar-card { background: #e8e4ed; }
+.radar-card { background: var(--lilac); }
 .chart-title,
 .plan-title,
 .plan-card-title,

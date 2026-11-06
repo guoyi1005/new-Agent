@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-layout">
     <Sidebar />
     <main class="main-content">
@@ -914,15 +914,15 @@ async function sendMessage() {
 <style scoped>
 /* 深色主题配色 */
 .page-layout {
-  --bg-page: #0a0c12;
-  --bg-hero: #1e1e3f;
-  --bg-card: #0f121d;
-  --bg-table-header: #1b1e28;
-  --border-color: #161924;
-  --text-primary: #ffffff;
-  --text-secondary: #8b92a8;
-  --text-muted: #5a6072;
-  --accent-primary: #4f46e5;
+  --bg-page: var(--hp-surface);
+  --bg-hero: var(--hp-surface-2);
+  --bg-card: var(--hp-surface);
+  --bg-table-header: var(--hp-surface-2);
+  --border-color: var(--hp-line);
+  --text-primary: var(--hp-ink);
+  --text-secondary: var(--hp-muted);
+  --text-muted: var(--hp-muted);
+  --accent-primary: var(--hp-pink-ink);
   --accent-success: #10b981;
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
@@ -956,11 +956,11 @@ async function sendMessage() {
 .hero-section {
   width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5a 100%);
+  background: var(--hp-surface-2);
   border-radius: 16px;
   padding: 40px;
   margin-bottom: 32px;
-  border: 3px solid #29304d;
+  border: 1px solid var(--hp-line);
 }
 
 .hero-content {
@@ -1240,7 +1240,7 @@ input::placeholder {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: #1a2133;
+  background: var(--hp-surface);
   overflow: hidden;
 }
 
@@ -1305,7 +1305,7 @@ video {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #181b26;
+  border: 1px solid var(--hp-line);
 }
 
 .section-icon {
@@ -1341,7 +1341,7 @@ video {
 
 .analysis-card {
   background: var(--bg-card);
-  border: 1px solid #181b26;
+  border: 1px solid var(--hp-line);
   border-radius: 12px;
   padding: 20px;
 }
@@ -1626,7 +1626,7 @@ video {
 
 .btn-back:hover {
   color: var(--text-primary);
-  border-color: #2a2f40;
+  border-color: var(--hp-line);
 }
 
 .btn-back:disabled {

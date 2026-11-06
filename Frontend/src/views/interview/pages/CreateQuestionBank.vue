@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page-layout">
     <Sidebar />
     <main class="main-content">
@@ -770,7 +770,7 @@ const doAiRecognize = async () => {
   overflow: hidden;
   overflow-x: hidden;
   max-width: 100%;
-  background: #121820;
+  background: var(--hp-surface);
 }
 
 .main-content {
@@ -780,7 +780,7 @@ const doAiRecognize = async () => {
   overflow-y: auto;
   overflow-x: hidden;
   height: 100vh;
-  background: #121820;
+  background: var(--hp-surface);
 }
 
 .page-container {
@@ -839,10 +839,10 @@ const doAiRecognize = async () => {
 
 .tab-switch {
   display: flex;
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 10px;
   padding: 4px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
   gap: 2px;
 }
 
@@ -871,10 +871,10 @@ const doAiRecognize = async () => {
 
 /* ========== 新建表单卡片 ========== */
 .form-card {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 16px;
   padding: 32px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
 }
 
 .section-title {
@@ -888,7 +888,7 @@ const doAiRecognize = async () => {
 
 .section-divider {
   border: none;
-  border-top: 1px solid #1e2d42;
+  border-top: 1px solid var(--hp-line);
   margin: 28px 0;
 }
 
@@ -913,11 +913,11 @@ const doAiRecognize = async () => {
   width: 100%;
   height: 40px;
   padding: 0 12px;
-  background: #131d2e;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   font-size: 14px;
-  color: #e2e8f0;
+  color: var(--hp-ink);
   outline: none;
   transition: border-color 0.2s;
   box-sizing: border-box;
@@ -941,11 +941,11 @@ const doAiRecognize = async () => {
 .form-textarea {
   width: 100%;
   padding: 10px 12px;
-  background: #131d2e;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   font-size: 14px;
-  color: #e2e8f0;
+  color: var(--hp-ink);
   outline: none;
   resize: vertical;
   transition: border-color 0.2s;
@@ -978,11 +978,11 @@ const doAiRecognize = async () => {
   display: inline-flex;
   align-items: center;
   padding: 5px 14px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
   border-radius: 20px;
   font-size: 13px;
   color: #6b7a99;
-  background: #131d2e;
+  background: var(--hp-surface);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
@@ -1018,10 +1018,10 @@ const doAiRecognize = async () => {
 
 /* 筛选卡片 */
 .filter-card {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 14px;
   padding: 20px 24px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1045,11 +1045,11 @@ const doAiRecognize = async () => {
   flex: 1;
   height: 38px;
   padding: 0 12px;
-  background: #131d2e;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   font-size: 14px;
-  color: #e2e8f0;
+  color: var(--hp-ink);
   outline: none;
   transition: border-color 0.2s;
 }
@@ -1092,11 +1092,11 @@ const doAiRecognize = async () => {
 
 .f-tag {
   padding: 4px 12px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
   border-radius: 16px;
   font-size: 12px;
   color: #6b7a99;
-  background: #131d2e;
+  background: var(--hp-surface);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
@@ -1107,10 +1107,10 @@ const doAiRecognize = async () => {
 
 /* 列表卡片 */
 .list-card {
-  background: #1b2431;
+  background: var(--hp-surface);
   border-radius: 14px;
   padding: 20px 24px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
   overflow-x: hidden;
   max-width: 100%;
 }
@@ -1136,8 +1136,8 @@ const doAiRecognize = async () => {
 }
 
 .page-size-select {
-  background: #131d2e;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 6px;
   padding: 2px 6px;
   font-size: 13px;
@@ -1158,7 +1158,7 @@ const doAiRecognize = async () => {
   align-items: center;
   padding: 0 16px;
   height: 44px;
-  background: #131d2e;
+  background: var(--hp-surface);
   border-radius: 8px;
   margin-bottom: 4px;
   min-width: 0;
@@ -1190,7 +1190,7 @@ const doAiRecognize = async () => {
 
 .q-tr:hover {
   background: rgba(58,123,200,0.08);
-  border-color: #1e2d42;
+  border-color: var(--hp-line);
 }
 
 .q-td {
@@ -1295,14 +1295,14 @@ const doAiRecognize = async () => {
   gap: 8px;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #1e2d42;
+  border-top: 1px solid var(--hp-line);
 }
 
 .page-btn {
   height: 34px;
   padding: 0 16px;
-  background: #131d2e;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 7px;
   font-size: 13px;
   color: #9daec8;
@@ -1358,7 +1358,7 @@ const doAiRecognize = async () => {
 .loading-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid #1e2d42;
+  border: 2px solid var(--hp-line);
   border-top-color: #3a7bc8;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -1379,8 +1379,8 @@ const doAiRecognize = async () => {
 }
 
 .modal-box {
-  background: #1b2431;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   border-radius: 16px;
   width: 100%;
   max-width: 860px;
@@ -1396,7 +1396,7 @@ const doAiRecognize = async () => {
   justify-content: space-between;
   align-items: center;
   padding: 14px 20px;
-  border-bottom: 1px solid #1e2d42;
+  border-bottom: 1px solid var(--hp-line);
   flex-shrink: 0;
 }
 
@@ -1440,7 +1440,7 @@ const doAiRecognize = async () => {
 
 .detail-divider {
   border: none;
-  border-top: 1px solid #1e2d42;
+  border-top: 1px solid var(--hp-line);
   margin: 10px 0;
 }
 
@@ -1476,11 +1476,11 @@ const doAiRecognize = async () => {
   font-size: 13px;
   color: #c8d6e8;
   line-height: 1.6;
-  background: #131d2e;
+  background: var(--hp-surface);
   padding: 5px 10px;
   border-radius: 6px;
   min-height: 28px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
 }
 
 .detail-field-value.pre-wrap {
@@ -1501,7 +1501,7 @@ const doAiRecognize = async () => {
   gap: 8px;
   margin-top: auto;
   padding-top: 10px;
-  border-top: 1px solid #1e2d42;
+  border-top: 1px solid var(--hp-line);
 }
 
 .detail-time-row {
@@ -1543,8 +1543,8 @@ const doAiRecognize = async () => {
 .confirm-q {
   font-size: 13px;
   color: #9daec8;
-  background: #131d2e;
-  border: 1px solid #1e2d42;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
   padding: 10px 14px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -1577,7 +1577,7 @@ const doAiRecognize = async () => {
 .btn-outline {
   height: 40px;
   padding: 0 20px;
-  border: 1px solid #1e2d42;
+  border: 1px solid var(--hp-line);
   border-radius: 8px;
   background: transparent;
   color: #6b7a99;
@@ -1629,7 +1629,7 @@ const doAiRecognize = async () => {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 20px;
-  border-top: 1px solid #1e2d42;
+  border-top: 1px solid var(--hp-line);
   flex-shrink: 0;
 }
 
@@ -1639,9 +1639,9 @@ const doAiRecognize = async () => {
   bottom: 32px;
   left: 50%;
   transform: translateX(-50%);
-  background: #1b2431;
-  border: 1px solid #1e2d42;
-  color: #e2e8f0;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-line);
+  color: var(--hp-ink);
   padding: 12px 24px;
   border-radius: 10px;
   font-size: 14px;

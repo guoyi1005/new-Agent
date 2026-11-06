@@ -1,4 +1,4 @@
-﻿<template>
+<template>
 	<div class="page-layout">
 		<Sidebar />
 		<main class="main-content">
@@ -317,7 +317,7 @@ onMounted(() => {
 .page-layout {
 	display: flex;
 	min-height: 100vh;
-	background: #0f1726;
+	background: var(--hp-surface);
 }
 
 .main-content {
@@ -336,7 +336,7 @@ onMounted(() => {
 .hero-card,
 .toolbar-card,
 .list-card {
-	border: 1px solid #22314a;
+	border: 1px solid var(--hp-line);
 	border-radius: 14px;
 	background: linear-gradient(180deg, #1a263a, #142033);
 }
@@ -371,7 +371,7 @@ onMounted(() => {
 	border: 1px solid #2a4064;
 	border-radius: 10px;
 	padding: 12px 16px;
-	background: #111c2e;
+	background: var(--hp-surface);
 	display: grid;
 	gap: 4px;
 }
@@ -404,8 +404,8 @@ onMounted(() => {
 textarea {
 	border: 1px solid #2a436b;
 	border-radius: 8px;
-	background: #12203a;
-	color: #eaf2ff;
+	background: var(--hp-surface);
+	color: var(--hp-ink);
 	padding: 8px 12px;
 	font-size: 13px;
 	outline: none;
@@ -420,7 +420,7 @@ textarea {
 .chip {
 	border: 1px solid #31517f;
 	border-radius: 999px;
-	background: #0f1b30;
+	background: var(--hp-surface);
 	color: #9db6df;
 	padding: 4px 10px;
 	font-size: 12px;
@@ -443,7 +443,7 @@ textarea {
 	padding: 8px 12px;
 	color: #8ea3c6;
 	font-size: 12px;
-	border-bottom: 1px solid #22314a;
+	border-bottom: 1px solid var(--hp-line);
 }
 
 .note-row {
@@ -451,7 +451,7 @@ textarea {
 	grid-template-columns: 1.2fr 1fr 160px;
 	gap: 12px;
 	padding: 12px;
-	border-bottom: 1px dashed #21334f;
+	border-bottom: 1px dashed var(--hp-line);
 	align-items: start;
 }
 
@@ -524,8 +524,8 @@ textarea {
 
 .danger {
 	border: 1px solid #7d3246;
-	background: #2a1220;
-	color: #ffb8c7;
+	background: var(--hp-surface);
+	color: var(--hp-ink);
 }
 
 .empty {
@@ -549,7 +549,7 @@ textarea {
 	width: min(520px, 100%);
 	border: 1px solid #2d4671;
 	border-radius: 12px;
-	background: #0f1c33;
+	background: var(--hp-surface);
 	padding: 20px;
 	display: grid;
 	gap: 12px;
@@ -605,7 +605,7 @@ textarea {
 	justify-content: space-between;
 	align-items: center;
 	padding-bottom: 10px;
-	border-bottom: 1px solid #22395d;
+	border-bottom: 1px solid var(--hp-line);
 }
 
 .close-btn {
@@ -641,9 +641,9 @@ textarea {
 }
 
 .detail-block {
-	border: 1px solid #1f385d;
+	border: 1px solid var(--hp-line);
 	border-radius: 10px;
-	background: #10213a;
+	background: var(--hp-surface);
 	padding: 12px;
 	display: grid;
 	gap: 8px;

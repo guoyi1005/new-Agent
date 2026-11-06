@@ -1,3 +1,149 @@
+/* The ability dashboard shares the portal's warm surfaces and selection states. */
+#app .interview-shell .interview-workspace {
+  --iv-bg: var(--hp-bg);
+  --iv-surface: var(--hp-surface);
+  --iv-surface-soft: var(--hp-surface-2);
+  --iv-ink: var(--hp-ink);
+  --iv-muted: var(--hp-muted);
+  --iv-line: var(--hp-line);
+  --iv-blue: var(--hp-blue);
+  --iv-blue-strong: var(--hp-pink-ink);
+  --iv-green: var(--hp-green);
+  --iv-yellow: var(--hp-yellow);
+  --iv-pink: var(--hp-pink);
+}
+
+#app .interview-shell .interview-workspace :is(.mentor-btn, .edit-footer .btn-primary) {
+  color: var(--hp-pink-ink) !important;
+  background: var(--hp-yellow) !important;
+  border-color: var(--hp-line-strong) !important;
+}
+
+#app .interview-shell .interview-workspace :is(.mentor-btn, .edit-footer .btn-primary):hover {
+  background: var(--hp-pink) !important;
+}
+
+#app .interview-shell .interview-workspace :is(.interview-hero__copy, .interview-hero__actions, .hero-action, .tech-stack-header, .tech-tags-section, .tech-tag, .chart-card, .plan-card, .right-sidebar, .sidebar-section, .edit-modal, .edit-close) {
+  border-color: var(--hp-line);
+  box-shadow: none;
+}
+
+#app .interview-shell .interview-workspace :is(.right-sidebar, .sidebar-section.trends, .plan-section) {
+  background: var(--hp-surface-2);
+}
+
+#app .interview-shell .interview-workspace .sidebar-section.hot-questions {
+  background: var(--hp-green);
+}
+
+#app .interview-shell .interview-workspace .page-dots .dot.active {
+  background: var(--hp-pink-ink);
+}
+
+/* Live interview workspace. */
+#app .interview-shell .cockpit {
+  --iv-bg: var(--hp-bg);
+  --iv-surface: var(--hp-surface);
+  --iv-surface-soft: var(--hp-surface-2);
+  --iv-ink: var(--hp-ink);
+  --iv-muted: var(--hp-muted);
+  --iv-line: var(--hp-line);
+  --iv-blue: var(--hp-surface-2);
+  --iv-blue-strong: var(--hp-pink-ink);
+  --iv-green: var(--hp-green);
+  --iv-yellow: var(--hp-yellow);
+  --iv-pink: var(--hp-pink);
+}
+
+#app .interview-shell .cockpit :is(.cockpit-header, .transcript-header, .overview-item, .center-caption, .camera-logo, .transcript-text, .ai-tips-section) {
+  background: var(--hp-surface-2);
+  border-color: var(--hp-line);
+  color: var(--hp-ink);
+  box-shadow: none;
+}
+
+#app .interview-shell .cockpit :is(.overview-title, .overview-value, .env-title, .focus-header, .focus-desc, .transcript-title, .tip-card-title, .ai-tips-header) {
+  color: var(--hp-ink);
+}
+
+#app .interview-shell .cockpit :is(.overview-label, .overview-progress-label, .env-label, .focus-subtitle, .transcript-time, .tip-card-text, .ai-avatar-status, .camera-wait-tip) {
+  color: var(--hp-muted);
+}
+
+#app .interview-shell .cockpit :is(.timer-pill, .overview-badge, .env-status-icon, .tip-card-icon) {
+  background: var(--hp-green);
+  border-color: var(--hp-green);
+  color: #3e603b;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+
+#app .interview-shell .cockpit :is(.focus-percent, .overview-value.highlight, .env-value.good, .env-value.excellent) {
+  color: #3e603b;
+  text-shadow: none;
+}
+
+#app .interview-shell .cockpit .focus-fill {
+  stroke: var(--hp-green-ink);
+  filter: none;
+}
+
+#app .interview-shell .cockpit .focus-track {
+  stroke: var(--hp-track);
+}
+
+#app .interview-shell .cockpit :is(.center-caption-label, .env-icon) {
+  color: var(--hp-pink-ink);
+}
+
+#app .interview-shell .cockpit :is(.center-main-card, .ai-tips-section, .center-chat-input) {
+  border-radius: var(--hp-r-sm);
+}
+
+#app .interview-shell .cockpit :is(.ai-avatar-wrap.ready, .ai-avatar.ready-face) {
+  border-radius: var(--hp-r-sm);
+  background: var(--hp-surface-2);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+#app .interview-shell .cockpit :is(.ai-avatar-wrap.ready, .ai-avatar.ready-face, .ai-tips-section)::before,
+#app .interview-shell .cockpit .ai-avatar.ready-face::after {
+  content: none;
+}
+
+#app .interview-shell .cockpit .camera-placeholder {
+  background-color: var(--hp-surface-2) !important;
+}
+
+#app .interview-shell .cockpit .camera-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--hp-r-sm);
+  background: var(--hp-surface);
+  color: var(--hp-pink-ink);
+}
+
+#app .interview-shell .cockpit .camera-logo:hover {
+  background: var(--hp-pink);
+  border-color: var(--hp-line-strong);
+}
+
+#app .interview-shell .cockpit :is(.transcript-badge, .transcript-item.user .transcript-text, .center-caption.user, .chat-mic-btn.active) {
+  background: var(--hp-pink);
+  border-color: var(--hp-line);
+  color: var(--hp-pink-ink);
+}
+
+#app .interview-shell .cockpit .center-chat-input input::placeholder {
+  color: var(--hp-muted);
+}
+
+#app .interview-shell .cockpit :is(button, input):focus-visible {
+  outline: 2px solid var(--hp-pink-ink);
+  outline-offset: 2px;
+}
+
 /*
  * AI interview visual bridge
  *
@@ -8,17 +154,17 @@
  */
 
 #app .interview-shell {
-  --iv-bg: #f7f5f1;
-  --iv-surface: #ffffff;
-  --iv-surface-soft: #f3f0eb;
-  --iv-ink: #23262b;
-  --iv-muted: #69717b;
-  --iv-line: #e3ded6;
-  --iv-blue: #dceaf5;
-  --iv-blue-strong: #5c8cb4;
-  --iv-green: #dfeadb;
-  --iv-yellow: #f3e4a8;
-  --iv-pink: #eededc;
+  --iv-bg: var(--hp-bg);
+  --iv-surface: var(--hp-surface);
+  --iv-surface-soft: var(--hp-surface-2);
+  --iv-ink: var(--hp-ink);
+  --iv-muted: var(--hp-muted);
+  --iv-line: var(--hp-line);
+  --iv-blue: var(--hp-blue);
+  --iv-blue-strong: var(--hp-pink-ink);
+  --iv-green: var(--hp-green);
+  --iv-yellow: var(--hp-yellow);
+  --iv-pink: var(--hp-pink);
   --iv-danger: #b96060;
   color: var(--iv-ink);
   color-scheme: light;
@@ -94,16 +240,20 @@
   background: var(--iv-surface-soft) !important;
 }
 
-#app .interview-shell .sidebar .nav-item.active,
+#app .interview-shell .sidebar .nav-item.active {
+  color: var(--hp-pink-ink) !important;
+  background: var(--hp-yellow) !important;
+}
+
 #app .interview-shell .sidebar .nav-item.active .nav-icon {
-  color: #ffffff !important;
-  background: var(--iv-ink) !important;
+  color: inherit !important;
+  background: transparent !important;
 }
 
 #app .interview-shell .sidebar .mentor-btn {
   border-color: var(--iv-ink) !important;
   color: #ffffff !important;
-  background: var(--iv-ink) !important;
+  background: var(--hp-pink-ink) !important;
 }
 
 #app .interview-shell .sidebar .mentor-btn:hover {
@@ -211,7 +361,7 @@
 ) {
   border-color: var(--iv-ink) !important;
   color: #ffffff !important;
-  background: var(--iv-ink) !important;
+  background: var(--hp-pink-ink) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
