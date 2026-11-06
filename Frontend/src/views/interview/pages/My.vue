@@ -1,5 +1,5 @@
 ﻿<template>
-	<div class="page-layout">
+	<div class="page-layout interview-profile">
 		<Sidebar />
 		<main class="main-content">
 			<div class="page-container">
@@ -884,7 +884,28 @@ onBeforeUnmount(() => {
 
 .hero-actions {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 8px;
+}
+
+.hero-actions .btn:hover { filter: brightness(.94); }
+.hero-actions .btn:focus-visible {
+	outline: 2px solid var(--hp-pink-ink);
+	outline-offset: 2px;
+}
+
+.hero-actions .btn:is(.line, .ghost) {
+	background: var(--hp-yellow);
+	border: 1px solid var(--hp-line-strong);
+	color: var(--hp-ink);
+}
+
+.hero-actions .btn.ghost { background: var(--hp-pink); }
+
+.hero-actions .btn.danger {
+	background: var(--hp-surface);
+	border: 1px solid #a85a50;
+	color: #8f342b;
 }
 
 .btn {
@@ -969,12 +990,13 @@ onBeforeUnmount(() => {
 	font-size: 28px;
 	line-height: 1;
 	font-weight: 700;
-	color: #ffffff;
+	color: var(--hp-ink);
+	font-variant-numeric: tabular-nums;
 }
 
 .metric-tip {
 	font-size: 12px;
-	color: #52c41a;
+	color: #3e603b;
 }
 
 .meter {
@@ -1025,8 +1047,8 @@ onBeforeUnmount(() => {
 .kv {
 	display: flex;
 	justify-content: space-between;
-	color: #9ca3af;
-	border-bottom: 1px dashed #2a3441;
+	color: var(--hp-muted);
+	border-bottom: 1px solid var(--hp-line);
 	padding: 10px 0;
 	gap: 12px;
 	font-size: 13px;

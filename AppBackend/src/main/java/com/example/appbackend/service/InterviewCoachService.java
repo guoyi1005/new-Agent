@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -20,10 +21,13 @@ public class InterviewCoachService {
 
     private final InterviewUserProfileRepository profileRepository;
     private final LlmService llmService;
+    private final InterviewDeepSeekService deepSeekService;
 
-    public InterviewCoachService(InterviewUserProfileRepository profileRepository, LlmService llmService) {
+    public InterviewCoachService(InterviewUserProfileRepository profileRepository, LlmService llmService,
+                                 InterviewDeepSeekService deepSeekService) {
         this.profileRepository = profileRepository;
         this.llmService = llmService;
+        this.deepSeekService = deepSeekService;
     }
 
     public SseEmitter coach(Long userId, Map<String, Object> body, String authorization) {
@@ -32,7 +36,7 @@ public class InterviewCoachService {
             throw new InterviewServiceException("missing_or_empty_field", 400, Map.of("field", "message"));
         }
         InterviewUserProfile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new InterviewServiceException("user_not_found", 404));
+                .orElseGet(InterviewUserProfile::new);
 
         Map<String, Object> ctx = new java.util.LinkedHashMap<>();
         ctx.put("nickname", Optional.ofNullable(profile.getNickname()).orElse(""));
@@ -45,7 +49,9 @@ public class InterviewCoachService {
         ctx.put("school", Optional.ofNullable(profile.getSchool()).orElse(""));
         String prompt = InterviewPrompts.buildCoachSystemPrompt(ctx);
 
-        return streamPlain(prompt, message, authorization);
+        return streamAnswer(() -> deepSeekService.chat(List.of(
+                Map.of("role", "system", "content", prompt),
+                Map.of("role", "user", "content", message))));
     }
 
     public SseEmitter customPath(Long userId, Map<String, Object> body, String authorization) {
@@ -72,15 +78,21 @@ public class InterviewCoachService {
     }
 
     private SseEmitter streamPlain(String system, String input, String authorization) {
-        SseEmitter emitter = new SseEmitter(0L);
-        CompletableFuture.runAsync(() -> {
-            try {
+        return streamAnswer(() -> {
                 LlmChatRequest req = new LlmChatRequest();
                 req.setPrompt(system);
                 req.setInput(input);
                 LlmChatResponse resp = llmService.chat(req, authorization);
-                String answer = resp != null && StringUtils.hasText(resp.getAnswer())
+                return resp != null && StringUtils.hasText(resp.getAnswer())
                         ? resp.getAnswer() : "暂时无法生成建议，请稍后再试。";
+        });
+    }
+
+    private SseEmitter streamAnswer(java.util.function.Supplier<String> generateAnswer) {
+        SseEmitter emitter = new SseEmitter(0L);
+        CompletableFuture.runAsync(() -> {
+            try {
+                String answer = generateAnswer.get();
                 int size = 40;
                 for (int i = 0; i < answer.length(); i += size) {
                     String chunk = answer.substring(i, Math.min(i + size, answer.length()));

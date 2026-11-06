@@ -977,7 +977,8 @@ onBeforeUnmount(() => {
 /* ==================== 分类标签 ==================== */
 .category-tabs {
   display: flex;
-  gap: 32px;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 12px;
   margin-bottom: 0;
   border-bottom: 0;
@@ -985,6 +986,8 @@ onBeforeUnmount(() => {
 }
 
 .tab-item {
+  padding: 7px 14px;
+  border-radius: 999px;
   color: #8b9aae;
   font-size: 14px;
   cursor: pointer;
@@ -994,20 +997,6 @@ onBeforeUnmount(() => {
 
 .tab-item:hover {
   color: #fff;
-}
-
-.tab-item.active {
-  color: #3a7bc8;
-}
-
-.tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #3a7bc8;
 }
 
 /* ==================== 统计卡片 ==================== */

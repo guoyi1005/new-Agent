@@ -5,7 +5,7 @@
       <EditorialToolbar
         v-model="dashboardSearch"
         eyebrow="CAREER / 02"
-        placeholder="搜索真题、技术方向或面试趋势"
+        placeholder="搜索公开练习题"
       />
       <div class="content-area">
         <!-- 左侧主要内容区 -->
@@ -18,8 +18,9 @@
             </div>
             <div class="interview-hero__actions">
               <button class="hero-action hero-action--primary" type="button" @click="router.push(PATHS.AI_MOCK_INTERVIEW)">
+                <small>INTERVIEW</small>
                 <span>开始模拟面试</span>
-                <b>→</b>
+                <b aria-hidden="true">进入模拟 →</b>
               </button>
               <button class="hero-action hero-action--resume" type="button" @click="router.push('/ai-tools/resume')">
                 <small>RESUME</small>
@@ -237,26 +238,29 @@
 
         <!-- 右侧侧边栏 -->
         <aside class="right-sidebar">
-          <!-- 1. 行业热门真题 -->
+          <!-- 公开练习题 -->
           <div class="sidebar-section hot-questions">
             <div class="section-header">
-              <img class="section-icon" src="@/assets/interview/11.png" alt="真题" />
-              <span class="section-title">行业热门真题</span>
+              <img class="section-icon" src="@/assets/interview/11.png" alt="" />
+              <span class="section-title">公开面试练习题</span>
             </div>
             <div class="question-list" :class="{ 'fading': questionFading }">
-              <div 
-                class="question-item" 
-                v-for="q in paginatedQuestions" 
-                :key="q.source + q.title"
+              <a
+                class="question-item source-link"
+                v-for="q in paginatedQuestions"
+                :key="q.url"
+                :href="q.url"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <div class="question-source">{{ q.source }}</div>
                 <div class="question-title">{{ q.title }}</div>
                 <div class="question-tags">
                   <span class="tag" v-for="(tag, i) in q.tags" :key="i">{{ tag }}</span>
                 </div>
-              </div>
+              </a>
             </div>
-            <div class="pagination">
+            <div v-if="questionPageCount > 1" class="pagination">
               <span class="page-dots">
                 <span 
                   class="dot" 
@@ -268,17 +272,20 @@
             </div>
           </div>
 
-          <!-- 2. 2024 面试趋势 -->
+          <!-- 技能趋势来源 -->
           <div class="sidebar-section trends">
             <div class="section-header">
               <img class="section-icon" src="@/assets/interview/10.png" alt="趋势" />
-              <span class="section-title">2026 面试趋势</span>
+              <span class="section-title">技能趋势报告</span>
             </div>
             <div class="trend-list" :class="{ 'fading': trendFading }">
-              <div 
-                class="trend-item-wrapper" 
-                v-for="trend in paginatedTrends" 
-                :key="trend.highlight + trend.text"
+              <a
+                class="trend-item-wrapper source-link"
+                v-for="trend in paginatedTrends"
+                :key="trend.url"
+                :href="trend.url"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <div class="trend-item">
                   <span class="trend-dot">●</span>
@@ -287,9 +294,9 @@
                     <span class="trend-text">{{ trend.text }}</span>
                   </div>
                 </div>
-              </div>
+              </a>
             </div>
-            <div class="pagination">
+            <div v-if="trendPageCount > 1" class="pagination">
               <span class="page-dots">
                 <span 
                   class="dot" 
@@ -513,21 +520,9 @@ const historyInterviews = ref<UIHistory[]>([])
 
 // ───── 行业热门真题 ─────
 const hotQuestions = ref([
-  { source: '字节跳动 · 2025秋招', title: '如何设计一个支持千万级 QPS 的分布式限流器？', tags: ['高并发', '架构设计'] },
-  { source: '阿里巴巴 · P7社招', title: '详细说明 MySQL MVCC 机制及其在 RR 隔离级别下的工作原理。', tags: ['数据库', '内核分析'] },
-  { source: '腾讯 · 2025春招', title: '介绍 HashMap 的底层实现以及 JDK8 后的优化。', tags: ['Java', '集合源码'] },
-  { source: '美团 · 技术岗', title: 'Redis 数据淘汰策略有哪些？Cache Aside 模式注意什么？', tags: ['Redis', '缓存'] },
-  { source: '拼多多 · 校招', title: '讲解一下 HTTP 三次握手和四次挥手的过程及原因。', tags: ['计算机网络', '协议'] },
-  { source: '快手 · 后端开发', title: 'MySQL 索引失效的常见原因有哪些？如何优化？', tags: ['数据库', '优化'] },
-  { source: '滴滴 · 架构组', title: '如何在分布式系统中保证数据一致性？', tags: ['分布式', '一致性'] },
-  { source: 'B站 · 基础设施', title: 'Docker 与 Kubernetes 的区别及各自适用场景。', tags: ['容器', 'DevOps'] },
-  { source: '百度 · 搜索部门', title: '讲解一下 Redis 的持久化机制 RDB 和 AOF 的区别。', tags: ['Redis', '持久化'] },
-  { source: '网易 · 游戏事业部', title: '介绍 Actor 模型与 Go CSP 的区别与联系。', tags: ['并发', 'Go'] },
-  { source: '京东 · 物流研发', title: '讲解一下 MySQL 中 InnoDB 的 Buffer Pool 工作原理。', tags: ['数据库', ' InnoDB'] },
-  { source: '蔚来 · 车联网', title: '介绍消息队列如何保证不丢消息？', tags: ['消息队列', '中间件'] },
-  { source: '米哈游 · 后端开发', title: '讲解一下游戏服务器架构设计要点。', tags: ['游戏', '架构'] },
-  { source: '小红书 · 基础架构', title: '介绍一下 K8s 中 Pod 的生命周期。', tags: ['K8s', '容器'] },
-  { source: '得物 · 技术中台', title: '讲解一下 CAP 定理与 BASE 理论。', tags: ['分布式', '理论'] },
+  { source: 'LeetCode · 第 146 题', title: 'LRU 缓存', tags: ['哈希表', '链表'], url: 'https://leetcode.com/problems/lru-cache/' },
+  { source: 'LeetCode · 第 56 题', title: '合并区间', tags: ['数组', '排序'], url: 'https://leetcode.com/problems/merge-intervals/' },
+  { source: 'LeetCode · 第 20 题', title: '有效的括号', tags: ['栈', '字符串'], url: 'https://leetcode.com/problems/valid-parentheses/' },
 ])
 
 const questionPage = ref(0)
@@ -553,21 +548,9 @@ const nextQuestionPage = () => {
 
 // ───── 面试趋势 ─────
 const interviewTrends = ref([
-  { highlight: 'AI工具链', text: '大模型(LLM)赋能研发流程成为新热点。' },
-  { highlight: '降本增效', text: '更侧重对系统性能极致优化的考察。' },
-  { highlight: '全栈意识', text: '后端更需理解云原生与前端交互成本。' },
-  { highlight: '项目深度', text: '不仅考察技术实现，更注重业务价值与系统设计能力。' },
-  { highlight: '场景题增多', text: '从八股文转向实际业务场景，考察问题分析与解决能力。' },
-  { highlight: '基础为王', text: '计算机基础（操作系统、网络、数据结构）仍是必考项。' },
-  { highlight: '八股文弱化', text: '不再死记硬背，更考验理解与实际应用。' },
-  { highlight: '项目为王', text: '深入考察项目中的技术选型、难点与优化方案。' },
-  { highlight: '云原生', text: '容器化、微服务架构成为后端面试必备知识。' },
-  { highlight: '工程实践', text: 'CI/CD、监控告警等运维知识受到重视。' },
-  { highlight: '软技能', text: '沟通表达、团队协作、跨部门协调能力同样重要。' },
-  { highlight: '技术广度', text: '除后端技术外，前端、大数据、安全等领域知识加分。' },
-  { highlight: '架构思维', text: '能从架构角度思考问题，具备长期演进意识。' },
-  { highlight: '学习能力', text: '考察候选人学习新技术、适应业务变化的能力。' },
-  { highlight: '代码质量', text: '代码规范、单元测试、Code Review 意识受关注。' },
+  { highlight: '世界经济论坛 · 2025《未来就业报告》', text: '受访雇主预计，到 2030 年，AI 与大数据将是重要性增长最快的技能类别。', url: 'https://www.weforum.org/publications/the-future-of-jobs-report-2025/3-skills-outlook' },
+  { highlight: 'Stack Overflow · 2025 开发者调查', text: '84% 的该题受访者已在开发流程中使用 AI 工具，或计划使用。', url: 'https://survey.stackoverflow.co/2025/ai#ai-tools-in-the-development-process' },
+  { highlight: 'Stack Overflow · AI 输出准确性', text: '在 2025 年调查中，46% 的该题受访者不信任 AI 工具输出的准确性，33% 表示信任。', url: 'https://survey.stackoverflow.co/2025/ai#accuracy-of-ai-tools' },
 ])
 
 const trendPage = ref(0)
@@ -592,6 +575,7 @@ const questionFading = ref(false)
 const trendFading = ref(false)
 
 const fadeToNextQuestion = () => {
+  if (questionPageCount.value <= 1) return
   questionFading.value = true
   setTimeout(() => {
     nextQuestionPage()
@@ -600,6 +584,7 @@ const fadeToNextQuestion = () => {
 }
 
 const fadeToNextTrend = () => {
+  if (trendPageCount.value <= 1) return
   trendFading.value = true
   setTimeout(() => {
     nextTrendPage()
@@ -2201,7 +2186,7 @@ onMounted(async () => {
   transition: transform .18s ease, box-shadow .18s ease;
 }
 .hero-action:hover { border-color: var(--hp-line-strong); transform: translateY(-2px); box-shadow: var(--hp-shadow-sm); }
-.hero-action--primary { color: var(--hp-pink-ink); background: var(--hp-yellow); }
+.hero-action--primary { background: var(--hp-yellow); }
 .hero-action--resume { background: var(--pink); }
 .hero-action small { font-size: 9px; font-weight: 800; letter-spacing: .14em; }
 .hero-action span { font-size: 15px; font-weight: 750; line-height: 1.3; }
@@ -2412,6 +2397,22 @@ onMounted(async () => {
 .trend-highlight { color: #5f6959; }
 .trend-highlight { font-weight: 700; }
 .trend-text { color: #656059; }
+
+.source-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.source-link:hover :is(.question-title, .trend-highlight) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.source-link:focus-visible {
+  outline: 2px solid var(--hp-pink-ink);
+  outline-offset: 2px;
+}
 .pagination { margin-top: 2px; }
 .page-dots .dot { background: #b6aea2; }
 .page-dots .dot.active { width: 20px; background: var(--ink); box-shadow: none; }

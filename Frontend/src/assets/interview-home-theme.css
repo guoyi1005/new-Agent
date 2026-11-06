@@ -13,13 +13,13 @@
   --iv-pink: var(--hp-pink);
 }
 
-#app .interview-shell .interview-workspace :is(.mentor-btn, .edit-footer .btn-primary) {
+#app .interview-shell .interview-workspace .edit-footer .btn-primary {
   color: var(--hp-pink-ink) !important;
   background: var(--hp-yellow) !important;
   border-color: var(--hp-line-strong) !important;
 }
 
-#app .interview-shell .interview-workspace :is(.mentor-btn, .edit-footer .btn-primary):hover {
+#app .interview-shell .interview-workspace .edit-footer .btn-primary:hover {
   background: var(--hp-pink) !important;
 }
 
@@ -38,6 +38,25 @@
 
 #app .interview-shell .interview-workspace .page-dots .dot.active {
   background: var(--hp-pink-ink);
+}
+
+#app .interview-shell .interview-profile :is(.hero-card, .content-grid .card) {
+  background: #fffdf8 !important;
+  border-color: var(--hp-line-strong) !important;
+  box-shadow: var(--hp-shadow-sm) !important;
+}
+
+#app .interview-shell .interview-profile .metric-card {
+  border-color: var(--hp-line-strong) !important;
+  box-shadow: none !important;
+}
+
+#app .interview-shell .interview-profile .metric-value {
+  color: var(--hp-ink) !important;
+}
+
+#app .interview-shell .interview-profile .meter span {
+  background: var(--hp-pink-ink) !important;
 }
 
 /* Live interview workspace. */
@@ -395,6 +414,12 @@
   border-color: #b8cfdf !important;
   color: #355e7e !important;
   background: var(--iv-blue) !important;
+}
+
+#app .interview-shell .category-tabs .tab-item.active {
+  background: #49352a !important;
+  border-color: #49352a !important;
+  color: var(--hp-cream) !important;
 }
 
 /* Tags, badges and progress indicators */

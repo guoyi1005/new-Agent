@@ -539,7 +539,7 @@ onMounted(() => {
 .status-value {
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--hp-ink);
 }
 
 .trend-up {

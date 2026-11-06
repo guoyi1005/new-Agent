@@ -26,12 +26,11 @@
             </div>
             <div class="course-grid">
               <div
-                v-for="(item, index) in getRow1Items(items)"
-                :key="item?.id || `placeholder-${index}`"
-                :class="['course-card', 'course-card-' + (index + 1), { 'placeholder-card': !item }]"
-                @click="item && openDetail(item)"
+                v-for="(item, index) in items.slice(0, 3)"
+                :key="item.id"
+                :class="['course-card', 'course-card-' + (index + 1)]"
+                @click="openDetail(item)"
               >
-                <template v-if="item">
                   <div class="card-visual" :style="{ backgroundImage: `url(${index === 1 ? embeddedImg2 : index === 2 ? embeddedImg3 : embeddedImg})` }">
                     <div class="course-level">{{ getDifficultyText(item.difficulty) }}</div>
                     <div class="course-icon">{{ getQuestionIcon(item.question_type) }}</div>
@@ -42,18 +41,6 @@
                     </div>
                     <h3 class="course-title" :title="item.question">{{ item.question }}</h3>
                   </div>
-                </template>
-                <template v-else>
-                  <div class="card-visual placeholder-visual" :style="{ backgroundImage: `url(${index === 1 ? embeddedImg2 : index === 2 ? embeddedImg3 : embeddedImg})` }">
-                    <div class="course-icon">💠</div>
-                  </div>
-                  <div class="course-info">
-                    <div class="course-tags">
-                      <span class="tag">暂无数据</span>
-                    </div>
-                    <h3 class="course-title">敬请期待</h3>
-                  </div>
-                </template>
               </div>
             </div>
           </section>
@@ -91,15 +78,21 @@
                   <h2 class="section-title">{{ position }}</h2>
                 </div>
               </div>
-              <div v-if="items[0]" class="featured-card" @click="openDetail(items[0])">
+              <div v-if="items[0]" class="featured-card">
                 <div class="featured-badge">精选题目</div>
                 <h3 class="featured-title">{{ items[0].question }}</h3>
                 <p class="featured-desc">{{ items[0].excellent_answer || '暂无参考答案' }}</p>
-                <span class="featured-link">查看详情</span>
+                <button type="button" class="featured-link" @click="openDetail(items[0])">查看详情</button>
                 <div class="featured-stats" v-if="items.length > 1">
                   <div class="stat-item">
-                    <span class="stat-label">更多题目</span>
-                    <span class="stat-value">{{ items.length }} 道</span>
+                    <span class="stat-label">本组其他题目（{{ items.length - 1 }} 道）</span>
+                    <button
+                      v-for="question in items.slice(1)"
+                      :key="question.id"
+                      type="button"
+                      class="featured-link"
+                      @click="openDetail(question)"
+                    >{{ question.question }}</button>
                   </div>
                 </div>
               </div>
@@ -318,27 +311,6 @@ const getDifficultyText = (difficulty?: number) => {
 const getCardClass = (difficulty?: number) => {
   const map: Record<number, string> = { 1: 'green', 2: 'green', 3: 'orange', 4: 'blue', 5: 'green' };
   return map[difficulty || 3] || 'orange';
-};
-
-// 获取第一行显示的3个不同题目（当前岗位不足时从其他岗位补充）
-const getRow1Items = (items: KnowledgeItem[]): KnowledgeItem[] => {
-  const result: KnowledgeItem[] = [];
-  // 先取当前岗位的数据
-  for (let i = 0; i < Math.min(3, items.length); i++) {
-    result.push(items[i]!);
-  }
-  // 如果不足3个，从所有题目中补充不同的数据
-  if (result.length < 3) {
-    const allItems = recommendedCourses.value;
-    for (const item of allItems) {
-      if (result.length >= 3) break;
-      // 避免重复添加已存在的题目
-      if (!result.some(r => r.id === item.id)) {
-        result.push(item);
-      }
-    }
-  }
-  return result;
 };
 
 onMounted(() => {
@@ -581,11 +553,19 @@ onMounted(() => {
 }
 
 .featured-link {
-  color: #4a9eff;
+  color: var(--hp-pink-ink);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
   font-size: 13px;
   text-decoration: none;
   margin-bottom: 16px;
 }
+
+.featured-link:hover { text-decoration: underline; }
+.featured-stats .featured-link { margin-bottom: 0; }
 
 .featured-stats {
   display: flex;

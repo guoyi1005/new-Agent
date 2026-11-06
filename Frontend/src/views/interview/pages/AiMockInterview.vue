@@ -915,7 +915,7 @@ async function sendMessage() {
 /* 深色主题配色 */
 .page-layout {
   --bg-page: var(--hp-surface);
-  --bg-hero: var(--hp-surface-2);
+  --bg-hero: var(--hp-yellow);
   --bg-card: var(--hp-surface);
   --bg-table-header: var(--hp-surface-2);
   --border-color: var(--hp-line);
@@ -956,11 +956,11 @@ async function sendMessage() {
 .hero-section {
   width: 100%;
   box-sizing: border-box;
-  background: var(--hp-surface-2);
+  background: var(--bg-hero);
   border-radius: 16px;
   padding: 40px;
   margin-bottom: 32px;
-  border: 1px solid var(--hp-line);
+  border: 1px solid var(--hp-line-strong);
 }
 
 .hero-content {
