@@ -210,7 +210,7 @@ export const aiCoachApi = {
     onDone?: () => void,
     onError?: (error: Error) => void
   ) => {
-    const url = `${API_BASE}/ai-coach`;
+    const url = buildUrl("/ai-coach");
     
     fetch(url, {
       method: "POST",
@@ -233,43 +233,30 @@ export const aiCoachApi = {
         
         const decoder = new TextDecoder();
         let buffer = "";
+        let receivedContent = false;
         
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
-          
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-          
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith("data: ")) {
-              const data = trimmed.slice(6);
-              if (data === "[DONE]") {
-                onDone?.();
-                return;
-              }
-              if (data.startsWith("ERROR:")) {
-                throw new Error(data.slice(6));
-              }
-              onChunk(data);
+          buffer += decoder.decode(value, { stream: !done });
+          const frames = buffer.split(/\r?\n\r?\n/);
+          buffer = done ? "" : frames.pop() || "";
+
+          for (const frame of frames) {
+            const data = frame.split(/\r?\n/)
+              .filter((line) => line.startsWith("data:"))
+              .map((line) => line.slice(5).replace(/^ /, ""))
+              .join("\n");
+            if (data === "[DONE]") {
+              if (!receivedContent) throw new Error("职业导师未返回回复");
+              onDone?.();
+              return;
             }
+            if (data.startsWith("ERROR:")) throw new Error(data.slice(6));
+            if (data.trim()) receivedContent = true;
+            if (data) onChunk(data);
           }
+          if (done) throw new Error("职业导师连接提前结束");
         }
-        
-        // 处理缓冲区中剩余的数据
-        if (buffer.trim()) {
-          const trimmed = buffer.trim();
-          if (trimmed.startsWith("data: ")) {
-            const data = trimmed.slice(6);
-            if (data !== "[DONE]") {
-              onChunk(data);
-            }
-          }
-        }
-        
-        onDone?.();
       })
       .catch((error) => {
         onError?.(error);
