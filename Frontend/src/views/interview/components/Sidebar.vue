@@ -13,10 +13,10 @@
       <div class="user-section">
         <div class="user-card" @click="navigateTo(PATHS.MY)">
           <div class="user-avatar">
-            <img :src="userAvatar" alt="avatar" />
+            <img v-if="userAvatar" :src="userAvatar" alt="" />
           </div>
           <div class="user-info">
-            <div class="user-name">{{ userNickname }}</div>
+            <div class="user-name">{{ userNickname || '\u00a0' }}</div>
             <div class="user-status">点击进入个人中心</div>
           </div>
           <div class="user-arrow">
@@ -85,12 +85,16 @@
   </div>
 </template>
 
+<script>
+let cachedSidebarProfile = null;
+</script>
+
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { PATHS } from '../routes/paths';
 import { authApi } from '../api/auth';
-import { clearAuth } from '../../../utils/auth';
+import { clearAuth, getToken, getUserInfo } from '../../../utils/auth';
 
 const emit = defineEmits(['customPath']);
 
@@ -105,30 +109,38 @@ watch(
   },
 );
 
-// 从 API 加载用户信息
-const userInfo = ref({
-  nickname: '用户',
-  avatar: '',
-});
+const session = getToken() || localStorage.getItem('session_token');
+const account = getUserInfo();
+const initialProfile = {
+  nickname: account?.nickname || account?.realName || account?.username || '',
+  avatar: account?.avatar || account?.avatar_url || '',
+};
+const userInfo = ref(
+  session && cachedSidebarProfile?.session === session
+    ? cachedSidebarProfile.profile
+    : initialProfile,
+);
 
 const userNickname = computed(() => userInfo.value.nickname);
 const userAvatar = computed(() => {
   if (userInfo.value.avatar) return userInfo.value.avatar;
-  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(userInfo.value.nickname)}`;
+  return userInfo.value.nickname
+    ? `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(userInfo.value.nickname)}`
+    : '';
 });
 
 // 加载用户信息
 async function loadUserInfo() {
   try {
     const profile = await authApi.getCurrentProfile();
+    if (session !== (getToken() || localStorage.getItem('session_token'))) return;
     userInfo.value = {
-      nickname: profile.nickname || '用户',
-      avatar: profile.avatar_url || '',
+      nickname: profile.nickname || initialProfile.nickname,
+      avatar: profile.avatar_url || initialProfile.avatar,
     };
-  } catch (e) {
-    // 使用 localStorage 作为后备
-    userInfo.value.nickname = localStorage.getItem('nickname') || '用户';
-    userInfo.value.avatar = localStorage.getItem('avatar_url') || '';
+    if (session) cachedSidebarProfile = { session, profile: userInfo.value };
+  } catch {
+    // Keep the signed-in account visible if refreshing its profile fails.
   }
 }
 
@@ -228,6 +240,7 @@ const navigateTo = (path) => {
 };
 
 const handleLogout = () => {
+  cachedSidebarProfile = null;
   localStorage.removeItem('session_token')
   localStorage.removeItem('is_manager')
   localStorage.removeItem('user_id')
