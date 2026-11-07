@@ -301,6 +301,7 @@ public class AppExamServiceImpl implements AppExamService {
         AppExamDTO.AttemptDetail detail = new AppExamDTO.AttemptDetail();
         detail.setId(attempt.getId());
         detail.setPaperId(attempt.getPaperId());
+        detail.setPaperTitle(resolvePaperTitle(attempt.getPaperId()));
         detail.setAttemptNo(attempt.getAttemptNo());
         detail.setStatus(attempt.getStatus());
         detail.setStartedAt(attempt.getStartedAt());
@@ -573,6 +574,7 @@ public class AppExamServiceImpl implements AppExamService {
         AppExamDTO.AttemptResult result = new AppExamDTO.AttemptResult();
         result.setId(attempt.getId());
         result.setPaperId(attempt.getPaperId());
+        result.setPaperTitle(resolvePaperTitle(attempt.getPaperId()));
         result.setAttemptNo(attempt.getAttemptNo());
         result.setStatus(attempt.getStatus());
         result.setStartedAt(attempt.getStartedAt());
@@ -582,6 +584,14 @@ public class AppExamServiceImpl implements AppExamService {
         result.setQuestions(questions.stream().map(question -> toQuestionResult(question, answers.get(question.getId()))).toList());
         result.setLearningUpdate(readLearningUpdate(attempt.getLearningUpdateJson()));
         return result;
+    }
+
+    /** 试卷标题以实际试卷为准，避免前端写死某门课的标题。 */
+    private String resolvePaperTitle(Long paperId) {
+        return paperRepository.findById(paperId)
+                .map(ExamPaper::getTitle)
+                .filter(title -> title != null && !title.isBlank())
+                .orElse("课程测验");
     }
 
     private List<ExamPaperQuestion> attemptQuestions(ExamPaperAttempt attempt) {

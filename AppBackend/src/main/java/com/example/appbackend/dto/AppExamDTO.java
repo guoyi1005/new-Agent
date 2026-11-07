@@ -52,6 +52,7 @@ public final class AppExamDTO {
     public static class AttemptDetail {
         private Long id;
         private Long paperId;
+        private String paperTitle;
         private Integer attemptNo;
         private ExamPaperAttempt.Status status;
         private LocalDateTime startedAt;
@@ -101,6 +102,7 @@ public final class AppExamDTO {
     public static class AttemptResult {
         private Long id;
         private Long paperId;
+        private String paperTitle;
         private Integer attemptNo;
         private ExamPaperAttempt.Status status;
         private LocalDateTime startedAt;

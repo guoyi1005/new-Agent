@@ -84,7 +84,7 @@ onMounted(async () => {
     <AppTabBar />
     <header class="review-header">
       <button type="button" @click="router.push({ path: `/mine/papers/results/${route.params.attemptId}`, query: examQuery })">‹ 返回成绩</button>
-      <div><h1>Python基础能力随机考试</h1><p>共 {{ result?.questions.length || 0 }} 题　满分 {{ result?.objectiveTotalScore || 0 }} 分</p></div>
+      <div><h1>{{ result?.paperTitle || '课程测验' }}</h1><p>共 {{ result?.questions.length || 0 }} 题　满分 {{ result?.objectiveTotalScore || 0 }} 分</p></div>
       <strong>最终成绩 <b>{{ result?.objectiveScore || 0 }}</b> 分</strong>
     </header>
     <div v-if="error" class="loading">{{ error }}</div>

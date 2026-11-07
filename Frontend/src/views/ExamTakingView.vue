@@ -159,10 +159,10 @@ onBeforeUnmount(() => window.clearInterval(timer))
     <AppTabBar />
     <header class="exam-header">
       <button type="button" aria-label="返回来源" @click="goExamBack()">‹</button>
-      <div><strong>Python基础能力随机考试</strong><small>第 {{ attempt?.attemptNo || '-' }} 次考试</small></div>
+      <div><strong>{{ attempt?.paperTitle || '课程测验' }}</strong><small>第 {{ attempt?.attemptNo || '-' }} 次考试</small></div>
       <p><small>剩余时间</small><b>{{ timeText }}</b></p>
     </header>
-    <div v-if="loading" class="state">正在随机抽取84道题…</div>
+    <div v-if="loading" class="state">正在准备试卷…</div>
     <main v-else-if="attempt && current" class="exam-main">
       <div class="progress-label"><span>答题进度 {{ attempt.answeredCount }}/{{ attempt.questionCount }}</span><b>{{ answeredRate }}%</b></div>
       <div class="progress"><i :style="{ width: `${answeredRate}%` }"></i></div>
